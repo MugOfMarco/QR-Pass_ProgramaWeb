@@ -30,71 +30,91 @@
 
     <div class="main-container">
 
-        <div class="column">
-            <fieldset class="option-group">
-                <legend>Puerta de ingreso</legend>
-                <input type="radio" id="mexico" name="puerta" value="mexico" checked>
-                <label for="mexico">México-Tacuba</label>
-                <input type="radio" id="mar" name="puerta" value="mar">
-                <label for="mar">Mar-Mediterraneo</label>
-            </fieldset>
-            
-            <div class="placeholder-box camera-view">
-                <div class="inner-box"></div>
-            </div>
-        </div>
+        <section>
+            <div class="container">
 
-        <div class="column">
-            <fieldset class="option-group">
-                <legend>Tipo</legend>
-                <input type="radio" id="entrada" name="tipo" value="entrada" checked>
+                <fieldset class="option-group">
+                    <legend>Puerta de ingreso</legend>
+                    <input type="radio" id="mexico" name="puerta" value="mexico" checked>
+                    <label for="mexico">México-Tacuba</label>
+                    <input type="radio" id="mar" name="puerta" value="mar">
+                    <label for="mar">Mar-Mediterraneo</label>
+                </fieldset>
+            
+                <div class="placeholder-box Registro">
+                    <div class="inner-box">
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section>
+            <div class="container">
+                <fieldset class="option-group">
+                    <legend>Tipo</legend>
+                    <input type="radio" id="entrada" name="tipo" value="entrada" checked>
                 <label for="entrada">Entrada</label>
                 <input type="radio" id="salida" name="tipo" value="salida">
                 <label for="salida">Salida</label>
             </fieldset>
             
-            <div class="placeholder-box info-box">
-                </div>
-        </div>
-
-        <div class="column form-column">
-            <div>
-                <label for="qr-input">Registro por QR</label>
-                <input type="text" id="qr-input" name="qr-input">
-            </div>
-            <div>
-                <label for="manual-input">Registro Manual</label>
-                <input type="text" id="manual-input" name="manual-input">
-            </div>
-            <div>
-                <label for="nombre">Nombre</label>
-                <input type="text" id="nombre" name="nombre">
-            </div>
-            <div>
-                <label for="boleta">Boleta</label>
-                <input type="text" id="boleta" name="boleta">
-            </div>
-            <div>
-                <label for="horario">Horario</label>
-                <input type="text" id="horario" name="horario">
-            </div>
-            <div>
-                <label for="grupo">Grupo</label>
-                <input type="text" id="grupo" name="grupo">
-            </div>
-            <div class="checkbox-container">
-                <div>
-                    <input type="checkbox" id="retardos" name="retardos">
-                    <label for="retardos">Retardos</label>
-                </div>
-                <div>
-                    <input type="checkbox" id="sin-credencial" name="sin-credencial">
-                    <label for="sin-credencial">Sin credencial</label>
+                <div class="placeholder-box info-box">
+            
                 </div>
             </div>
-        </div>
+        </section>
 
     </div>
     
+
+    <div class="column-outputs">
+
+            <div class="text-entry field">
+                <label for="qr-input">Registro por QR</label>
+                <input type="text" id="qr-input" name="qr-input">
+            </div>
+
+            <div class="text-entry field">
+                <label for="manual-input">Registro Manual</label>
+                <input type="text" id="manual-input" name="manual-input">
+            </div>
+
+            <div class="text-entry field">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre-output" name="nombre">
+            </div>
+
+            <div class="text-entry field">
+                <label for="boleta">Boleta</label>
+                <input type="text" id="boleta-output" name="boleta">
+            </div>
+
+            <div class="text-entry field">
+                <label for="horario">Horario</label>
+                <input type="text" id="horario-output" name="horario">
+            </div>
+
+            <div class="text-entry field">
+                <label for="grupo">Grupo</label>
+                <input type="text" id="grupo-output" name="grupo">
+            </div>
+
+            <div class="container-outputs">
+                <div class="text-entry field">
+                    <input type="text" id="retardos-output" name="retardos">
+                    <label for="retardos">Retardos</label>
+                </div>
+
+                <div class="text-entry field">
+                    <input type="text" id="sin-credencial-output" name="sin-credencial">
+                    <label for="sin-credencial">Sin credencial</label>
+                </div>
+
+            </div>
+
+    </div>
+
 </body>
 </html>
