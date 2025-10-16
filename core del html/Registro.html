@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro</title>
-    <link rel="stylesheet" href="">
+    <link rel="stylesheet" href="estilos.css">
 
 </head>
 <body>
@@ -27,6 +27,10 @@
 
     </header>
     
+    <div class="status-container">
+        <div id="status-indicator"></div>
+        <h2 id="status-message">Esperando registro...</h2>
+    </div>
 
     <div class="main-container">
 
@@ -35,9 +39,9 @@
 
                 <fieldset class="option-group">
                     <legend>Puerta de ingreso</legend>
-                    <input type="radio" id="mexico" name="puerta" value="mexico" checked>
+                    <input type="radio" id="mexico" name="puerta" value="mexico" checked required>
                     <label for="mexico">México-Tacuba</label>
-                    <input type="radio" id="mar" name="puerta" value="mar">
+                    <input type="radio" id="mar" name="puerta" value="mar" required>
                     <label for="mar">Mar-Mediterraneo</label>
                 </fieldset>
             
@@ -54,11 +58,11 @@
             <div class="container">
                 <fieldset class="option-group">
                     <legend>Tipo</legend>
-                    <input type="radio" id="entrada" name="tipo" value="entrada" checked>
+                    <input type="radio" id="entrada" name="tipo" value="entrada" checked required>
                 <label for="entrada">Entrada</label>
-                <input type="radio" id="salida" name="tipo" value="salida">
+                <input type="radio" id="salida" name="tipo" value="salida" required>
                 <label for="salida">Salida</label>
-            </fieldset>
+                </fieldset>
             
                 <div class="placeholder-box info-box">
             
@@ -83,32 +87,32 @@
 
             <div class="text-entry field">
                 <label for="nombre">Nombre</label>
-                <input type="text" id="nombre-output" name="nombre">
+                <input type="text" id="nombre-output" name="nombre" readonly>
             </div>
 
             <div class="text-entry field">
                 <label for="boleta">Boleta</label>
-                <input type="text" id="boleta-output" name="boleta">
+                <input type="text" id="boleta-output" name="boleta" readonly>
             </div>
 
             <div class="text-entry field">
                 <label for="horario">Horario</label>
-                <input type="text" id="horario-output" name="horario">
+                <input type="text" id="horario-output" name="horario" readonly>
             </div>
 
             <div class="text-entry field">
                 <label for="grupo">Grupo</label>
-                <input type="text" id="grupo-output" name="grupo">
+                <input type="text" id="grupo-output" name="grupo" readonly>
             </div>
 
             <div class="container-outputs">
                 <div class="text-entry field">
-                    <input type="text" id="retardos-output" name="retardos">
+                    <input type="text" id="retardos-output" name="retardos" readonly>
                     <label for="retardos">Retardos</label>
                 </div>
 
                 <div class="text-entry field">
-                    <input type="text" id="sin-credencial-output" name="sin-credencial">
+                    <input type="text" id="sin-credencial-output" name="sin-credencial" readonly>
                     <label for="sin-credencial">Sin credencial</label>
                 </div>
 
@@ -116,5 +120,6 @@
 
     </div>
 
+    <script src="registro.js" defer></script>
 </body>
 </html>
