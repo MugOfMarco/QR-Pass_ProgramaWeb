@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Incidencias</title>
+    <link rel="stylesheet" href=""> </head>
+<body>
+
+    <header class="site-header">
+        <div class="header-container">
+            
+            <div class="nav-button">
+                <button type="button">  </button> 
+            </div>
+
+            <div class="title">
+                <h1>Incidencias</h1>
+            </div>
+
+            <div class="logo">
+                <img src="" alt="Logo QR Pass"> //AQUI VA EL LOGO
+
+            </div>
+
+        </div>
+    </header>
+    
+    <div class="main-container">
+
+        <section class="student-info-section">
+            <div class="container">
+                
+                <div class="input-group">
+                    <label for="search-boleta">Ingrese boleta</label>
+                    <input type="text" id="search-boleta" name="search-boleta">
+                </div>
+
+                <div class="student-data-display">
+                    <div class="field">
+                        <label for="display-boleta">Boleta</label>
+                        <input type="text" id="display-boleta" name="display-boleta" readonly>
+                    </div>
+                    <div class="field">
+                        <label for="display-alumno">Alumno</label>
+                        <input type="text" id="display-alumno" name="display-alumno" readonly>
+                    </div>
+                    <div class="field">
+                        <label for="display-grupo">Grupo</label>
+                        <input type="text" id="display-grupo" name="display-grupo" readonly>
+                    </div>
+                </div>
+
+            </div>
+            
+        </section>
+
+        <section class="incidents-table-section">
+            <div class="container">
+                
+                <table class="incidents-table">
+                    <thead>
+                        <tr>
+                            <th>Puerta</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        </tbody>
+
+                </table>
+
+                <div class="table-controls">
+                    <select name="item-selector" id="item-selector">
+                        <option value="item1">Item 1</option>
+                        <option value="item2">Item 2</option>
+                    </select>
+
+                    <div class="action-buttons">
+                        <button type="button" id="btn-justselec">justselec</button>
+                        <button type="button" id="btn-justret">justret</button>
+                        <button type="button" id="btn-justsin">justsin</button>
+                        <button type="button" id="btn-justall">justall</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+
+</body>
+</html>
