@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modificar Alumno</title>
+    <link rel="stylesheet" href=""> </head>
+<body>
+
+    <header class="site-header">
+        <div class="header-container">
+            <div class="nav-button">
+                <button type="button"></button> 
+            </div>
+            <div class="title">
+                <h1>Modificar Alumno</h1>
+            </div>
+            <div class="logo">
+                <img src="" alt="Logo QR Pass">
+            </div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+
+        <section class="student-search-section">
+            <div class="container">
+                <div class="input-group">
+                    <label for="search-boleta" class="label-highlight">Ingresar boleta</label>
+                    <input type="text" id="soloNumeros-input" name="search-boleta">
+                </div>
+                <div class="action-button-container">
+                    <button type="button" id="btn-buscar">Buscar Alumno</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="student-edit-section">
+            <div class="container">
+                
+                <fieldset class="student-data-form">
+                    <legend>Datos del Alumno</legend>
+                    
+                    <div class="field">
+                        <label for="edit-boleta">Boleta</label>
+                        <input type="text" id="edit-boleta" name="boleta" readonly>
+                    </div>
+
+                    <div class="field">
+                        <label for="edit-nombre">Nombre del Alumno</label>
+                        <input type="text" id="edit-nombre" name="nombre" disabled>
+                    </div>
+
+                    <div class="field">
+                        <label for="edit-grupo">Grupo</label>
+                        <input type="text" id="edit-grupo" name="grupo" disabled>
+                    </div>
+
+                    <div class="field">
+                        <label for="edit-horario">Horario</label>
+                        <input type="text" id="edit-horario" name="horario" disabled>
+                    </div>
+                    
+                    <div class="field">
+                        <label for="edit-estatus">Estatus</label>
+                        <select id="edit-estatus" name="estatus" disabled>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                            <option value="egresado">Egresado</option>
+                        </select>
+                    </div>
+
+                    <div class="checkbox-field">
+                        <input type="checkbox" id="edit-puertas-abiertas" name="puertas-abiertas" disabled>
+                        <label for="edit-puertas-abiertas">Permitir puertas abiertas</label>
+                    </div>
+
+                </fieldset>
+
+                <div class="action-buttons">
+                    <button type="button" id="btn-guardar" class="button-primary" disabled>
+                        Guardar Cambios
+                    </button>
+                    <button type="button" id="btn-cancelar" class="button-secondary" disabled>
+                        Cancelar
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>foote r del qr pass.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
