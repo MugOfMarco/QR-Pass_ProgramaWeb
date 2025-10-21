@@ -39,7 +39,7 @@
 
                 <fieldset class="option-group">
                     <legend>Puerta de ingreso</legend>
-                    <input type="radio" id="mexico" name="puerta" value="mexico" checked required>
+                    <input type="radio" id="mexico-tacuba" name="puerta" value="mexico-tacuba" checked required>
                     <label for="mexico">México-Tacuba</label>
                     <input type="radio" id="mar" name="puerta" value="mar" required>
                     <label for="mar">Mar-Mediterraneo</label>
@@ -77,7 +77,7 @@
 
             <div class="text-entry field">
                 <label for="qr-input">Registro por QR</label>
-                <input type="text" id="qr-input" name="qr-input">
+                <input type="text" id="qr-input" name="qr-input" onkeypress="return soloNumeros(event)">
             </div>
 
             <div class="text-entry field">
@@ -121,5 +121,6 @@
     </div>
 
     <script src="registro.js" defer></script>
+    <script src="validaciones.js"></script>
 </body>
 </html>
