@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Alumno</title>
+    <link rel="stylesheet" href=""> </head>
+<body>
+
+    <header class="site-header">
+        <div class="header-container">
+            
+            <div class="nav-button">
+                <button type="button"></button> 
+            </div>
+
+            <div class="title">
+                <h1>Registrar Alumno</h1>
+            </div>
+
+            <div class="logo">
+                <img src="" alt="Logo QR Pass">
+            </div>
+
+        </div>
+    </header>
+    
+    <div class="main-container">
+
+        <section class="student-registration-section">
+            <div class="container">
+                
+                <form id="register-student-form">
+                    <fieldset class="student-data-form">
+                        <legend>Datos del Nuevo Alumno</legend>
+                        
+                        <div class="field">
+                            <label for="register-boleta">Boleta</label>
+                            <input type="text" id="soloNumeros-input" name="boleta" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="register-nombre">Nombre del Alumno</label>
+                            <input type="text" id="register-nombre" name="nombre" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="register-grupo">Grupo</label>
+                            <input type="text" id="register-grupo" name="grupo">
+                        </div>
+
+                        <div class="field">
+                            <label for="register-horario">Horario</label>
+                            <input type="text" id="register-horario" name="horario">
+                        </div>
+                        
+                        <div class="field">
+                            <label for="register-estatus">Estatus</label>
+                            <select id="register-estatus" name="estatus">
+                                <option value="activo" selected>Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+
+                        <div class="checkbox-field">
+                            <input type="checkbox" id="register-puertas-abiertas" name="puertas-abiertas">
+                            <label for="register-puertas-abiertas">Permitir puertas abiertas</label>
+                        </div>
+
+                    </fieldset>
+
+                    <div class="action-buttons">
+                        <button type="submit" id="btn-registrar" class="button-primary">
+                            Registrar Alumno
+                        </button>
+                        <button type="reset" id="btn-limpiar" class="button-secondary">
+                            Limpiar Campos
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>footer de la pagina</p>
+        </div>
+    </footer>
+
+</body>
+</html>
