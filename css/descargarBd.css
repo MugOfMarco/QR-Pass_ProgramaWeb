@@ -1,0 +1,288 @@
+/* Reset y estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.site-header {
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Botón de navegación (menú hamburguesa) */
+.nav-button button {
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.nav-button button::before,
+.nav-button button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 4px;
+    background-color: #5c1f33;
+    border-radius: 2px;
+}
+
+.nav-button button::before {
+    top: 14px;
+    box-shadow: 0 9px 0 #5c1f33, 0 18px 0 #5c1f33;
+}
+
+.nav-button button:hover {
+    transform: scale(1.05);
+}
+
+/* Título del header */
+.title h1 {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Logo */
+.logo img {
+    width: 60px;
+    height: 60px;
+}
+
+/* Contenedor principal */
+.main-container {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    width: 100%;
+}
+
+/* Sección de respaldo */
+.backup-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+/* Texto de instrucciones */
+.user-code-display {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Grupo selector de archivos */
+.file-selector-group {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+/* Campo de ruta de archivo */
+.file-path-display {
+    flex: 1;
+}
+
+.file-path-display input {
+    width: 100%;
+    padding: 1.2rem 1.5rem;
+    font-size: 1.1rem;
+    border: 3px solid #333;
+    border-radius: 10px;
+    background-color: white;
+    color: #333;
+}
+
+.file-path-display input:read-only {
+    background-color: #f9f9f9;
+    cursor: default;
+}
+
+/* Botón de examinar (icono de carpeta) */
+.browse-button {
+    width: 120px;
+    height: 90px;
+    background-color: white;
+    border: 3px solid #333;
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Icono de carpeta usando CSS */
+.browse-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 50px;
+    border: 4px solid #333;
+    border-radius: 4px;
+    background-color: transparent;
+}
+
+.browse-button::after {
+    content: '';
+    position: absolute;
+    top: 28%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 8px;
+    background-color: #333;
+    border-radius: 2px 2px 0 0;
+}
+
+.browse-button:hover {
+    background-color: #f0f0f0;
+    transform: scale(1.05);
+}
+
+.browse-button:active {
+    transform: scale(0.98);
+}
+
+/* Contenedor del botón de acción */
+.action-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Botón de descargar respaldo */
+#btn-download-backup {
+    padding: 1.5rem 3rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: black;
+    background-color: white;
+    border: 3px solid #333;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 300px;
+}
+
+#btn-download-backup:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+#btn-download-backup:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header-container {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .title {
+        order: -1;
+        width: 100%;
+        text-align: center;
+    }
+
+    .title h1 {
+        font-size: 1.5rem;
+    }
+
+    .main-container {
+        padding: 2rem 1rem;
+    }
+
+    .user-code-display {
+        font-size: 1.1rem;
+    }
+
+    .file-selector-group {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .browse-button {
+        width: 100%;
+        max-width: 150px;
+    }
+
+    #btn-download-backup {
+        min-width: 100%;
+        font-size: 1.1rem;
+        padding: 1.2rem 2rem;
+    }
+
+    .nav-button button {
+        width: 40px;
+        height: 40px;
+    }
+
+    .nav-button button::before,
+    .nav-button button::after {
+        width: 24px;
+        height: 3px;
+    }
+
+    .nav-button button::before {
+        top: 11px;
+        box-shadow: 0 7px 0 #5c1f33, 0 14px 0 #5c1f33;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        gap: 2rem;
+    }
+
+    .user-code-display {
+        font-size: 1rem;
+    }
+
+    .file-path-display input {
+        font-size: 0.9rem;
+        padding: 1rem;
+    }
+}
