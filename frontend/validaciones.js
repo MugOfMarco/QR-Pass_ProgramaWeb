@@ -20,3 +20,39 @@ document.addEventListener('DOMContentLoaded', () => {
         campo.addEventListener('paste', limpiarPegado);
     });
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const camposLetras = document.querySelectorAll('.input-solo-letras');
+
+    function bloquearNoLetras(evento) {
+        const patron = /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/;
+        const tecla = String.fromCharCode(evento.charCode);
+
+        if (!patron.test(tecla) && evento.charCode !== 0) {
+            evento.preventDefault();
+        }
+    }
+
+    function procesarEntrada() {
+        let valor = this.value;
+        const valorLimpio = valor.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
+        this.value = valorLimpio.toUpperCase();
+    }
+    
+    function limpiarPegado(evento) {
+        evento.preventDefault();
+        const textoPegado = (evento.clipboardData || window.clipboardData).getData('text');
+        
+        const soloLetrasMayus = textoPegado
+            .replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '')
+            .toUpperCase();
+            
+        this.value += soloLetrasMayus;
+    }
+
+    camposLetras.forEach(campo => {
+        campo.addEventListener('keypress', bloquearNoLetras);
+        campo.addEventListener('input', procesarEntrada);
+        campo.addEventListener('paste', limpiarPegado);
+    });
+});
