@@ -1,0 +1,397 @@
+/* Reset y estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.site-header {
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Botón de navegación (menú hamburguesa) */
+.nav-button button {
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.nav-button button::before,
+.nav-button button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 4px;
+    background-color: #5c1f33;
+    border-radius: 2px;
+}
+
+.nav-button button::before {
+    top: 14px;
+    box-shadow: 0 9px 0 #5c1f33, 0 18px 0 #5c1f33;
+}
+
+.nav-button button:hover {
+    transform: scale(1.05);
+}
+
+/* Título del header */
+.title h1 {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Logo */
+.logo img {
+    width: 60px;
+    height: 60px;
+}
+
+/* Contenedor principal */
+.main-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 3rem;
+    width: 100%;
+}
+
+/* Sección de información del estudiante */
+.student-info-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    width: 100%;
+}
+
+/* Grupo de input */
+.input-group {
+    margin-bottom: 2rem;
+}
+
+.input-group label {
+    display: block;
+    color: #b71c1c;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    border: 3px solid #333;
+    border-radius: 50px;
+    background-color: white;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #5c1f33;
+    box-shadow: 0 0 0 3px rgba(92, 31, 51, 0.1);
+}
+
+/* Campos de datos del estudiante */
+.student-data-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+}
+
+.field label {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.field input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    border: 3px solid #333;
+    border-radius: 50px;
+    background-color: white;
+    color: #333;
+}
+
+.field input:read-only {
+    background-color: #f9f9f9;
+    cursor: default;
+}
+
+/* Sección de tabla de incidencias */
+.incidents-table-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.incidents-table-section .container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Título de la sección */
+.incidents-table-section::before {
+    content: 'Incidencias';
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+/* Tabla de incidencias */
+.incidents-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border: 3px solid #333;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.incidents-table thead {
+    background-color: #f5f5f5;
+}
+
+.incidents-table th {
+    padding: 1rem;
+    text-align: left;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333;
+    border-bottom: 3px solid #333;
+}
+
+.incidents-table tbody tr {
+    border-bottom: 2px solid #ddd;
+    transition: background-color 0.2s ease;
+}
+
+.incidents-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.incidents-table td {
+    padding: 1rem;
+    font-size: 1rem;
+    color: #333;
+}
+
+/* Altura mínima para la tabla cuando está vacía */
+.incidents-table tbody {
+    min-height: 300px;
+    display: table-row-group;
+}
+
+/* Controles de la tabla */
+.table-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+/* Selector de items */
+#item-selector {
+    width: 100%;
+    max-width: 400px;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    border: 3px solid #333;
+    border-radius: 10px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#item-selector:focus {
+    outline: none;
+    border-color: #5c1f33;
+}
+
+/* Título de justificación */
+.table-controls::before {
+    content: 'Justificación';
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* Botones de acción */
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    width: 100%;
+    max-width: 1000px;
+}
+
+.action-buttons button {
+    padding: 1.2rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: black;
+    background-color: white;
+    border: 3px solid #333;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: capitalize;
+}
+
+.action-buttons button:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.action-buttons button:active {
+    transform: translateY(0);
+}
+
+/* Nombres personalizados para los botones */
+#btn-justselec::after {
+    content: 'Justificar selección';
+}
+
+#btn-justret::after {
+    content: 'Justificar retardos';
+}
+
+#btn-justsin::after {
+    content: 'Justificar credencial';
+}
+
+#btn-justall::after {
+    content: 'Justificar todo';
+}
+
+.action-buttons button {
+    font-size: 0;
+}
+
+.action-buttons button::after {
+    font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .main-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .action-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .header-container {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .title {
+        order: -1;
+        width: 100%;
+        text-align: center;
+    }
+
+    .title h1 {
+        font-size: 1.8rem;
+    }
+
+    .main-container {
+        padding: 1rem;
+    }
+
+    .input-group label {
+        font-size: 1.2rem;
+    }
+
+    .field label {
+        font-size: 1.1rem;
+    }
+
+    .incidents-table th,
+    .incidents-table td {
+        padding: 0.7rem;
+        font-size: 0.9rem;
+    }
+
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-button button {
+        width: 40px;
+        height: 40px;
+    }
+
+    .nav-button button::before,
+    .nav-button button::after {
+        width: 24px;
+        height: 3px;
+    }
+
+    .nav-button button::before {
+        top: 11px;
+        box-shadow: 0 7px 0 #5c1f33, 0 14px 0 #5c1f33;
+    }
+}
+
+@media (max-width: 480px) {
+    .incidents-table-section::before {
+        font-size: 1.5rem;
+    }
+
+    .table-controls::before {
+        font-size: 1.4rem;
+    }
+}

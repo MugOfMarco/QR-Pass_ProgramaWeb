@@ -1,0 +1,322 @@
+/* Reset y estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.site-header {
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Botón de navegación (menú hamburguesa) */
+.nav-button button {
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.nav-button button::before,
+.nav-button button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 4px;
+    background-color: #5c1f33;
+    border-radius: 2px;
+}
+
+.nav-button button::before {
+    top: 14px;
+    box-shadow: 0 9px 0 #5c1f33, 0 18px 0 #5c1f33;
+}
+
+.nav-button button:hover {
+    transform: scale(1.05);
+}
+
+/* Título del header */
+.title h1 {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Logo */
+.logo img {
+    width: 60px;
+    height: 60px;
+}
+
+/* Contenedor principal */
+.main-container {
+    flex: 1;
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    width: 100%;
+}
+
+/* Sección de registro */
+.student-registration-section {
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+}
+
+#register-student-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Fieldset de datos */
+.student-data-form {
+    border: 3px solid #333;
+    border-radius: 15px;
+    padding: 2rem;
+    background-color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.student-data-form legend {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    padding: 0 1rem;
+}
+
+/* Campos del formulario */
+.field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+.field label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.field input,
+.field select {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    font-size: 1rem;
+    border: 2px solid #666;
+    border-radius: 8px;
+    background-color: white;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.field input:focus,
+.field select:focus {
+    outline: none;
+    border-color: #5c1f33;
+    box-shadow: 0 0 0 3px rgba(92, 31, 51, 0.1);
+}
+
+.field input:required:invalid {
+    border-color: #666;
+}
+
+.field input:required:valid {
+    border-color: #4caf50;
+}
+
+/* Campo de checkbox */
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.checkbox-field input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #5c1f33;
+}
+
+.checkbox-field label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+}
+
+/* Botones de acción */
+.action-buttons {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.action-buttons button {
+    padding: 1.2rem 2.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.button-primary {
+    color: white;
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    box-shadow: 0 4px 15px rgba(92, 31, 51, 0.3);
+}
+
+.button-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(92, 31, 51, 0.4);
+}
+
+.button-secondary {
+    color: #333;
+    background-color: #e0e0e0;
+    border: 2px solid #999;
+}
+
+.button-secondary:hover {
+    background-color: #d0d0d0;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+.action-buttons button:active {
+    transform: translateY(-1px);
+}
+
+/* Footer */
+.site-footer {
+    background-color: #5c1f33;
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.footer-container p {
+    font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header-container {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .title {
+        order: -1;
+        width: 100%;
+        text-align: center;
+    }
+
+    .title h1 {
+        font-size: 1.8rem;
+    }
+
+    .main-container {
+        padding: 1rem;
+    }
+
+    .student-data-form {
+        padding: 1.5rem;
+    }
+
+    .student-data-form legend {
+        font-size: 1.3rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons button {
+        min-width: 100%;
+    }
+
+    .nav-button button {
+        width: 40px;
+        height: 40px;
+    }
+
+    .nav-button button::before,
+    .nav-button button::after {
+        width: 24px;
+        height: 3px;
+    }
+
+    .nav-button button::before {
+        top: 11px;
+        box-shadow: 0 7px 0 #5c1f33, 0 14px 0 #5c1f33;
+    }
+}
+
+@media (max-width: 480px) {
+    .title h1 {
+        font-size: 1.5rem;
+    }
+
+    .student-data-form {
+        padding: 1rem;
+    }
+
+    .field label {
+        font-size: 1rem;
+    }
+
+    .field input,
+    .field select {
+        padding: 0.7rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .action-buttons button {
+        font-size: 1rem;
+        padding: 1rem 2rem;
+    }
+}

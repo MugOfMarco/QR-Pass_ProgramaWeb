@@ -5,3 +5,149 @@
   padding: 0;
   box-sizing: border-box; 
 }
+
+/* Reset y estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.site-header {
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem 2rem;
+}
+
+.header-container-main {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.title-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.title-main h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    color: #5c1f33;
+    letter-spacing: 2px;
+}
+
+.logo {
+    width: 60px;
+    height: 60px;
+}
+
+/* Subtítulo del header */
+.site-header::after {
+    content: "Control de entrada y salida";
+    display: block;
+    text-align: center;
+    color: #333;
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+}
+
+/* Contenedor principal */
+.container {
+    flex: 1;
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 90%;
+}
+
+/* Estilo de los botones/enlaces */
+.container a {
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    color: white;
+    text-decoration: none;
+    padding: 1.5rem 2rem;
+    border-radius: 50px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(92, 31, 51, 0.3);
+    border: 2px solid transparent;
+}
+
+.container a:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(92, 31, 51, 0.4);
+    border: 2px solid #7a2945;
+    background: linear-gradient(135deg, #6b2440 0%, #4a1729 100%);
+}
+
+.container a:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(92, 31, 51, 0.3);
+}
+
+/* Footer */
+footer.site-header {
+    margin-top: auto;
+    background-color: #5c1f33;
+    color: white;
+    text-align: center;
+}
+
+.footer-container-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .title-main h1 {
+        font-size: 2rem;
+    }
+
+    .container {
+        margin: 2rem auto;
+        padding: 1rem;
+    }
+
+    .container a {
+        font-size: 1.1rem;
+        padding: 1.2rem 1.5rem;
+    }
+
+    .site-header::after {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .title-main h1 {
+        font-size: 1.5rem;
+    }
+
+    .logo {
+        width: 40px;
+        height: 40px;
+    }
+
+    .container a {
+        font-size: 1rem;
+        padding: 1rem 1.2rem;
+    }
+}
