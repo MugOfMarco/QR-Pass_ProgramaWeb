@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const inputCampo = document.getElementById('qr-input');
+    const inputCampo = document.getElementById('soloNumeros-input');
 
     inputCampo.addEventListener('keypress', function (evento) {
         const charCode = (evento.which) ? evento.which : evento.keyCode;
