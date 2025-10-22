@@ -56,3 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
         campo.addEventListener('paste', limpiarPegado);
     });
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const boton = document.getElementById('btn-menu-principal');
+    const menu = document.getElementById('lista-opciones');
+
+    boton.addEventListener('click', () => {
+
+        menu.classList.toggle('activo');
+
+        const estaAbierto = menu.classList.contains('activo');
+        boton.setAttribute('aria-expanded', estaAbierto);
+    });
+});
