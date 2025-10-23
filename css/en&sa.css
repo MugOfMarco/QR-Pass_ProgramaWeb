@@ -61,6 +61,26 @@ body {
     transform: scale(1.05);
 }
 
+
+/* Tu lista de menú (la clase que ya tienes) */
+.contenido-menu {
+    display: none; /* Oculta por defecto */
+    
+    /* Estilos opcionales para que se vea como un menú desplegable */
+    position: absolute;
+    top: 60px; /* Ajusta esto (altura de tu header) */
+    left: 10px; /* Ajusta la posición */
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+
+.contenido-menu.menu-visible {
+    display: block;
+}
+
 /* Título del header */
 .title::after {
     content: 'Entrada por Scanner/Manual';

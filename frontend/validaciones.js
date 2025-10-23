@@ -57,15 +57,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    const boton = document.getElementById('btn-menu-principal');
-    const menu = document.getElementById('lista-opciones');
+// Espera a que todo el HTML esté cargado
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // 1. Encuentra el botón que agregaste
+    const menuButton = document.getElementById('menu-toggle-btn');
 
-    boton.addEventListener('click', () => {
+    // 2. Encuentra tu lista de opciones por su ID
+    const menuList = document.getElementById('lista-opciones');
 
-        menu.classList.toggle('activo');
-
-        const estaAbierto = menu.classList.contains('activo');
-        boton.setAttribute('aria-expanded', estaAbierto);
-    });
+    // 3. Verifica que ambos elementos existan
+    if (menuButton && menuList) {
+        
+        // 4. Asigna la función al evento 'click' del botón
+        menuButton.addEventListener('click', function() {
+            
+            // 5. Alterna (agrega/quita) la clase 'menu-visible' 
+            //    directamente en la LISTA (el <ul>).
+            menuList.classList.toggle('menu-visible');
+        });
+    } else {
+        console.warn('No se encontró el botón de menú o la lista de opciones.');
+    }
 });
