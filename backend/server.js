@@ -4,13 +4,20 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const path = require('path'); 
 
 // Configuración de la App
 const app = express();
 
 // MIDDLEWARES PRIMERO
 app.use(cors());
-app.use(express.json()); // <-- ESTO VA DESPUÉS de app = express()
+app.use(express.json());
+
+app.use(express.static(path.join(__dirname, '..')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../index.html'));
+});
 
 const PORT = 3000;
 
@@ -18,8 +25,9 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '', 
-    database: 'CECYT9'
+    password: '',  // ← ¿Es la misma contraseña en ambos MySQL?
+    database: 'CECYT9',
+    port: 3306  // ← Agrega esto explícitamente
 };
 
 // --- Definición del API ---
@@ -55,6 +63,7 @@ app.get('/api/alumno/:boleta', async (req, res) => {
     }
 });
 
+// Ruta para obtener datos completos del alumno con horario
 // Ruta para obtener datos completos del alumno con horario
 app.get('/api/horarios/alumno/:boleta', async (req, res) => {
     const boleta = req.params.boleta;
@@ -94,6 +103,25 @@ app.get('/api/horarios/alumno/:boleta', async (req, res) => {
             [boleta]
         );
 
+        // CALCULAR PRIMERA Y ÚLTIMA HORA
+        let primeraHora = null;
+        let ultimaHora = null;
+
+        if (horarioRows.length > 0) {
+            // Ordenar por hora para encontrar la primera y última
+            const horasOrdenadas = horarioRows
+                .map(h => h.HoraInicio)
+                .sort();
+            
+            primeraHora = horasOrdenadas[0];
+            ultimaHora = horasOrdenadas[horasOrdenadas.length - 1];
+            
+            // Formatear a "07:00 - 13:40"
+            alumno.horarioFormateado = `${primeraHora.substring(0, 5)} - ${ultimaHora.substring(0, 5)}`;
+        } else {
+            alumno.horarioFormateado = "Sin horario";
+        }
+
         const [acreditadasRows] = await connection.query(
             `SELECT m.nombre, ma.fecha_acreditacion
              FROM MateriasAcreditadas ma
@@ -108,6 +136,7 @@ app.get('/api/horarios/alumno/:boleta', async (req, res) => {
             success: true,
             alumno: alumno,
             horario: horarioRows,
+            horarioFormateado: alumno.horarioFormateado, // ← Nuevo campo
             materiasAcreditadas: acreditadasRows
         });
 
@@ -157,16 +186,20 @@ app.post('/api/alumnos/:boleta/actualizar', async (req, res) => {
     }
 });
 
-// Ruta para crear registros
+// Ruta para crear registros - VERSIÓN CORREGIDA
 app.post('/api/registros', async (req, res) => {
     try {
         const { boleta, grupo, puerta, registro, tieneRetardo, sinCredencial } = req.body;
         
         const connection = await mysql.createConnection(dbConfig);
         
+        // CONVERTIR fecha ISO a formato MySQL DATETIME
+        const fechaMySQL = new Date(registro).toISOString().slice(0, 19).replace('T', ' ');
+        // Esto convierte: '2025-11-03T17:27:33.855Z' → '2025-11-03 17:27:33'
+        
         await connection.query(
             'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro) VALUES (?, ?, ?, ?)',
-            [boleta, grupo, puerta, registro]
+            [boleta, grupo, puerta, fechaMySQL]  // ← Usar la fecha convertida
         );
 
         if (tieneRetardo || sinCredencial) {
@@ -184,21 +217,24 @@ app.post('/api/registros', async (req, res) => {
                 tipoIncidencia = 'Entrada sin credencial';
             }
 
+            // Usar fecha actual en formato MySQL para el reporte
+            const fechaActualMySQL = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
             await connection.query(
                 'INSERT INTO Reportes (id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte) VALUES (?, ?, ?, ?, ?)',
                 [
                     registroInsertado[0].id_registro,
                     tipoIncidencia,
-                    registro,
+                    fechaMySQL,  // ← Usar la misma fecha convertida
                     'Registro automático del sistema',
-                    new Date()
+                    fechaActualMySQL  // ← Fecha actual en formato MySQL
                 ]
             );
         }
 
         await connection.end();
 
-        res.json({ success: true, message: 'Registro creado' });
+        res.json({ success: true, message: 'Registro creado correctamente' });
     } catch (error) {
         console.error('Error creando registro:', error);
         res.status(500).json({ success: false, message: 'Error creando registro' });

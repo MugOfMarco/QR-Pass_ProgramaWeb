@@ -34,32 +34,35 @@ class RegistroSystem {
     }
 
     async procesarRegistro(alumnoData, tipo) {
-        const puerta = document.querySelector('input[name="puerta"]:checked').value;
-        const ahora = new Date();
-        
-        // Verificar si es sin credencial
-        const sinCredencial = tipo === 'manual';
-        
-        // Verificar retardo (simplificado)
-        const tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
-        
-        // Actualizar contadores
-        if (tieneRetardo || sinCredencial) {
-            await this.actualizarContadores(alumnoData.alumno.Boleta, tieneRetardo, sinCredencial);
-        }
-        
-        // Crear registro
-        await this.crearRegistroBD(
-            alumnoData.alumno.Boleta, 
-            alumnoData.alumno.Grupo, 
-            puerta, 
-            tieneRetardo, 
-            sinCredencial
-        );
-        
-        // Mostrar resultados
-        this.mostrarResultado(alumnoData, tieneRetardo, sinCredencial);
+    // OBTENER LA PUERTA SELECCIONADA DE LOS RADIO BUTTONS EXISTENTES
+    const puertaSeleccionada = document.querySelector('input[name="puerta"]:checked');
+    const puerta = puertaSeleccionada ? puertaSeleccionada.value : 'mexico-tacuba';
+    
+    const ahora = new Date();
+    
+    // Verificar si es sin credencial
+    const sinCredencial = tipo === 'manual';
+    
+    // Verificar retardo (simplificado)
+    const tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
+    
+    // Actualizar contadores
+    if (tieneRetardo || sinCredencial) {
+        await this.actualizarContadores(alumnoData.alumno.Boleta, tieneRetardo, sinCredencial);
     }
+    
+    // Crear registro
+    await this.crearRegistroBD(
+        alumnoData.alumno.Boleta, 
+        alumnoData.alumno.Grupo, 
+        puerta,  // ← Usar la puerta seleccionada de los radio buttons
+        tieneRetardo, 
+        sinCredencial
+    );
+    
+    // Mostrar resultados
+    this.mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta);
+}
 
     async verificarRetardoSimple(horario) {
         const hoy = new Date().getDay();
@@ -102,47 +105,53 @@ class RegistroSystem {
         });
     }
 
-    mostrarResultado(alumnoData, tieneRetardo, sinCredencial) {
-        const alumno = alumnoData.alumno;
-        
-        // Llenar campos
-        document.getElementById('nombre-output').value = alumno.Nombre;
-        document.getElementById('boleta-output').value = alumno.Boleta;
-        document.getElementById('grupo-output').value = alumno.Grupo;
-        document.getElementById('horario-output').value = this.obtenerHorarioTexto(alumnoData.horario);
-        document.getElementById('retardos-output').value = (alumno.Retardos || 0) + (tieneRetardo ? 1 : 0);
-        document.getElementById('sin-credencial-output').value = (alumno.Sin_credencial || 0) + (sinCredencial ? 1 : 0);
+    mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta) {
+    const alumno = alumnoData.alumno;
+    
+    // Llenar campos
+    document.getElementById('nombre-output').value = alumno.Nombre;
+    document.getElementById('boleta-output').value = alumno.Boleta;
+    document.getElementById('grupo-output').value = alumno.Grupo;
+    
+    // USAR EL HORARIO FORMATEADO DEL BACKEND
+    document.getElementById('horario-output').value = alumnoData.horarioFormateado || this.obtenerHorarioTexto(alumnoData.horario);
+    
+    document.getElementById('retardos-output').value = (alumno.Retardos || 0) + (tieneRetardo ? 1 : 0);
+    document.getElementById('sin-credencial-output').value = (alumno.Sin_credencial || 0) + (sinCredencial ? 1 : 0);
 
-        // Mostrar estado
-        let mensaje = 'Registro exitoso';
-        if (tieneRetardo && sinCredencial) {
-            mensaje = 'Registro con retardo y sin credencial';
-        } else if (tieneRetardo) {
-            mensaje = 'Registro con retardo';
-        } else if (sinCredencial) {
-            mensaje = 'Registro sin credencial';
-        }
-        
-        this.mostrarEstado(mensaje, 'success');
-        
-        // Limpiar inputs
-        setTimeout(() => {
-            document.getElementById('manual-input').value = '';
-            document.getElementById('qr-input').value = '';
-        }, 2000);
+    // Mostrar estado - INCLUIR LA PUERTA USADA
+    let mensaje = `Registro exitoso - Puerta: ${this.formatearNombrePuerta(puerta)}`;
+    if (tieneRetardo && sinCredencial) {
+        mensaje = `Registro con retardo y sin credencial - Puerta: ${this.formatearNombrePuerta(puerta)}`;
+    } else if (tieneRetardo) {
+        mensaje = `Registro con retardo - Puerta: ${this.formatearNombrePuerta(puerta)}`;
+    } else if (sinCredencial) {
+        mensaje = `Registro sin credencial - Puerta: ${this.formatearNombrePuerta(puerta)}`;
     }
-
+    
+    this.mostrarEstado(mensaje, 'success');
+    
+    // Limpiar inputs
+    setTimeout(() => {
+        document.getElementById('manual-input').value = '';
+        document.getElementById('qr-input').value = '';
+    }, 2000);
+}
     obtenerHorarioTexto(horario) {
-        const hoy = new Date().getDay();
-        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const horarioHoy = horario.filter(h => h.Dia === dias[hoy] && h.Activa);
-        
-        if (horarioHoy.length === 0) return 'Sin horario hoy';
-        
-        return horarioHoy.map(h => 
-            `${h.HoraInicio.substring(0,5)}-${h.HoraFin.substring(0,5)} ${h.materia}`
-        ).join(' / ');
-    }
+    if (!horario || horario.length === 0) return 'Sin horario';
+    
+    // Si ya viene formateado del backend, usarlo
+    if (this.horarioFormateado) return this.horarioFormateado;
+    
+    // Si no, calcular primera y última hora
+    const horas = horario.map(h => h.HoraInicio).sort();
+    if (horas.length === 0) return 'Sin horario';
+    
+    const primeraHora = horas[0].substring(0, 5);
+    const ultimaHora = horas[horas.length - 1].substring(0, 5);
+    
+    return `${primeraHora} - ${ultimaHora}`;
+}
 
     mostrarEstado(mensaje, tipo) {
         const statusIndicator = document.getElementById('status-indicator');
@@ -155,9 +164,19 @@ class RegistroSystem {
     mostrarError(mensaje) {
         this.mostrarEstado(mensaje, 'error');
     }
+
+    formatearNombrePuerta(puertaValue) {
+    const puertas = {
+        'mexico-tacuba': 'México-Tacuba',
+        'mar': 'Mar-Mediterráneo'
+    };
+    return puertas[puertaValue] || puertaValue;
+};
 }
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
     new RegistroSystem();
 });
+
+// AGREGAR ESTA FUNCIÓN AL FINAL DE LA CLASE
