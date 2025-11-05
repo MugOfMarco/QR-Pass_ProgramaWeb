@@ -28,19 +28,20 @@ document.getElementById('qr-input').addEventListener('change', (e) => {
     if (boleta.length < 5) return;
 
     try {
-        // 4. Usar la boleta limpia para la llamada a la API
         const response = await fetch(`${this.apiBase}/horarios/alumno/${boleta}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                await this.procesarRegistro(data, tipo);
-            } else {
-                this.mostrarError('Alumno no encontrado');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            this.mostrarError('Error de conexión');
+        const text = await response.text(); // Obtén la respuesta como texto
+        console.log('Respuesta del servidor:', text); // Imprime la respuesta para verificar su contenido
+    
+        const data = JSON.parse(text); // Intenta convertirlo a JSON
+        if (data.success) {
+            await this.procesarRegistro(data, tipo);
+        } else {
+            this.mostrarError('Alumno no encontrado');
         }
+    } catch (error) {
+        console.error('Error:', error);
+        this.mostrarError('Error de conexión: ' + error.message);
+    }
     }
 
     async procesarRegistro(alumnoData, tipo) {
