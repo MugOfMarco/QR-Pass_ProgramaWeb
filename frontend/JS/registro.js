@@ -6,20 +6,30 @@ class RegistroSystem {
     }
 
     initEventListeners() {
-        document.getElementById('manual-input').addEventListener('input', (e) => {
-            this.handleBoletaInput(e.target.value, 'manual');
-        });
+        // EN TU FUNCIÓN initEventListeners()
 
-        document.getElementById('qr-input').addEventListener('input', (e) => {
-            this.handleBoletaInput(e.target.value, 'qr');
-        });
+// RECOMENDADO
+document.getElementById('manual-input').addEventListener('change', (e) => {
+    this.handleBoletaInput(e.target.value, 'manual');
+});
+
+document.getElementById('qr-input').addEventListener('change', (e) => {
+    this.handleBoletaInput(e.target.value, 'qr');
+});
     }
 
-    async handleBoletaInput(boleta, tipo) {
-        if (boleta.length < 5) return;
+    async handleBoletaInput(boletaInput, tipo) { // 1. Renombré la variable de entrada
+    
+    // 2. ¡ESTA ES LA CORRECCIÓN!
+    // .trim() elimina espacios y saltos de línea al inicio y al final
+    const boleta = boletaInput.trim(); 
 
-        try {
-            const response = await fetch(`${this.apiBase}/horarios/alumno/${boleta}`);
+    // 3. Usar la boleta limpia para la validación
+    if (boleta.length < 5) return;
+
+    try {
+        // 4. Usar la boleta limpia para la llamada a la API
+        const response = await fetch(`${this.apiBase}/horarios/alumno/${boleta}`);
             const data = await response.json();
             
             if (data.success) {
