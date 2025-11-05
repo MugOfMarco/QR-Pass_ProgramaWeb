@@ -65,18 +65,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 2. Encuentra tu lista de opciones por su ID
     const menuList = document.getElementById('lista-opciones');
+    const menuOverlay = document.getElementById('menu-overlay');
 
     // 3. Verifica que ambos elementos existan
-    if (menuButton && menuList) {
-        
+    if (menuButton && menuList && menuOverlay) {
+
         // 4. Asigna la función al evento 'click' del botón
-        menuButton.addEventListener('click', function() {
-            
-            // 5. Alterna (agrega/quita) la clase 'menu-visible' 
-            //    directamente en la LISTA (el <ul>).
+        menuButton.addEventListener('click', function(e) {
+            e.stopPropagation();
             menuList.classList.toggle('menu-visible');
+            menuOverlay.classList.toggle('menu-visible');
         });
+
+        menuOverlay.addEventListener('click', function() {
+            menuList.classList.remove('menu-visible');
+            menuOverlay.classList.remove('menu-visible');
+        });
+
+        menuList.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') {
+                menuList.classList.remove('menu-visible');
+                menuOverlay.classList.remove('menu-visible');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                menuList.classList.remove('menu-visible');
+                menuOverlay.classList.remove('menu-visible');
+            }
+        });
+
     } else {
-        console.warn('No se encontró el botón de menú o la lista de opciones.');
+        console.warn('Elementos del menú no encontrados.');
     }
 });
