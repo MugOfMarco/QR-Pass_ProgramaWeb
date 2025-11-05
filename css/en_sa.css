@@ -34,12 +34,6 @@ body {
     height: 110px;
 }
 
-.Boton-nav {
-    position: relative;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
 .Boton-nav::before,
 .Boton-nav::after {
     content: '';
@@ -52,11 +46,7 @@ body {
 }
 
 .Boton-nav:hover {
-    transform: scale(1.1);
-}
-
-.Boton-nav:active {
-    transform: scale(0.95);
+    transform: scale(1.05);
 }
 
 /* Título del header */
@@ -71,6 +61,106 @@ body {
 .logo img {
     width: 60px;
     height: 60px;
+}
+
+/* ===== ESTILOS PARA EL MENÚ DE NAVEGACIÓN ===== */
+
+/* Contenedor del menú */
+.menu-navegacion {
+    position: relative;
+    z-index: 1000;
+}
+
+/* Lista del menú - OCULTA POR DEFECTO */
+.menu-lista {
+    position: absolute;
+    top: 100%;
+    left: 2rem;
+    background: white;
+    border: 3px solid #5c1f33;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    list-style: none;
+    padding: 1rem 0;
+    margin: 0.5rem 0 0 0;
+    min-width: 280px;
+    z-index: 1001;
+    display: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+/* Lista del menú - VISIBLE */
+.menu-lista.menu-visible {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Elementos de la lista */
+.menu-lista li {
+    border-bottom: 2px solid #f0f0f0;
+    transition: background-color 0.3s ease;
+}
+
+.menu-lista li:last-child {
+    border-bottom: none;
+    margin-top: 0.5rem;
+    border-top: 2px solid #5c1f33;
+}
+
+.menu-lista li:last-child a {
+    color: #5c1f33;
+    font-weight: 700;
+}
+
+/* Enlaces del menú */
+.menu-lista a {
+    display: block;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.menu-lista a:hover {
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    color: white;
+    padding-left: 2rem;
+}
+
+/* Botón del menú - MEJORAS VISUALES */
+.Boton-nav {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.Boton-nav:hover {
+    transform: scale(1.1);
+}
+
+.Boton-nav:active {
+    transform: scale(0.95);
+}
+
+/* Overlay para cerrar menú al hacer clic fuera */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 999;
+    display: none;
+}
+
+.menu-overlay.menu-visible {
+    display: block;
 }
 
 /* Contenedor de estado */
@@ -247,7 +337,8 @@ body {
     font-weight: 600;
 }
 
-/* Responsive */
+/* ===== RESPONSIVE ===== */
+
 @media (max-width: 1024px) {
     .main-container {
         grid-template-columns: 1fr;
@@ -257,8 +348,19 @@ body {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .title::after {
+    .title {
         font-size: 2rem;
+    }
+    
+    /* Menú responsive */
+    .menu-lista {
+        min-width: 250px;
+        left: 1rem;
+    }
+    
+    .menu-lista a {
+        font-size: 1rem;
+        padding: 0.9rem 1.3rem;
     }
 }
 
@@ -272,10 +374,7 @@ body {
         order: -1;
         width: 100%;
         text-align: center;
-    }
-
-    .title::after {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
     }
 
     .main-container {
@@ -307,20 +406,27 @@ body {
         min-height: 200px;
     }
 
+    .Boton-nav img {
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Menú responsive */
+    .menu-lista {
+        position: fixed;
+        top: 140px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        min-width: 90%;
+        max-width: 400px;
+    }
+    
+    .menu-lista.menu-visible {
+        transform: translateX(-50%) translateY(0);
+    }
+    
     .Boton-nav {
-        width: 40px;
-        height: 40px;
-    }
-
-    .Boton-nav::before,
-    .Boton-nav::after {
-        width: 24px;
-        height: 3px;
-    }
-
-    .Boton-nav::before {
-        top: 11px;
-        box-shadow: 0 7px 0 #5c1f33, 0 14px 0 #5c1f33;
+        order: -1;
     }
 }
 
@@ -353,5 +459,21 @@ body {
     .text-entry.field input {
         padding: 0.7rem 1rem;
         font-size: 0.95rem;
+    }
+
+    /* Menú responsive */
+    .menu-lista {
+        top: 120px;
+        min-width: 95%;
+    }
+    
+    .menu-lista a {
+        font-size: 0.95rem;
+        padding: 0.8rem 1.2rem;
+    }
+    
+    .Boton-nav img {
+        width: 60px;
+        height: 60px;
     }
 }
