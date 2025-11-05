@@ -25,7 +25,7 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '',  // ← ¿Es la misma contraseña en ambos MySQL?
+    password: 'n0m3l0',  // ← ¿Es la misma contraseña en ambos MySQL?
     database: 'CECYT9',
     port: 3306  // ← Agrega esto explícitamente
 };
@@ -67,6 +67,10 @@ app.get('/api/alumno/:boleta', async (req, res) => {
 // Ruta para obtener datos completos del alumno con horario
 app.get('/api/horarios/alumno/:boleta', async (req, res) => {
     const boleta = req.params.boleta;
+
+    // --- ¡AÑADE ESTA LÍNEA DE DEPURACIÓN AQUÍ! ---
+    console.log(`[DEBUG] Recibí boleta: [${boleta}] (Tipo: ${typeof boleta})`);
+    // -------------------------------------------
 
     try {
         const connection = await mysql.createConnection(dbConfig);
