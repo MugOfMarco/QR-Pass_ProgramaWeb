@@ -18,6 +18,8 @@ body {
     background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
     padding: 1.5rem 2rem;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 100;
 }
 
 .header-container {
@@ -30,40 +32,29 @@ body {
 
 /* Botón de navegación */
 .Boton-nav {
-    width: 50px;
-    height: 50px;
-    background-color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
     position: relative;
-    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
-.Boton-nav::before,
-.Boton-nav::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 30px;
-    height: 4px;
-    background-color: #5c1f33;
-    border-radius: 2px;
+.Boton-nav img {
+    width: 110px;
+    height: 110px;
+    transition: transform 0.3s ease;
 }
 
-.Boton-nav::before {
-    top: 14px;
-    box-shadow: 0 9px 0 #5c1f33, 0 18px 0 #5c1f33;
+.Boton-nav:hover img {
+    transform: scale(1.1);
 }
 
-.Boton-nav:hover {
-    transform: scale(1.05);
+.Boton-nav button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
 }
 
 /* Título del header */
-.title::after {
-    content: 'Entrada por Scanner/Manual';
+.title {
     color: white;
     font-size: 2.5rem;
     font-weight: 700;
@@ -74,6 +65,78 @@ body {
 .logo img {
     width: 60px;
     height: 60px;
+}
+
+/* ===== ESTILOS PARA EL MENÚ DE NAVEGACIÓN ===== */
+
+/* Contenedor del menú */
+.menu-navegacion {
+    position: relative;
+    z-index: 1000;
+}
+
+/* Lista del menú - OCULTA POR DEFECTO */
+.menu-lista {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: white;
+    border: 3px solid #5c1f33;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    list-style: none;
+    padding: 1rem 0;
+    margin: 0;
+    min-width: 280px;
+    z-index: 1001;
+    display: none;
+}
+
+/* Lista del menú - VISIBLE */
+.menu-lista.menu-visible {
+    display: block;
+}
+
+/* Elementos de la lista */
+.menu-lista li {
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.menu-lista li:last-child {
+    border-bottom: none;
+}
+
+/* Enlaces del menú */
+.menu-lista a {
+    display: block;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.menu-lista a:hover {
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    color: white;
+    padding-left: 2rem;
+}
+
+/* Overlay para cerrar menú */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+.menu-overlay.menu-visible {
+    display: block;
 }
 
 /* Contenedor de estado */
@@ -250,7 +313,8 @@ body {
     font-weight: 600;
 }
 
-/* Responsive */
+/* ===== RESPONSIVE ===== */
+
 @media (max-width: 1024px) {
     .main-container {
         grid-template-columns: 1fr;
@@ -260,8 +324,18 @@ body {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .title::after {
+    .title {
         font-size: 2rem;
+    }
+    
+    .menu-lista {
+        min-width: 250px;
+        left: 1rem;
+    }
+    
+    .menu-lista a {
+        font-size: 1rem;
+        padding: 0.9rem 1.3rem;
     }
 }
 
@@ -275,10 +349,7 @@ body {
         order: -1;
         width: 100%;
         text-align: center;
-    }
-
-    .title::after {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
     }
 
     .main-container {
@@ -310,20 +381,22 @@ body {
         min-height: 200px;
     }
 
+    .Boton-nav img {
+        width: 80px;
+        height: 80px;
+    }
+
+    .menu-lista {
+        position: fixed;
+        top: 140px;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 90%;
+        max-width: 400px;
+    }
+    
     .Boton-nav {
-        width: 40px;
-        height: 40px;
-    }
-
-    .Boton-nav::before,
-    .Boton-nav::after {
-        width: 24px;
-        height: 3px;
-    }
-
-    .Boton-nav::before {
-        top: 11px;
-        box-shadow: 0 7px 0 #5c1f33, 0 14px 0 #5c1f33;
+        order: -1;
     }
 }
 
@@ -356,5 +429,20 @@ body {
     .text-entry.field input {
         padding: 0.7rem 1rem;
         font-size: 0.95rem;
+    }
+
+    .menu-lista {
+        top: 120px;
+        min-width: 95%;
+    }
+    
+    .menu-lista a {
+        font-size: 0.95rem;
+        padding: 0.8rem 1.2rem;
+    }
+    
+    .Boton-nav img {
+        width: 60px;
+        height: 60px;
     }
 }
