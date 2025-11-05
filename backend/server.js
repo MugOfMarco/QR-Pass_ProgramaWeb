@@ -1,116 +1,255 @@
-// 1. IMPORTACIONES (Las herramientas que necesitamos)
+// backend/server.js - VERSIÓN CORREGIDA
+
+// Importa las librerías necesarias
 const express = require('express');
-const mysql = require('mysql2/promise'); // MySQL con promesas
-const cors = require('cors');           // Para permitir la conexión desde el frontend
-const bcrypt = require('bcrypt');       // Para comparar contraseñas
+const mysql = require('mysql2/promise');
+const cors = require('cors');
+const path = require('path'); 
 
 // 2. CONFIGURACIÓN INICIAL
 const app = express();
-app.use(cors());           // Permite peticiones
-app.use(express.json());   // Permite leer el JSON que envía el login.js
 
-// 3. CONFIGURACIÓN DE LA BASE DE DATOS
-// ¡Esta es la "llave de la despensa" que NUNCA sale de este archivo!
+// MIDDLEWARES PRIMERO
+app.use(cors());
+app.use(express.json());
+
+app.use(express.static(path.join(__dirname, '..')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+const PORT = 3000;
+
+// Configuración de la Base de Datos
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'tu_contraseña_de_mysql', // <-- ¡CAMBIA ESTO POR TU CONTRASEÑA!
-    database: 'CECYT9'
+    password: 'n0m3l0',  // ← ¿Es la misma contraseña en ambos MySQL?
+    database: 'CECYT9',
+    port: 3306  // ← Agrega esto explícitamente
 };
 
-// ---------------------------------------------------
-// ENDPOINT #1: BUSCAR ALUMNO (el que ya tenías)
-// ---------------------------------------------------
+// --- Definición del API ---
+
+// Endpoint básico para probar
+app.get('/api/test', (req, res) => {
+    res.json({ message: '✅ API funcionando correctamente' });
+});
+
+// Endpoint original
 app.get('/api/alumno/:boleta', async (req, res) => {
-    
     const boleta = req.params.boleta;
 
     try {
         const connection = await mysql.createConnection(dbConfig);
-        
-        // Consulta para buscar al alumno por boleta
         const sqlQuery = "SELECT Nombre, Grupo FROM ALumnos WHERE Boleta = ?";
-        
         const [rows] = await connection.query(sqlQuery, [boleta]);
-        
-        await connection.end(); // Cierra la conexión
+        await connection.end();
 
         if (rows.length > 0) {
-            // Si se encontró, devuelve el primer resultado como JSON
             const alumno = rows[0];
             res.json({
                 nombre: alumno.Nombre,
                 grupo: alumno.Grupo,
-                boleta: boleta // Devolvemos la boleta para rellenar el campo
+                boleta: boleta
             });
         } else {
-            // Si no hay resultados, devuelve un error 404 (No Encontrado)
             res.status(404).json({ message: 'Alumno no encontrado' });
         }
     } catch (error) {
-        // Si algo falla en la base de datos
-        console.error('Error en API /api/alumno:', error);
+        console.error('Error en la consulta:', error);
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 });
 
-// ---------------------------------------------------
-// ENDPOINT #2: LOGIN (el nuevo)
-// ---------------------------------------------------
-app.post('/api/login', async (req, res) => {
-    
-    // Recibe el 'username' y 'password' que envió el login.js
-    // CAMBIO: 'username' se recibe del body, no 'usuario'
-    const { username, password } = req.body;
+// Ruta para obtener datos completos del alumno con horario
+// Ruta para obtener datos completos del alumno con horario
+app.get('/api/horarios/alumno/:boleta', async (req, res) => {
+    const boleta = req.params.boleta;
 
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Usuario y contraseña son requeridos' });
-    }
+    // --- ¡AÑADE ESTA LÍNEA DE DEPURACIÓN AQUÍ! ---
+    console.log(`[DEBUG] Recibí boleta: [${boleta}] (Tipo: ${typeof boleta})`);
+    // -------------------------------------------
 
     try {
         const connection = await mysql.createConnection(dbConfig);
         
-        // Buscamos al usuario en la tabla 'UsuariosSistema' por la columna 'usuario'
-        // Y verificamos que esté activo
-        const sqlQuery = "SELECT * FROM UsuariosSistema WHERE usuario = ? AND activo = TRUE";
-        
-        // Usamos 'username' (lo que recibimos) para buscar en la columna 'usuario' (de la BD)
-        const [rows] = await connection.query(sqlQuery, [username]);
-        
+        const [alumnoRows] = await connection.query(
+            `SELECT a.Boleta, a.Nombre, a.Grupo, a.Sin_credencial, a.Retardos, 
+                    a.Puerta_abierta, c.nombre as carrera, ea.estado as estado_academico
+             FROM ALumnos a 
+             LEFT JOIN Carrera c ON a.id_carrera = c.id_carrera 
+             LEFT JOIN EstadoAcademico ea ON a.id_estado_academico = ea.id_estado
+             WHERE a.Boleta = ?`,
+            [boleta]
+        );
+
+        if (alumnoRows.length === 0) {
+            await connection.end();
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Alumno no encontrado' 
+            });
+        }
+
+        const alumno = alumnoRows[0];
+
+        const [horarioRows] = await connection.query(
+            `SELECT ha.Dia, ha.Hora, ha.HoraInicio, ha.HoraFin, 
+                    m.nombre as materia, ha.Activa
+             FROM HorarioAlumno ha
+             JOIN Materia m ON ha.id_materia = m.id_materia
+             WHERE ha.Boleta = ?
+             ORDER BY 
+                 FIELD(ha.Dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'),
+                 ha.Hora`,
+            [boleta]
+        );
+
+        // CALCULAR PRIMERA Y ÚLTIMA HORA
+        let primeraHora = null;
+        let ultimaHora = null;
+
+        if (horarioRows.length > 0) {
+            // Ordenar por hora para encontrar la primera y última
+            const horasOrdenadas = horarioRows
+                .map(h => h.HoraInicio)
+                .sort();
+            
+            primeraHora = horasOrdenadas[0];
+            ultimaHora = horasOrdenadas[horasOrdenadas.length - 1];
+            
+            // Formatear a "07:00 - 13:40"
+            alumno.horarioFormateado = `${primeraHora.substring(0, 5)} - ${ultimaHora.substring(0, 5)}`;
+        } else {
+            alumno.horarioFormateado = "Sin horario";
+        }
+
+        const [acreditadasRows] = await connection.query(
+            `SELECT m.nombre, ma.fecha_acreditacion
+             FROM MateriasAcreditadas ma
+             JOIN Materia m ON ma.id_materia = m.id_materia
+             WHERE ma.boleta = ?`,
+            [boleta]
+        );
+
         await connection.end();
 
-        // Si no encontramos un usuario ACTIVO con ese nombre
-        if (rows.length === 0) {
-            return res.status(401).json({ message: 'Credenciales incorrectas o usuario inactivo' });
-        }
-
-        const user = rows[0]; // El usuario encontrado en la BD
-
-        // Comparamos la contraseña del formulario (password) 
-        // con la contraseña hasheada de la BD (user.contraseña)
-        const passwordMatch = await bcrypt.compare(password, user.contraseña);
-
-        if (passwordMatch) {
-            // ¡ÉXITO! La contraseña coincide
-            res.status(200).json({ 
-                message: 'Login exitoso',
-                tipo: user.tipo_usuario 
-            });
-        } else {
-            // FRACASO. La contraseña no coincide
-            res.status(401).json({ message: 'Credenciales incorrectas' });
-        }
+        res.json({
+            success: true,
+            alumno: alumno,
+            horario: horarioRows,
+            horarioFormateado: alumno.horarioFormateado, // ← Nuevo campo
+            materiasAcreditadas: acreditadasRows
+        });
 
     } catch (error) {
-        console.error('Error en API /api/login:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        console.error('Error en la consulta:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor' 
+        });
     }
 });
 
-// ---------------------------------------------------
-// 4. INICIAR EL SERVIDOR (La cocina "abre sus puertas")
-// ---------------------------------------------------
-const PORT = 3000; // El puerto donde correrá el servidor
+// Ruta para actualizar contadores de alumno
+app.post('/api/alumnos/:boleta/actualizar', async (req, res) => {
+    try {
+        const { boleta } = req.params;
+        const { retardos, sin_credencial } = req.body;
+        
+        const connection = await mysql.createConnection(dbConfig);
+        
+        let updateQuery = 'UPDATE ALumnos SET ';
+        const updates = [];
+        const params = [];
+        
+        if (retardos) {
+            updates.push('Retardos = Retardos + ?');
+            params.push(1);
+        }
+        if (sin_credencial) {
+            updates.push('Sin_credencial = Sin_credencial + ?');
+            params.push(1);
+        }
+        
+        if (updates.length > 0) {
+            updateQuery += updates.join(', ') + ' WHERE Boleta = ?';
+            params.push(boleta);
+            
+            await connection.query(updateQuery, params);
+        }
+        
+        await connection.end();
+        
+        res.json({ success: true, message: 'Contadores actualizados' });
+    } catch (error) {
+        console.error('Error actualizando contadores:', error);
+        res.status(500).json({ success: false, message: 'Error actualizando contadores' });
+    }
+});
+
+// Ruta para crear registros - VERSIÓN CORREGIDA
+app.post('/api/registros', async (req, res) => {
+    try {
+        const { boleta, grupo, puerta, registro, tieneRetardo, sinCredencial } = req.body;
+        
+        const connection = await mysql.createConnection(dbConfig);
+        
+        // CONVERTIR fecha ISO a formato MySQL DATETIME
+        const fechaMySQL = new Date(registro).toISOString().slice(0, 19).replace('T', ' ');
+        // Esto convierte: '2025-11-03T17:27:33.855Z' → '2025-11-03 17:27:33'
+        
+        await connection.query(
+            'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro) VALUES (?, ?, ?, ?)',
+            [boleta, grupo, puerta, fechaMySQL]  // ← Usar la fecha convertida
+        );
+
+        if (tieneRetardo || sinCredencial) {
+            const [registroInsertado] = await connection.query(
+                'SELECT id_registro FROM Registros WHERE Boleta = ? ORDER BY id_registro DESC LIMIT 1',
+                [boleta]
+            );
+
+            let tipoIncidencia = '';
+            if (tieneRetardo && sinCredencial) {
+                tipoIncidencia = 'Retardo y sin credencial';
+            } else if (tieneRetardo) {
+                tipoIncidencia = 'Retardo';
+            } else {
+                tipoIncidencia = 'Entrada sin credencial';
+            }
+
+            // Usar fecha actual en formato MySQL para el reporte
+            const fechaActualMySQL = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            await connection.query(
+                'INSERT INTO Reportes (id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte) VALUES (?, ?, ?, ?, ?)',
+                [
+                    registroInsertado[0].id_registro,
+                    tipoIncidencia,
+                    fechaMySQL,  // ← Usar la misma fecha convertida
+                    'Registro automático del sistema',
+                    fechaActualMySQL  // ← Fecha actual en formato MySQL
+                ]
+            );
+        }
+
+        await connection.end();
+
+        res.json({ success: true, message: 'Registro creado correctamente' });
+    } catch (error) {
+        console.error('Error creando registro:', error);
+        res.status(500).json({ success: false, message: 'Error creando registro' });
+    }
+});
+
+// --- Inicia el servidor ---
 app.listen(PORT, () => {
-    console.log(`Servidor API (la cocina) corriendo en http://localhost:${PORT}`);
+    console.log(`✅ Servidor API corriendo en http://localhost:${PORT}`);
+    console.log(`📊 Endpoints disponibles:`);
+    console.log(`   http://localhost:${PORT}/api/test`);
+    console.log(`   http://localhost:${PORT}/api/alumno/12345`);
+    console.log(`   http://localhost:${PORT}/api/horarios/alumno/12345`);
 });
