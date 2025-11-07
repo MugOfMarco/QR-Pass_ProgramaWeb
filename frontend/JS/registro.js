@@ -277,7 +277,7 @@ class RegistroSystem {
     formatearNombrePuerta(puertaValue) {
         const puertas = {
             'mexico-tacuba': 'México-Tacuba',
-            'mar': 'Mar-Mediterráneo'
+            'mar-mediterraneo': 'Mar-Mediterráneo'
         };
         return puertas[puertaValue] || puertaValue;
     }
