@@ -1,4 +1,4 @@
-// backend/server.js - VERSIÓN COMPLETA CORREGIDA
+// backend/server.js - VERSIÓN CORREGIDA PARA HORA LOCAL
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -21,9 +21,10 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'n0m3l0',
+    password: 'Qeqrqt131415',
     database: 'CECYT9',
-    port: 3306
+    port: 3306,
+    timezone: '-06:00' // ← ¡IMPORTANTE! Agregar timezone de México
 };
 
 // --- ENDPOINTS ---
@@ -144,62 +145,36 @@ app.get('/api/horarios/alumno/:boleta', async (req, res) => {
     }
 });
 
-// Ruta para actualizar contadores de alumno
-app.post('/api/alumnos/:boleta/actualizar', async (req, res) => {
-    try {
-        const { boleta } = req.params;
-        const { retardos, sin_credencial } = req.body;
-        
-        const connection = await mysql.createConnection(dbConfig);
-        
-        let updateQuery = 'UPDATE ALumnos SET ';
-        const updates = [];
-        const params = [];
-        
-        if (retardos) {
-            updates.push('Retardos = Retardos + ?');
-            params.push(1);
-        }
-        if (sin_credencial) {
-            updates.push('Sin_credencial = Sin_credencial + ?');
-            params.push(1);
-        }
-        
-        if (updates.length > 0) {
-            updateQuery += updates.join(', ') + ' WHERE Boleta = ?';
-            params.push(boleta);
-            
-            await connection.query(updateQuery, params);
-        }
-        
-        await connection.end();
-        
-        res.json({ success: true, message: 'Contadores actualizados' });
-    } catch (error) {
-        console.error('Error actualizando contadores:', error);
-        res.status(500).json({ success: false, message: 'Error actualizando contadores' });
-    }
-});
-
-// ✅ ENDPOINT CORREGIDO PARA REGISTROS - VERSIÓN FUNCIONAL
+// ✅ ENDPOINT CORREGIDO - VERSIÓN CON HORA LOCAL MÉXICO
 app.post('/api/registros', async (req, res) => {
     try {
         const { boleta, grupo, puerta, registro, tipo, tieneRetardo, sinCredencial } = req.body;
         
         console.log(`[REGISTRO] Datos recibidos:`, {
-            boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial
+            boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial,
+            registroRecibido: registro
         });
         
         const connection = await mysql.createConnection(dbConfig);
         
-        // CONVERTIR fecha ISO a formato MySQL DATETIME
-        const fechaMySQL = new Date(registro).toISOString().slice(0, 19).replace('T', ' ');
+        // ✅ CORRECCIÓN: USAR HORA LOCAL DE MÉXICO
+        let fechaMySQL;
         
-        console.log(`[REGISTRO] Insertando en BD:`, {
-            boleta, grupo, puerta, fechaMySQL, tipo
-        });
+        if (registro) {
+            // Si viene la fecha del frontend, convertir a hora local México
+            const fecha = new Date(registro);
+            // Ajustar a UTC-6 (México)
+            const offsetMexico = -6 * 60; // minutos
+            const fechaMexico = new Date(fecha.getTime() + offsetMexico * 60 * 1000);
+            fechaMySQL = fechaMexico.toISOString().slice(0, 19).replace('T', ' ');
+        } else {
+            // Si no viene fecha, usar hora actual del servidor (ya debería ser local)
+            fechaMySQL = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
         
-        // ✅ INSERTAR CON TODOS LOS CAMPOS REQUERIDOS
+        console.log(`[REGISTRO] Fecha para MySQL: ${fechaMySQL}`);
+        
+        // ✅ INSERTAR EN BD
         const [result] = await connection.query(
             'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
             [boleta, grupo, puerta, fechaMySQL, tipo]
@@ -207,7 +182,7 @@ app.post('/api/registros', async (req, res) => {
 
         console.log(`[REGISTRO] Insertado con ID: ${result.insertId}`);
 
-        // ✅ SOLO ACTUALIZAR CONTADORES PARA ENTRADAS CON INCIDENCIAS
+        // ✅ ACTUALIZAR CONTADORES SOLO PARA ENTRADAS CON INCIDENCIAS
         if (tipo !== 'salida' && (tieneRetardo || sinCredencial)) {
             console.log(`[REGISTRO] Actualizando contadores para boleta ${boleta}`);
             
@@ -237,7 +212,8 @@ app.post('/api/registros', async (req, res) => {
             success: true, 
             message: 'Registro creado correctamente',
             tipo: tipo,
-            id_registro: result.insertId
+            id_registro: result.insertId,
+            fecha_registro: fechaMySQL // Para debug
         });
         
     } catch (error) {
@@ -250,6 +226,22 @@ app.post('/api/registros', async (req, res) => {
     }
 });
 
+// Endpoint para ver registros recientes (para debug)
+app.get('/api/registros/recientes', async (req, res) => {
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+        const [rows] = await connection.query(
+            'SELECT * FROM Registros ORDER BY id_registro DESC LIMIT 10'
+        );
+        await connection.end();
+        
+        res.json({ success: true, registros: rows });
+    } catch (error) {
+        console.error('Error obteniendo registros:', error);
+        res.status(500).json({ success: false, message: 'Error obteniendo registros' });
+    }
+});
+
 // --- Inicia el servidor ---
 app.listen(PORT, () => {
     console.log(`✅ Servidor API corriendo en http://localhost:${PORT}`);
@@ -258,4 +250,5 @@ app.listen(PORT, () => {
     console.log(`   http://localhost:${PORT}/api/alumno/12345`);
     console.log(`   http://localhost:${PORT}/api/horarios/alumno/12345`);
     console.log(`   http://localhost:${PORT}/api/registros`);
+    console.log(`   http://localhost:${PORT}/api/registros/recientes ← Para debug`);
 });

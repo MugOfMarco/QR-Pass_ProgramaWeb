@@ -162,37 +162,45 @@ class RegistroSystem {
     }
 
     async crearRegistroBD(boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial) {
-        const ahora = new Date();
-        const horaFormateada = this.formatearHora(ahora);
-        
-        console.log('Enviando registro a BD:', {
-            boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial
-        });
-        
-        const response = await fetch(`${this.apiBase}/registros`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                boleta: parseInt(boleta),
-                grupo: grupo,
-                puerta: puerta,
-                registro: ahora.toISOString(),
-                hora: horaFormateada,
-                tipo: tipo,
-                tieneRetardo: tieneRetardo,
-                sinCredencial: sinCredencial
-            })
-        });
+    const ahora = new Date();
+    
+    // CORRECCIÓN: Ajustar para hora local de México
+    const offset = -6 * 60; // UTC-6 para zona central
+    const horaLocal = new Date(ahora.getTime() + offset * 60 * 1000);
+    
+    console.log('Hora original:', ahora.toISOString());
+    console.log('Hora local ajustada:', horaLocal.toISOString());
+    
+    const horaFormateada = this.formatearHora(ahora); // Usar la hora local real
+    
+    console.log('Enviando registro a BD:', {
+        boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial
+    });
+    
+    const response = await fetch(`${this.apiBase}/registros`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            boleta: parseInt(boleta),
+            grupo: grupo,
+            puerta: puerta,
+            registro: ahora.toISOString(), // Mantener ISO string para consistencia
+            hora: horaFormateada, // Agregar hora formateada separadamente
+            tipo: tipo,
+            tieneRetardo: tieneRetardo,
+            sinCredencial: sinCredencial
+        })
+    });
 
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.message);
-        }
-        
-        console.log('Registro creado exitosamente:', result);
-        return result;
+    const result = await response.json();
+    
+    if (!result.success) {
+        throw new Error(result.message);
     }
+    
+    console.log('Registro creado exitosamente:', result);
+    return result;
+}
 
     mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, tipoRegistro) {
         const alumno = alumnoData.alumno;
