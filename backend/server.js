@@ -1,18 +1,14 @@
-// backend/server.js - VERSIÓN CORREGIDA
-
-// Importa las librerías necesarias
+// backend/server.js - VERSIÓN COMPLETA CORREGIDA
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const path = require('path'); 
 
-// 2. CONFIGURACIÓN INICIAL
 const app = express();
 
-// MIDDLEWARES PRIMERO
+// MIDDLEWARES
 app.use(cors());
 app.use(express.json());
-
 app.use(express.static(path.join(__dirname, '..')));
 
 app.get('/', (req, res) => {
@@ -25,19 +21,19 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'n0m3l0',  // ← ¿Es la misma contraseña en ambos MySQL?
+    password: 'n0m3l0',
     database: 'CECYT9',
-    port: 3306  // ← Agrega esto explícitamente
+    port: 3306
 };
 
-// --- Definición del API ---
+// --- ENDPOINTS ---
 
 // Endpoint básico para probar
 app.get('/api/test', (req, res) => {
     res.json({ message: '✅ API funcionando correctamente' });
 });
 
-// Endpoint original
+// Endpoint para obtener alumno básico
 app.get('/api/alumno/:boleta', async (req, res) => {
     const boleta = req.params.boleta;
 
@@ -64,13 +60,10 @@ app.get('/api/alumno/:boleta', async (req, res) => {
 });
 
 // Ruta para obtener datos completos del alumno con horario
-// Ruta para obtener datos completos del alumno con horario
 app.get('/api/horarios/alumno/:boleta', async (req, res) => {
     const boleta = req.params.boleta;
 
-    // --- ¡AÑADE ESTA LÍNEA DE DEPURACIÓN AQUÍ! ---
     console.log(`[DEBUG] Recibí boleta: [${boleta}] (Tipo: ${typeof boleta})`);
-    // -------------------------------------------
 
     try {
         const connection = await mysql.createConnection(dbConfig);
@@ -112,7 +105,6 @@ app.get('/api/horarios/alumno/:boleta', async (req, res) => {
         let ultimaHora = null;
 
         if (horarioRows.length > 0) {
-            // Ordenar por hora para encontrar la primera y última
             const horasOrdenadas = horarioRows
                 .map(h => h.HoraInicio)
                 .sort();
@@ -120,7 +112,6 @@ app.get('/api/horarios/alumno/:boleta', async (req, res) => {
             primeraHora = horasOrdenadas[0];
             ultimaHora = horasOrdenadas[horasOrdenadas.length - 1];
             
-            // Formatear a "07:00 - 13:40"
             alumno.horarioFormateado = `${primeraHora.substring(0, 5)} - ${ultimaHora.substring(0, 5)}`;
         } else {
             alumno.horarioFormateado = "Sin horario";
@@ -140,7 +131,7 @@ app.get('/api/horarios/alumno/:boleta', async (req, res) => {
             success: true,
             alumno: alumno,
             horario: horarioRows,
-            horarioFormateado: alumno.horarioFormateado, // ← Nuevo campo
+            horarioFormateado: alumno.horarioFormateado,
             materiasAcreditadas: acreditadasRows
         });
 
@@ -190,58 +181,72 @@ app.post('/api/alumnos/:boleta/actualizar', async (req, res) => {
     }
 });
 
-// Ruta para crear registros - VERSIÓN CORREGIDA
+// ✅ ENDPOINT CORREGIDO PARA REGISTROS - VERSIÓN FUNCIONAL
 app.post('/api/registros', async (req, res) => {
     try {
-        const { boleta, grupo, puerta, registro, tieneRetardo, sinCredencial } = req.body;
+        const { boleta, grupo, puerta, registro, tipo, tieneRetardo, sinCredencial } = req.body;
+        
+        console.log(`[REGISTRO] Datos recibidos:`, {
+            boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial
+        });
         
         const connection = await mysql.createConnection(dbConfig);
         
         // CONVERTIR fecha ISO a formato MySQL DATETIME
         const fechaMySQL = new Date(registro).toISOString().slice(0, 19).replace('T', ' ');
-        // Esto convierte: '2025-11-03T17:27:33.855Z' → '2025-11-03 17:27:33'
         
-        await connection.query(
-            'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro) VALUES (?, ?, ?, ?)',
-            [boleta, grupo, puerta, fechaMySQL]  // ← Usar la fecha convertida
+        console.log(`[REGISTRO] Insertando en BD:`, {
+            boleta, grupo, puerta, fechaMySQL, tipo
+        });
+        
+        // ✅ INSERTAR CON TODOS LOS CAMPOS REQUERIDOS
+        const [result] = await connection.query(
+            'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
+            [boleta, grupo, puerta, fechaMySQL, tipo]
         );
 
-        if (tieneRetardo || sinCredencial) {
-            const [registroInsertado] = await connection.query(
-                'SELECT id_registro FROM Registros WHERE Boleta = ? ORDER BY id_registro DESC LIMIT 1',
-                [boleta]
-            );
+        console.log(`[REGISTRO] Insertado con ID: ${result.insertId}`);
 
-            let tipoIncidencia = '';
-            if (tieneRetardo && sinCredencial) {
-                tipoIncidencia = 'Retardo y sin credencial';
-            } else if (tieneRetardo) {
-                tipoIncidencia = 'Retardo';
-            } else {
-                tipoIncidencia = 'Entrada sin credencial';
+        // ✅ SOLO ACTUALIZAR CONTADORES PARA ENTRADAS CON INCIDENCIAS
+        if (tipo !== 'salida' && (tieneRetardo || sinCredencial)) {
+            console.log(`[REGISTRO] Actualizando contadores para boleta ${boleta}`);
+            
+            let updateQuery = 'UPDATE ALumnos SET ';
+            const updates = [];
+            const params = [];
+            
+            if (tieneRetardo) {
+                updates.push('Retardos = Retardos + 1');
             }
-
-            // Usar fecha actual en formato MySQL para el reporte
-            const fechaActualMySQL = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-            await connection.query(
-                'INSERT INTO Reportes (id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte) VALUES (?, ?, ?, ?, ?)',
-                [
-                    registroInsertado[0].id_registro,
-                    tipoIncidencia,
-                    fechaMySQL,  // ← Usar la misma fecha convertida
-                    'Registro automático del sistema',
-                    fechaActualMySQL  // ← Fecha actual en formato MySQL
-                ]
-            );
+            if (sinCredencial) {
+                updates.push('Sin_credencial = Sin_credencial + 1');
+            }
+            
+            if (updates.length > 0) {
+                updateQuery += updates.join(', ') + ' WHERE Boleta = ?';
+                params.push(boleta);
+                
+                await connection.query(updateQuery, params);
+                console.log(`[REGISTRO] Contadores actualizados: ${updates.join(', ')}`);
+            }
         }
 
         await connection.end();
 
-        res.json({ success: true, message: 'Registro creado correctamente' });
+        res.json({ 
+            success: true, 
+            message: 'Registro creado correctamente',
+            tipo: tipo,
+            id_registro: result.insertId
+        });
+        
     } catch (error) {
-        console.error('Error creando registro:', error);
-        res.status(500).json({ success: false, message: 'Error creando registro' });
+        console.error('❌ Error creando registro:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error creando registro: ' + error.message,
+            sql: error.sql
+        });
     }
 });
 
@@ -252,4 +257,5 @@ app.listen(PORT, () => {
     console.log(`   http://localhost:${PORT}/api/test`);
     console.log(`   http://localhost:${PORT}/api/alumno/12345`);
     console.log(`   http://localhost:${PORT}/api/horarios/alumno/12345`);
+    console.log(`   http://localhost:${PORT}/api/registros`);
 });
