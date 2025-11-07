@@ -35,28 +35,95 @@ app.get('/api/test', (req, res) => {
 });
 
 // Endpoint para obtener alumno básico
-app.get('/api/alumno/:boleta', async (req, res) => {
-    const boleta = req.params.boleta;
-
+// Obtener incidencias de un alumno (actualizado)
+app.get('/api/incidencias/alumno/:boleta', async (req, res) => {
     try {
+        const { boleta } = req.params;
+        
         const connection = await mysql.createConnection(dbConfig);
-        const sqlQuery = "SELECT Nombre, Grupo FROM ALumnos WHERE Boleta = ?";
-        const [rows] = await connection.query(sqlQuery, [boleta]);
+        
+        // ✅ Obtener registros que son incidencias (no salidas ni entradas normales)
+        // Y que NO tengan reporte de justificación
+        const [rows] = await connection.query(
+            `SELECT r.* 
+             FROM Registros r
+             LEFT JOIN Reportes rep ON r.id_registro = rep.id_registro
+             WHERE r.Boleta = ? 
+             AND r.tipo IN ('retardo', 'sin_credencial')  -- ← Solo tipos individuales ahora
+             AND rep.id_registro IS NULL  -- Solo incidencias no justificadas
+             ORDER BY r.Registro DESC`,
+            [boleta]
+        );
+
         await connection.end();
 
-        if (rows.length > 0) {
-            const alumno = rows[0];
-            res.json({
-                nombre: alumno.Nombre,
-                grupo: alumno.Grupo,
-                boleta: boleta
-            });
-        } else {
-            res.status(404).json({ message: 'Alumno no encontrado' });
-        }
+        res.json({ 
+            success: true, 
+            incidencias: rows 
+        });
+        
     } catch (error) {
-        console.error('Error en la consulta:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        console.error('Error obteniendo incidencias:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error obteniendo incidencias' 
+        });
+    }
+});
+
+// Crear reporte de justificación
+// Endpoint corregido para crear reportes
+app.post('/api/reportes', async (req, res) => {
+    try {
+        const { id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte } = req.body;
+        
+        console.log('[REPORTE] Datos recibidos:', {
+            id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte
+        });
+        
+        const connection = await mysql.createConnection(dbConfig);
+
+        // Convertir fechas ISO a formato MySQL
+        const convertirFechaMySQL = (fechaISO) => {
+            if (!fechaISO) return new Date().toISOString().slice(0, 19).replace('T', ' ');
+            
+            const fecha = new Date(fechaISO);
+            // Ajustar a zona horaria México (UTC-6)
+            const offsetMexico = -6 * 60 * 60 * 1000; // UTC-6 en milisegundos
+            const fechaMexico = new Date(fecha.getTime() + offsetMexico);
+            
+            return fechaMexico.toISOString().slice(0, 19).replace('T', ' ');
+        };
+
+        const fechaIncidenciaMySQL = convertirFechaMySQL(fecha_incidencia);
+        const fechaReporteMySQL = convertirFechaMySQL(fecha_reporte);
+        
+        console.log('[REPORTE] Fechas convertidas:', {
+            fechaIncidenciaMySQL,
+            fechaReporteMySQL
+        });
+        
+        const [result] = await connection.query(
+            `INSERT INTO Reportes (id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte) 
+             VALUES (?, ?, ?, ?, ?)`,
+            [id_registro, tipo_incidencia, fechaIncidenciaMySQL, justificacion, fechaReporteMySQL]
+        );
+
+        await connection.end();
+
+        res.json({ 
+            success: true, 
+            message: 'Reporte creado correctamente',
+            id_reporte: result.insertId
+        });
+        
+    } catch (error) {
+        console.error('❌ Error creando reporte:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error creando reporte: ' + error.message,
+            sql: error.sql
+        });
     }
 });
 
@@ -145,45 +212,54 @@ app.get('/api/horarios/alumno/:boleta', async (req, res) => {
     }
 });
 
-// ✅ ENDPOINT CORREGIDO - VERSIÓN CON HORA LOCAL MÉXICO
+// ✅ ENDPOINT MODIFICADO - Crear registros separados para retardo_sin_credencial
 app.post('/api/registros', async (req, res) => {
     try {
         const { boleta, grupo, puerta, registro, tipo, tieneRetardo, sinCredencial } = req.body;
         
         console.log(`[REGISTRO] Datos recibidos:`, {
-            boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial,
-            registroRecibido: registro
+            boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial
         });
         
         const connection = await mysql.createConnection(dbConfig);
         
-        // ✅ CORRECCIÓN: USAR HORA LOCAL DE MÉXICO
-        let fechaMySQL;
+        // CONVERTIR fecha ISO a formato MySQL
+        const fechaMySQL = new Date(registro).toISOString().slice(0, 19).replace('T', ' ');
         
-        if (registro) {
-            // Si viene la fecha del frontend, convertir a hora local México
-            const fecha = new Date(registro);
-            // Ajustar a UTC-6 (México)
-            const offsetMexico = -6 * 60; // minutos
-            const fechaMexico = new Date(fecha.getTime() + offsetMexico * 60 * 1000);
-            fechaMySQL = fechaMexico.toISOString().slice(0, 19).replace('T', ' ');
+        let resultados = [];
+        
+        // ✅ MODIFICACIÓN: Si es retardo_sin_credencial, crear 2 registros separados
+        if (tipo === 'retardo_sin_credencial') {
+            console.log(`[REGISTRO] Creando 2 registros separados para retardo_sin_credencial`);
+            
+            // Registro 1: Retardo
+            const [result1] = await connection.query(
+                'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
+                [boleta, grupo, puerta, fechaMySQL, 'retardo']
+            );
+            resultados.push(result1);
+            
+            // Registro 2: Sin credencial
+            const [result2] = await connection.query(
+                'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
+                [boleta, grupo, puerta, fechaMySQL, 'sin_credencial']
+            );
+            resultados.push(result2);
+            
+            console.log(`[REGISTRO] Creados 2 registros: Retardo(ID:${result1.insertId}), SinCredencial(ID:${result2.insertId})`);
+            
         } else {
-            // Si no viene fecha, usar hora actual del servidor (ya debería ser local)
-            fechaMySQL = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            // Registro normal (entrada, salida, retardo individual, sin_credencial individual)
+            const [result] = await connection.query(
+                'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
+                [boleta, grupo, puerta, fechaMySQL, tipo]
+            );
+            resultados.push(result);
+            console.log(`[REGISTRO] Insertado con ID: ${result.insertId}`);
         }
-        
-        console.log(`[REGISTRO] Fecha para MySQL: ${fechaMySQL}`);
-        
-        // ✅ INSERTAR EN BD
-        const [result] = await connection.query(
-            'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
-            [boleta, grupo, puerta, fechaMySQL, tipo]
-        );
 
-        console.log(`[REGISTRO] Insertado con ID: ${result.insertId}`);
-
-        // ✅ ACTUALIZAR CONTADORES SOLO PARA ENTRADAS CON INCIDENCIAS
-        if (tipo !== 'salida' && (tieneRetardo || sinCredencial)) {
+        // ✅ ACTUALIZAR CONTADORES SOLO AL REGISTRAR (NO al justificar)
+        if (tipo !== 'salida') {
             console.log(`[REGISTRO] Actualizando contadores para boleta ${boleta}`);
             
             let updateQuery = 'UPDATE ALumnos SET ';
@@ -210,10 +286,10 @@ app.post('/api/registros', async (req, res) => {
 
         res.json({ 
             success: true, 
-            message: 'Registro creado correctamente',
+            message: 'Registro(s) creado(s) correctamente',
             tipo: tipo,
-            id_registro: result.insertId,
-            fecha_registro: fechaMySQL // Para debug
+            ids_registros: resultados.map(r => r.insertId),
+            registros_creados: resultados.length
         });
         
     } catch (error) {

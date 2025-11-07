@@ -40,62 +40,62 @@ class RegistroSystem {
     }
 
     async procesarRegistro(alumnoData, tipoEntrada) {
-        try {
-            // OBTENER LA PUERTA SELECCIONADA
-            const puertaSeleccionada = document.querySelector('input[name="puerta"]:checked');
-            const puerta = puertaSeleccionada ? puertaSeleccionada.value : 'mexico-tacuba';
-            
-            // OBTENER EL TIPO SELECCIONADO (ENTRADA/SALIDA)
-            const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked');
-            const tipo = tipoSeleccionado ? tipoSeleccionado.value : 'entrada';
-            
-            console.log('Datos seleccionados:', { puerta, tipo, tipoEntrada });
-            
-            const ahora = new Date();
-            
-            // Solo verificar retardo si es ENTRADA
-            let tieneRetardo = false;
-            let sinCredencial = false;
-            
-            if (tipo === 'entrada') {
-                sinCredencial = tipoEntrada === 'manual';
-                tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
-                console.log('Resultado verificación retardo:', { tieneRetardo, sinCredencial });
-            }
-            
-            // Determinar el tipo final para la base de datos
-            let tipoRegistro = tipo; // 'entrada' o 'salida'
-            
-            if (tipo === 'entrada') {
-                if (tieneRetardo && sinCredencial) {
-                    tipoRegistro = 'retardo_sin_credencial';
-                } else if (tieneRetardo) {
-                    tipoRegistro = 'retardo';
-                } else if (sinCredencial) {
-                    tipoRegistro = 'sin_credencial';
-                }
-            }
-            
-            console.log('Tipo de registro final:', tipoRegistro);
-            
-            // Crear registro en BD
-            await this.crearRegistroBD(
-                alumnoData.alumno.Boleta, 
-                alumnoData.alumno.Grupo, 
-                puerta,
-                tipoRegistro,
-                tieneRetardo, 
-                sinCredencial
-            );
-            
-            // Mostrar resultados
-            this.mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, tipoRegistro);
-            
-        } catch (error) {
-            console.error('Error en procesarRegistro:', error);
-            this.mostrarError('Error al procesar registro: ' + error.message);
+    try {
+        const puertaSeleccionada = document.querySelector('input[name="puerta"]:checked');
+        const puerta = puertaSeleccionada ? puertaSeleccionada.value : 'mexico-tacuba';
+        
+        const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked');
+        const tipo = tipoSeleccionado ? tipoSeleccionado.value : 'entrada';
+        
+        console.log('Datos seleccionados:', { puerta, tipo, tipoEntrada });
+        
+        const ahora = new Date();
+        
+        // Solo verificar retardo si es ENTRADA
+        let tieneRetardo = false;
+        let sinCredencial = false;
+        
+        if (tipo === 'entrada') {
+            sinCredencial = tipoEntrada === 'manual';
+            tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
+            console.log('Resultado verificación retardo:', { tieneRetardo, sinCredencial });
         }
+        
+        // ✅ MODIFICACIÓN: Determinar el tipo final
+        let tipoRegistro = tipo; // 'entrada' o 'salida'
+        
+        if (tipo === 'entrada') {
+            if (tieneRetardo && sinCredencial) {
+                tipoRegistro = 'retardo_sin_credencial'; // ← Este creará 2 registros
+            } else if (tieneRetardo) {
+                tipoRegistro = 'retardo';
+            } else if (sinCredencial) {
+                tipoRegistro = 'sin_credencial';
+            }
+        }
+        
+        console.log('Tipo de registro final:', tipoRegistro);
+        
+        // Crear registro en BD (puede crear 1 o 2 registros)
+        const resultado = await this.crearRegistroBD(
+            alumnoData.alumno.Boleta, 
+            alumnoData.alumno.Grupo, 
+            puerta,
+            tipoRegistro,
+            tieneRetardo, 
+            sinCredencial
+        );
+        
+        console.log('Resultado del registro:', resultado);
+        
+        // Mostrar resultados
+        this.mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, tipoRegistro);
+        
+    } catch (error) {
+        console.error('Error en procesarRegistro:', error);
+        this.mostrarError('Error al procesar registro: ' + error.message);
     }
+}
 
     async verificarRetardoSimple(horario) {
         console.log('🔍 Verificando retardo...');
