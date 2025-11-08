@@ -21,7 +21,7 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'n0m3l0',
+    password: 'Qeqrqt131415',
     database: 'CECYT9',
     port: 3306,
     timezone: '-06:00' // ← ¡IMPORTANTE! Agregar timezone de México
@@ -246,9 +246,11 @@ app.post('/api/registros', async (req, res) => {
         
         const connection = await mysql.createConnection(dbConfig);
         
-        // CONVERTIR fecha ISO a formato MySQL
-        const fechaMySQL = new Date(registro).toISOString().slice(0, 19).replace('T', ' ');
-        
+        const ahora = new Date();
+        const offset = -6 * 60 * 60 * 1000; // Offset en milisegundos
+        const fechaLocal = new Date(ahora.getTime() + offset);
+
+        const fechaMySQL = fechaLocal.toISOString().slice(0, 19).replace('T', ' ');
         let resultados = [];
         
         // ✅ MODIFICACIÓN: Si es retardo_sin_credencial, crear 2 registros separados

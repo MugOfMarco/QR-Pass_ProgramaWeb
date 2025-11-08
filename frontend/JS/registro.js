@@ -185,12 +185,7 @@ class RegistroSystem {
 
     async crearRegistroBD(boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial) {
         const ahora = new Date();
-
-        const offset = -6 * 60;
-        const horaLocal = new Date(ahora.getTime() + offset * 60 * 1000);
-
         const horaFormateada = this.formatearHora(ahora);
-
         console.log('Enviando registro a BD:', {
             boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial
         });
@@ -287,7 +282,6 @@ class RegistroSystem {
 
     mostrarError(mensaje) {
         this.mostrarEstado(mensaje, 'error');
-        _
     }
 
     formatearNombrePuerta(puertaValue) {
