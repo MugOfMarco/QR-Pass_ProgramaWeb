@@ -21,7 +21,7 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'Qeqrqt131415',
+    password: 'n0m3l0',
     database: 'CECYT9',
     port: 3306,
     timezone: '-06:00' // ← ¡IMPORTANTE! Agregar timezone de México

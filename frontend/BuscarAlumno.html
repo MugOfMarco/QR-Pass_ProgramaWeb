@@ -46,17 +46,24 @@
             </li>
         </ul>
     </nav>
+
+    <div id="menu-overlay" class="menu-overlay"></div>
     
     <div class="main-container">
         <!-- Columna Izquierda: Datos del Alumno -->
         <section class="student-search-section">
             <div class="container">
                 <div class="input-group">
-                    <label for="search-boleta" class="label-highlight">Ingresar boleta</label>
-                    <input type="text" id="search-boleta" name="search-boleta" class="input-solo-numeros">
+                    <label for="search-boleta-inc" class="label-highlight">Ingrese boleta</label>
+                    <input type="text" id="search-boleta-inc" name="search-boleta-inc" class="input-solo-numeros">
                 </div>
 
                 <div class="student-data-display">
+                    <div class="field">
+                        <label for="display-boleta">Boleta</label>
+                        <input type="text" id="display-boleta" name="display-boleta" readonly>
+                    </div>
+
                     <div class="field">
                         <label for="display-alumno">Alumno</label>
                         <input type="text" id="display-alumno" name="display-alumno" readonly>
@@ -77,11 +84,11 @@
                 <div class="incident-counters">
                     <div class="counter-item">
                         <span class="counter-label">Incidencias:</span>
-                        <span class="counter-value" id="total-incidencias">2</span>
+                        <span class="counter-value" id="total-incidencias">0</span>
                     </div>
                     <div class="counter-item">
                         <span class="counter-label">Retardos:</span>
-                        <span class="counter-value" id="total-retardos">99</span>
+                        <span class="counter-value" id="total-retardos">0</span>
                     </div>
                 </div>
             </div>
@@ -115,57 +122,40 @@
                         <table class="incidents-table">
                             <thead>
                                 <tr>
+                                    <th>Puerta</th>
                                     <th>Fecha</th>
                                     <th>Tipo</th>
-                                    <th>Registro</th>
                                 </tr>
                             </thead>
                             <tbody id="incidents-tbody">
-                                <!-- Datos de ejemplo - se llenarán dinámicamente -->
-                                <tr>
-                                    <td>14/03/2025 17:34:15</td>
-                                    <td>Retardo</td>
-                                    <td>2</td>
-                                </tr>
-                                <tr>
-                                    <td>14/03/2025 17:35:20</td>
-                                    <td>Sin credencial</td>
-                                    <td>9</td>
-                                </tr>
-                                <tr>
-                                    <td>14/03/2025 17:36:05</td>
-                                    <td>Retardo</td>
-                                    <td>17</td>
-                                </tr>
-                                <tr>
-                                    <td>14/03/2025 17:36:05</td>
-                                    <td>Sin credencial</td>
-                                    <td>12</td>
-                                </tr>
-                                <tr>
-                                    <td>14/03/2025 17:38:45</td>
-                                    <td>Retardo</td>
-                                    <td>14</td>
-                                </tr>
+                                <!-- Los datos se llenarán dinámicamente -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Justificación -->
+                <!-- Controles de tabla (Select y botones de justificación) -->
                 <div class="justification-section">
                     <h3 class="justification-title">Justificación</h3>
+                    
+                    <select name="item-selector" id="item-selector">
+                        <option value="item1">Selecciona una justificación...</option>
+                        <option value="item2">Se hablo con el tutor/a</option>
+                        <option value="item3">Se hablo con el estudiante</option>
+                        <option value="item4">Error en el registro</option>
+                    </select>
+
                     <div class="justification-buttons">
-                        <button type="button" id="btn-just-seleccion">
+                        <button type="button" id="btn-justselec">
                             Justificar<br>selección
                         </button>
-                        <button type="button" id="btn-just-retardos">
+                        <button type="button" id="btn-justret">
                             Justificar<br>retardos
                         </button>
-                        <button type="button" id="btn-just-credencial">
-                            Justificar<br>credencial
+                        <button type="button" id="btn-justsin">
+                            Justificar<br>sin credencial
                         </button>
-                        <button type="button" id="btn-just-todo">
+                        <button type="button" id="btn-justall">
                             Justificar<br>todo
                         </button>
                     </div>
@@ -181,5 +171,6 @@
     </footer>
 
     <script src="./JS/validaciones.js"></script>
+    <script src="./JS/incidencias.js"></script>
 </body>
-</html>         
+</html>
