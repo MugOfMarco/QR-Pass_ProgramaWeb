@@ -21,7 +21,7 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'Qeqrqt131415',
+    password: 'n0m3l0',
     database: 'CECYT9',
     port: 3306,
     timezone: '-06:00' // ← ¡IMPORTANTE! Agregar timezone de México
@@ -323,8 +323,8 @@ app.listen(PORT, () => {
     console.log(`✅ Servidor API corriendo en http://localhost:${PORT}`);
     console.log(`📊 Endpoints disponibles:`);
     console.log(`   http://localhost:${PORT}/api/test`);
-    console.log(`   http://localhost:${PORT}/api/alumno/12345`);
-    console.log(`   http://localhost:${PORT}/api/horarios/alumno/12345`);
+    console.log(`   http://localhost:${PORT}/api/alumno/2024090001`);
+    console.log(`   http://localhost:${PORT}/api/horarios/alumno/2024090001`);
     console.log(`   http://localhost:${PORT}/api/registros`);
     console.log(`   http://localhost:${PORT}/api/registros/recientes ← Para debug`);
 });
