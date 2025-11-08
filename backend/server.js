@@ -35,21 +35,20 @@ app.get('/api/test', (req, res) => {
 });
 
 // Endpoint para obtener alumno básico
-// Obtener incidencias de un alumno (actualizado)
+// Obtener incidencias de un alumno
 app.get('/api/incidencias/alumno/:boleta', async (req, res) => {
     try {
         const { boleta } = req.params;
         
         const connection = await mysql.createConnection(dbConfig);
         
-        // ✅ Obtener registros que son incidencias (no salidas ni entradas normales)
-        // Y que NO tengan reporte de justificación
+        // Obtener registros que son incidencias y NO tienen reporte
         const [rows] = await connection.query(
             `SELECT r.* 
              FROM Registros r
              LEFT JOIN Reportes rep ON r.id_registro = rep.id_registro
              WHERE r.Boleta = ? 
-             AND r.tipo IN ('retardo', 'sin_credencial')  -- ← Solo tipos individuales ahora
+             AND r.tipo IN ('retardo', 'sin_credencial')  -- Solo tipos individuales
              AND rep.id_registro IS NULL  -- Solo incidencias no justificadas
              ORDER BY r.Registro DESC`,
             [boleta]
@@ -57,6 +56,8 @@ app.get('/api/incidencias/alumno/:boleta', async (req, res) => {
 
         await connection.end();
 
+        console.log(`[INCIDENCIAS] Encontradas ${rows.length} incidencias para boleta ${boleta}`);
+        
         res.json({ 
             success: true, 
             incidencias: rows 
@@ -72,48 +73,71 @@ app.get('/api/incidencias/alumno/:boleta', async (req, res) => {
 });
 
 // Crear reporte de justificación
-// Endpoint corregido para crear reportes
+// ✅ ENDPOINT CORREGIDO - Actualizar contadores al justificar
 app.post('/api/reportes', async (req, res) => {
     try {
         const { id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte } = req.body;
         
         console.log('[REPORTE] Datos recibidos:', {
-            id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte
+            id_registro, tipo_incidencia, justificacion
         });
         
         const connection = await mysql.createConnection(dbConfig);
-
-        // Convertir fechas ISO a formato MySQL
+        
+        // Primero, obtener la boleta del registro
+        const [registroRows] = await connection.query(
+            'SELECT Boleta FROM Registros WHERE id_registro = ?',
+            [id_registro]
+        );
+        
+        if (registroRows.length === 0) {
+            throw new Error('Registro no encontrado');
+        }
+        
+        const boleta = registroRows[0].Boleta;
+        
+        // Convertir fechas a formato MySQL
         const convertirFechaMySQL = (fechaISO) => {
             if (!fechaISO) return new Date().toISOString().slice(0, 19).replace('T', ' ');
-            
-            const fecha = new Date(fechaISO);
-            // Ajustar a zona horaria México (UTC-6)
-            const offsetMexico = -6 * 60 * 60 * 1000; // UTC-6 en milisegundos
-            const fechaMexico = new Date(fecha.getTime() + offsetMexico);
-            
-            return fechaMexico.toISOString().slice(0, 19).replace('T', ' ');
+            const fecha = new Date(fechaISO.replace('Z', ''));
+            return fecha.toISOString().slice(0, 19).replace('T', ' ');
         };
 
         const fechaIncidenciaMySQL = convertirFechaMySQL(fecha_incidencia);
         const fechaReporteMySQL = convertirFechaMySQL(fecha_reporte);
         
-        console.log('[REPORTE] Fechas convertidas:', {
-            fechaIncidenciaMySQL,
-            fechaReporteMySQL
-        });
-        
+        // Crear el reporte
         const [result] = await connection.query(
             `INSERT INTO Reportes (id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte) 
              VALUES (?, ?, ?, ?, ?)`,
             [id_registro, tipo_incidencia, fechaIncidenciaMySQL, justificacion, fechaReporteMySQL]
         );
 
+        // ✅ CORRECCIÓN: ACTUALIZAR CONTADORES DEL ALUMNO
+        console.log(`[REPORTE] Actualizando contadores para boleta ${boleta}, tipo: ${tipo_incidencia}`);
+        
+        if (tipo_incidencia === 'retardo') {
+            await connection.query(
+                `UPDATE ALumnos SET Retardos = GREATEST(0, Retardos - 1) WHERE Boleta = ?`,
+                [boleta]
+            );
+            console.log(`[REPORTE] Retardo decrementado para boleta ${boleta}`);
+            
+        } else if (tipo_incidencia === 'sin_credencial') {
+            await connection.query(
+                `UPDATE ALumnos SET Sin_credencial = GREATEST(0, Sin_credencial - 1) WHERE Boleta = ?`,
+                [boleta]
+            );
+            console.log(`[REPORTE] Sin credencial decrementado para boleta ${boleta}`);
+        }
+
         await connection.end();
 
+        console.log(`[REPORTE] Reporte creado con ID: ${result.insertId}`);
+        
         res.json({ 
             success: true, 
-            message: 'Reporte creado correctamente',
+            message: 'Reporte creado correctamente y contadores actualizados',
             id_reporte: result.insertId
         });
         
@@ -121,8 +145,7 @@ app.post('/api/reportes', async (req, res) => {
         console.error('❌ Error creando reporte:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Error creando reporte: ' + error.message,
-            sql: error.sql
+            message: 'Error creando reporte: ' + error.message
         });
     }
 });
@@ -327,4 +350,52 @@ app.listen(PORT, () => {
     console.log(`   http://localhost:${PORT}/api/horarios/alumno/2024090001`);
     console.log(`   http://localhost:${PORT}/api/registros`);
     console.log(`   http://localhost:${PORT}/api/registros/recientes ← Para debug`);
+});
+
+// Endpoint para diagnóstico - Ver estado actual de alumno
+app.get('/api/diagnostico/alumno/:boleta', async (req, res) => {
+    try {
+        const { boleta } = req.params;
+        
+        const connection = await mysql.createConnection(dbConfig);
+        
+        // Datos del alumno
+        const [alumnoRows] = await connection.query(
+            'SELECT Boleta, Nombre, Grupo, Sin_credencial, Retardos FROM ALumnos WHERE Boleta = ?',
+            [boleta]
+        );
+        
+        // Incidencias sin justificar
+        const [incidenciasRows] = await connection.query(
+            `SELECT COUNT(*) as count FROM Registros r
+             LEFT JOIN Reportes rep ON r.id_registro = rep.id_registro
+             WHERE r.Boleta = ? AND r.tipo IN ('retardo', 'sin_credencial')
+             AND rep.id_registro IS NULL`,
+            [boleta]
+        );
+        
+        // Reportes existentes
+        const [reportesRows] = await connection.query(
+            `SELECT COUNT(*) as count FROM Reportes rep
+             JOIN Registros r ON rep.id_registro = r.id_registro
+             WHERE r.Boleta = ?`,
+            [boleta]
+        );
+
+        await connection.end();
+
+        res.json({ 
+            success: true,
+            alumno: alumnoRows[0] || null,
+            incidencias_sin_justificar: incidenciasRows[0].count,
+            reportes_creados: reportesRows[0].count
+        });
+        
+    } catch (error) {
+        console.error('Error en diagnóstico:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error en diagnóstico' 
+        });
+    }
 });
