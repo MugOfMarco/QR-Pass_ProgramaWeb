@@ -1,4 +1,4 @@
-class BuscarAlumnoSystem {
+class SistemaAlumnos {
     constructor() {
         this.apiBase = 'http://localhost:3000/api';
         this.alumnoActual = null;
@@ -49,7 +49,8 @@ class BuscarAlumnoSystem {
         }
 
         try {
-            const response = await fetch(`${this.apiBase}/horarios/alumno/${boleta}`);
+            // Usar tu stored procedure para obtener datos completos
+            const response = await fetch(`${this.apiBase}/alumno/${boleta}`);
             
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
@@ -60,6 +61,7 @@ class BuscarAlumnoSystem {
             if (data.success) {
                 this.alumnoActual = data.alumno;
                 this.mostrarDatosAlumno();
+                this.mostrarHorario(data.horario);
                 await this.cargarIncidencias(boleta);
                 await this.cargarFotoAlumno(boleta);
             } else {
@@ -77,54 +79,108 @@ class BuscarAlumnoSystem {
         if (!this.alumnoActual) return;
 
         // Datos básicos
-        document.getElementById('display-boleta').value = this.alumnoActual.Boleta || '';
-        document.getElementById('display-alumno').value = this.alumnoActual.Nombre || '';
-        document.getElementById('display-grupo').value = this.alumnoActual.Grupo || '';
+        document.getElementById('display-boleta').value = this.alumnoActual.boleta || '';
+        document.getElementById('display-alumno').value = this.alumnoActual.nombre || '';
+        document.getElementById('display-grupo').value = this.alumnoActual.nombre_grupo || '';
         
-        // Horario
-        const horario = this.formatearHorario(this.alumnoActual);
-        document.getElementById('display-horario').value = horario;
+        // Mostrar contadores
+        document.getElementById('total-incidencias').textContent = this.alumnoActual.sin_credencial || '0';
+        document.getElementById('total-retardos').textContent = this.alumnoActual.retardos || '0';
+        
+        // Estado de credencial
+        this.actualizarEstadoCredencial();
     }
 
-    formatearHorario(alumno) {
-        if (!alumno.HoraEntrada || !alumno.HoraSalida) return 'No disponible';
-        
-        // Convertir formato de tiempo si es necesario
-        const entrada = this.formatearHora(alumno.HoraEntrada);
-        const salida = this.formatearHora(alumno.HoraSalida);
-        
-        return `${entrada} - ${salida}`;
+    // En tu clase SistemaAlumnos, actualiza el método mostrarHorario:
+mostrarHorario(horario) {
+    const tbody = document.getElementById('horario-tbody');
+    
+    if (!horario || horario.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3" style="text-align: center; padding: 1rem;">
+                    No hay horario disponible
+                </td>
+            </tr>
+        `;
+        return;
     }
 
-    formatearHora(hora) {
-        // Si viene en formato HH:MM:SS, tomar solo HH:MM
-        if (typeof hora === 'string') {
-            const partes = hora.split(':');
-            if (partes.length >= 2) {
-                return `${partes[0]}:${partes[1]}`;
+    tbody.innerHTML = '';
+    
+    // Ordenar por día y hora
+    const diasOrden = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    const horarioOrdenado = horario.sort((a, b) => {
+        const diaA = diasOrden.indexOf(a.dia);
+        const diaB = diasOrden.indexOf(b.dia);
+        if (diaA !== diaB) return diaA - diaB;
+        return a.hora - b.hora;
+    });
+
+    horarioOrdenado.forEach(clase => {
+        const tr = document.createElement('tr');
+        tr.className = `dia-${clase.dia}`;
+        
+        // Formatear hora (quitar segundos si existen)
+        const horaInicio = clase.inicio.substring(0, 5);
+        const horaFin = clase.fin.substring(0, 5);
+        
+        tr.innerHTML = `
+            <td>${this.capitalizeFirstLetter(clase.dia)}</td>
+            <td>${horaInicio} - ${horaFin}</td>
+            <td>${clase.materia}</td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
+}
+
+capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+    formatearHorario(horario) {
+        // Agrupar por día
+        const horarioPorDia = {};
+        horario.forEach(clase => {
+            if (!horarioPorDia[clase.dia]) {
+                horarioPorDia[clase.dia] = [];
             }
-        }
-        return hora;
+            horarioPorDia[clase.dia].push(clase);
+        });
+
+        // Formatear texto
+        let texto = '';
+        const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+        
+        dias.forEach(dia => {
+            if (horarioPorDia[dia]) {
+                texto += `${dia.charAt(0).toUpperCase() + dia.slice(1)}:\n`;
+                horarioPorDia[dia].forEach(clase => {
+                    texto += `  ${clase.inicio} - ${clase.fin} | ${clase.materia}\n`;
+                });
+                texto += '\n';
+            }
+        });
+
+        return texto.trim();
     }
 
     async cargarFotoAlumno(boleta) {
         try {
             const response = await fetch(`${this.apiBase}/alumnos/foto/${boleta}`);
-            
             if (response.ok) {
                 const data = await response.json();
-                
                 if (data.success && data.foto) {
                     const img = document.getElementById('student-photo');
                     if (img) {
-                        img.src = data.foto; // Asumiendo que la API retorna la URL o base64
+                        img.src = data.foto;
                         img.style.display = 'block';
                     }
                 }
             }
         } catch (error) {
             console.log('No se pudo cargar la foto del alumno');
-            // No mostramos error, simplemente no se muestra la foto
         }
     }
 
@@ -150,12 +206,34 @@ class BuscarAlumnoSystem {
             img.style.display = 'none';
         }
         
+        // Limpiar estado de credencial
+        this.limpiarEstadoCredencial();
+        
         this.alumnoActual = null;
         this.incidencias = [];
     }
 
+    actualizarEstadoCredencial() {
+        const bloqueado = this.alumnoActual.bloqueado || false;
+        const estadoElement = document.getElementById('estado-credencial');
+        
+        if (estadoElement) {
+            estadoElement.textContent = bloqueado ? 'BLOQUEADA' : 'ACTIVA';
+            estadoElement.className = bloqueado ? 'estado-bloqueada' : 'estado-activa';
+        }
+    }
+
+    limpiarEstadoCredencial() {
+        const estadoElement = document.getElementById('estado-credencial');
+        if (estadoElement) {
+            estadoElement.textContent = '';
+            estadoElement.className = '';
+        }
+    }
+
     async cargarIncidencias(boleta) {
         try {
+            // Usar tu stored procedure para obtener incidencias
             const response = await fetch(`${this.apiBase}/incidencias/alumno/${boleta}`);
             
             if (!response.ok) {
@@ -166,36 +244,18 @@ class BuscarAlumnoSystem {
             
             if (data.success) {
                 this.incidencias = data.incidencias || [];
-                this.actualizarContadores();
                 this.mostrarIncidencias();
             } else {
                 this.mostrarError('No se pudieron cargar las incidencias');
                 this.incidencias = [];
-                this.actualizarContadores();
                 this.mostrarIncidencias();
             }
         } catch (error) {
             console.error('Error cargando incidencias:', error);
             this.mostrarError('Error al cargar incidencias');
             this.incidencias = [];
-            this.actualizarContadores();
             this.mostrarIncidencias();
         }
-    }
-
-    actualizarContadores() {
-        // Contar total de incidencias (sin credencial)
-        const totalSinCredencial = this.incidencias.filter(inc => 
-            inc.tipo === 'sin_credencial' || inc.tipo === 'retardo_sin_credencial'
-        ).length;
-        
-        // Contar total de retardos
-        const totalRetardos = this.incidencias.filter(inc => 
-            inc.tipo === 'retardo' || inc.tipo === 'retardo_sin_credencial'
-        ).length;
-        
-        document.getElementById('total-incidencias').textContent = totalSinCredencial;
-        document.getElementById('total-retardos').textContent = totalRetardos;
     }
 
     mostrarIncidencias() {
@@ -207,48 +267,32 @@ class BuscarAlumnoSystem {
         if (this.incidencias.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="3" style="text-align: center; padding: 2rem;">No se encontraron incidencias</td>
+                    <td colspan="4" style="text-align: center; padding: 2rem;">No se encontraron incidencias</td>
                 </tr>
             `;
             return;
         }
 
-        this.incidencias.forEach((incidencia, index) => {
+        this.incidencias.forEach((incidencia) => {
             const tr = document.createElement('tr');
             tr.dataset.idRegistro = incidencia.id_registro;
-            tr.dataset.index = index;
             
-            // Formatear fecha
-            const fecha = new Date(incidencia.Registro);
+            // Formatear fecha (ajustar por la diferencia de hora de México)
+            const fecha = new Date(incidencia.fecha);
             const fechaFormateada = fecha.toLocaleDateString('es-MX');
             const horaFormateada = fecha.toLocaleTimeString('es-MX', { 
                 hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
+                minute: '2-digit'
             });
-
-            // Determinar tipo de incidencia
-            let tipoIncidencia = 'Entrada normal';
-            let claseTipo = '';
-
-            if (incidencia.tipo === 'retardo') {
-                tipoIncidencia = 'Retardo';
-                claseTipo = 'tipo-retardo';
-            } else if (incidencia.tipo === 'sin_credencial') {
-                tipoIncidencia = 'Sin credencial';
-                claseTipo = 'tipo-sin-credencial';
-            } else if (incidencia.tipo === 'retardo_sin_credencial') {
-                tipoIncidencia = 'Retardo sin credencial';
-                claseTipo = 'tipo-retardo-sin-credencial';
-            }
 
             tr.innerHTML = `
                 <td>
                     <input type="checkbox" class="incidencia-checkbox" data-id="${incidencia.id_registro}">
-                    ${this.formatearNombrePuerta(incidencia.Puerta)}
+                    ${this.formatearNombrePuerta(incidencia.puerta)}
                 </td>
-                <td>${fechaFormateada} ${horaFormateada}</td>
-                <td class="${claseTipo}">${tipoIncidencia}</td>
+                <td>${fechaFormateada}</td>
+                <td>${horaFormateada}</td>
+                <td class="tipo-${incidencia.tipo}">${this.formatearTipoIncidencia(incidencia.tipo)}</td>
             `;
 
             tbody.appendChild(tr);
@@ -258,9 +302,19 @@ class BuscarAlumnoSystem {
     formatearNombrePuerta(puertaValue) {
         const puertas = {
             'mexico-tacuba': 'México-Tacuba',
-            'mar': 'Mar-Mediterráneo'
+            'mar-mediterraneo': 'Mar Mediterráneo',
+            'entrada_principal': 'Entrada Principal'
         };
         return puertas[puertaValue] || puertaValue;
+    }
+
+    formatearTipoIncidencia(tipo) {
+        const tipos = {
+            'retardo': 'Retardo',
+            'entrada_sin_credencial': 'Sin credencial',
+            'entrada': 'Entrada normal'
+        };
+        return tipos[tipo] || tipo;
     }
 
     // Obtener incidencias seleccionadas
@@ -282,7 +336,7 @@ class BuscarAlumnoSystem {
         }
 
         const justificacion = document.getElementById('item-selector').value;
-        if (justificacion === 'item1') {
+        if (!justificacion || justificacion === 'item1') {
             this.mostrarError('Selecciona una justificación válida');
             return;
         }
@@ -290,10 +344,9 @@ class BuscarAlumnoSystem {
         await this.procesarJustificacion(incidenciasSeleccionadas, justificacion);
     }
 
-    // Justificar todas las de retardo
     async justificarTodasRetardos() {
         const incidenciasRetardo = this.incidencias.filter(inc => 
-            inc.tipo === 'retardo' || inc.tipo === 'retardo_sin_credencial'
+            inc.tipo === 'retardo'
         );
         
         if (incidenciasRetardo.length === 0) {
@@ -302,7 +355,7 @@ class BuscarAlumnoSystem {
         }
 
         const justificacion = document.getElementById('item-selector').value;
-        if (justificacion === 'item1') {
+        if (!justificacion || justificacion === 'item1') {
             this.mostrarError('Selecciona una justificación válida');
             return;
         }
@@ -310,10 +363,9 @@ class BuscarAlumnoSystem {
         await this.procesarJustificacion(incidenciasRetardo, justificacion);
     }
 
-    // Justificar todas las de sin credencial
     async justificarTodasSinCredencial() {
         const incidenciasSinCredencial = this.incidencias.filter(inc => 
-            inc.tipo === 'sin_credencial' || inc.tipo === 'retardo_sin_credencial'
+            inc.tipo === 'entrada_sin_credencial'
         );
         
         if (incidenciasSinCredencial.length === 0) {
@@ -322,7 +374,7 @@ class BuscarAlumnoSystem {
         }
 
         const justificacion = document.getElementById('item-selector').value;
-        if (justificacion === 'item1') {
+        if (!justificacion || justificacion === 'item1') {
             this.mostrarError('Selecciona una justificación válida');
             return;
         }
@@ -330,7 +382,6 @@ class BuscarAlumnoSystem {
         await this.procesarJustificacion(incidenciasSinCredencial, justificacion);
     }
 
-    // Justificar todas las incidencias
     async justificarTodas() {
         if (this.incidencias.length === 0) {
             this.mostrarError('No hay incidencias para justificar');
@@ -338,7 +389,7 @@ class BuscarAlumnoSystem {
         }
 
         const justificacion = document.getElementById('item-selector').value;
-        if (justificacion === 'item1') {
+        if (!justificacion || justificacion === 'item1') {
             this.mostrarError('Selecciona una justificación válida');
             return;
         }
@@ -351,13 +402,20 @@ class BuscarAlumnoSystem {
             const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
             
             for (const incidencia of incidencias) {
-                await this.crearReporte(incidencia, justificacionTexto);
+                // Obtener id_tipo_anterior según el tipo de incidencia
+                const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
+                
+                await this.crearJustificacionBD(
+                    incidencia.id_registro, 
+                    justificacionTexto, 
+                    idTipoAnterior
+                );
             }
 
             this.mostrarExito(`Se justificaron ${incidencias.length} incidencia(s) correctamente`);
             
-            // Recargar incidencias
-            await this.cargarIncidencias(this.alumnoActual.Boleta);
+            // Recargar datos del alumno para actualizar contadores
+            await this.buscarAlumno(this.alumnoActual.boleta);
             
         } catch (error) {
             console.error('Error justificando incidencias:', error);
@@ -365,16 +423,23 @@ class BuscarAlumnoSystem {
         }
     }
 
-    async crearReporte(incidencia, justificacion) {
-        const response = await fetch(`${this.apiBase}/reportes`, {
+    obtenerIdTipoAnterior(tipoIncidencia) {
+        // Mapear tipos de incidencia a id_tipo_registro
+        const tipos = {
+            'retardo': 2,  // Asumiendo que 2 = retardo
+            'entrada_sin_credencial': 3  // Asumiendo que 3 = entrada_sin_credencial
+        };
+        return tipos[tipoIncidencia] || 2;
+    }
+
+    async crearJustificacionBD(idRegistro, justificacion, idTipoAnterior) {
+        const response = await fetch(`${this.apiBase}/justificaciones`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                id_registro: incidencia.id_registro,
-                tipo_incidencia: incidencia.tipo,
-                fecha_incidencia: incidencia.Registro,
+                id_registro: idRegistro,
                 justificacion: justificacion,
-                fecha_reporte: new Date().toISOString()
+                id_tipo_anterior: idTipoAnterior
             })
         });
 
@@ -391,24 +456,25 @@ class BuscarAlumnoSystem {
         const justificaciones = {
             'item2': 'Se habló con el tutor/a',
             'item3': 'Se habló con el estudiante',
-            'item4': 'Error en el registro'
+            'item4': 'Error en el registro',
+            'item5': 'Actividad escolar',
+            'item6': 'Problema de salud'
         };
         return justificaciones[valor] || valor;
     }
 
-    // Bloquear credencial
     async bloquearCredencial() {
         if (!this.alumnoActual) {
             this.mostrarError('Selecciona un alumno primero');
             return;
         }
 
-        if (!confirm(`¿Estás seguro de bloquear la credencial de ${this.alumnoActual.Nombre}?`)) {
+        if (!confirm(`¿Estás seguro de bloquear la credencial de ${this.alumnoActual.nombre}?`)) {
             return;
         }
 
         try {
-            const response = await fetch(`${this.apiBase}/alumnos/bloquear/${this.alumnoActual.Boleta}`, {
+            const response = await fetch(`${this.apiBase}/alumnos/bloquear/${this.alumnoActual.boleta}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -417,6 +483,8 @@ class BuscarAlumnoSystem {
             
             if (result.success) {
                 this.mostrarExito('Credencial bloqueada correctamente');
+                this.alumnoActual.bloqueado = true;
+                this.actualizarEstadoCredencial();
             } else {
                 this.mostrarError('Error al bloquear credencial');
             }
@@ -426,19 +494,18 @@ class BuscarAlumnoSystem {
         }
     }
 
-    // Desbloquear credencial
     async desbloquearCredencial() {
         if (!this.alumnoActual) {
             this.mostrarError('Selecciona un alumno primero');
             return;
         }
 
-        if (!confirm(`¿Estás seguro de desbloquear la credencial de ${this.alumnoActual.Nombre}?`)) {
+        if (!confirm(`¿Estás seguro de desbloquear la credencial de ${this.alumnoActual.nombre}?`)) {
             return;
         }
 
         try {
-            const response = await fetch(`${this.apiBase}/alumnos/desbloquear/${this.alumnoActual.Boleta}`, {
+            const response = await fetch(`${this.apiBase}/alumnos/desbloquear/${this.alumnoActual.boleta}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -447,6 +514,8 @@ class BuscarAlumnoSystem {
             
             if (result.success) {
                 this.mostrarExito('Credencial desbloqueada correctamente');
+                this.alumnoActual.bloqueado = false;
+                this.actualizarEstadoCredencial();
             } else {
                 this.mostrarError('Error al desbloquear credencial');
             }
@@ -457,15 +526,14 @@ class BuscarAlumnoSystem {
     }
 
     mostrarExito(mensaje) {
-        this.mostrarEstado(mensaje, 'success');
+        this.mostrarNotificacion(mensaje, 'success');
     }
 
     mostrarError(mensaje) {
-        this.mostrarEstado(mensaje, 'error');
+        this.mostrarNotificacion(mensaje, 'error');
     }
 
-    mostrarEstado(mensaje, tipo) {
-        // Crear notificación temporal
+    mostrarNotificacion(mensaje, tipo) {
         const notification = document.createElement('div');
         notification.className = `notification ${tipo}`;
         notification.textContent = mensaje;
@@ -512,5 +580,5 @@ class BuscarAlumnoSystem {
 
 // Inicializar sistema
 document.addEventListener('DOMContentLoaded', () => {
-    new BuscarAlumnoSystem();
+    new SistemaAlumnos();
 });

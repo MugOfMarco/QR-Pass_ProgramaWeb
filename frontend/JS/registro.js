@@ -1,4 +1,4 @@
-// registro.js - VERSIÓN ACTUALIZADA PARA NUEVA BD
+// registro.js - VERSIÓN CORREGIDA (DETECCIÓN DE FINES DE SEMANA)
 class RegistroSystem {
     constructor() {
         this.apiBase = 'http://localhost:3000/api';
@@ -13,6 +13,9 @@ class RegistroSystem {
             'entrada_sin_credencial': 3,
             'justificado': 4
         };
+
+        // Mapeo de días en español (CORREGIDO)
+        this.diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     }
 
     initEventListeners() {
@@ -53,7 +56,6 @@ class RegistroSystem {
         if (boleta.length < 5) return;
 
         try {
-            // ✅ CAMBIO: Usar nuevo endpoint
             const response = await fetch(`${this.apiBase}/alumno/${boleta}`);
 
             if (!response.ok) {
@@ -86,17 +88,28 @@ class RegistroSystem {
 
             console.log('Datos seleccionados:', { puerta, tipo, tipoEntrada });
 
+            // ✅ VERIFICAR SI ES FIN DE SEMANA PRIMERO
+            const hoy = new Date();
+            const diaSemana = hoy.getDay(); // 0 = domingo, 6 = sábado
+            
+            if (diaSemana === 0 || diaSemana === 6) {
+                console.log('🔒 Es fin de semana - No hay clases');
+                
+                // Mostrar mensaje especial para fines de semana
+                this.mostrarResultadoFinSemana(alumnoData, puerta, tipo);
+                return;
+            }
+
             let idTipoRegistro;
             let tieneRetardo = false;
             let sinCredencial = false;
 
-            // ✅ LÓGICA CORREGIDA con IDs correctos
+            // Lógica para días entre semana
             if (tipo === 'entrada') {
                 sinCredencial = tipoEntrada === 'manual';
                 tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
                 
                 if (tieneRetardo && sinCredencial) {
-                    // Para retardo + sin_credencial, creamos DOS registros
                     idTipoRegistro = this.tiposRegistro.retardo; // ID 2
                 } else if (tieneRetardo) {
                     idTipoRegistro = this.tiposRegistro.retardo; // ID 2
@@ -120,7 +133,7 @@ class RegistroSystem {
 
             console.log('Resultado del registro:', resultado);
 
-            // ✅ Si es retardo + sin_credencial, crear registro adicional para sin_credencial
+            // Si es retardo + sin_credencial, crear registro adicional para sin_credencial
             if (tieneRetardo && sinCredencial && tipo === 'entrada') {
                 await this.crearRegistroBD(
                     alumnoData.alumno.boleta,
@@ -141,17 +154,16 @@ class RegistroSystem {
     async verificarRetardoSimple(horario) {
         console.log('🔍 Verificando retardo...');
 
-        const hoy = new Date().getDay();
-        if (hoy === 0 || hoy === 6) {
-            console.log('Fin de semana, no hay retardos');
-            return false;
-        }
+        const hoy = new Date();
+        const diaSemana = hoy.getDay();
+        const diaActual = this.diasSemana[diaSemana];
 
-        const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-        const diaActual = dias[hoy];
+        console.log(`Hoy es: ${diaActual} (día ${diaSemana})`);
 
         // ✅ CAMBIO: Usar nueva estructura de horario
         const horarioHoy = horario.filter(h => h.dia === diaActual);
+
+        console.log('Horario para hoy:', horarioHoy);
 
         if (horarioHoy.length === 0) {
             console.log('No hay clases hoy');
@@ -164,6 +176,8 @@ class RegistroSystem {
             return horaA - horaB;
         })[0];
 
+        console.log('Primera clase del día:', primeraClase);
+
         const horaActual = new Date();
         const [horasClase, minutosClase] = primeraClase.inicio.split(':').map(Number);
 
@@ -172,6 +186,10 @@ class RegistroSystem {
 
         const diferenciaMs = horaActual - horaInicioClase;
         const diferenciaMinutos = Math.floor(diferenciaMs / (1000 * 60));
+
+        console.log(`Hora actual: ${horaActual.toLocaleTimeString()}`);
+        console.log(`Hora clase: ${horaInicioClase.toLocaleTimeString()}`);
+        console.log(`Diferencia: ${diferenciaMinutos} minutos`);
 
         const esRetardo = diferenciaMinutos > 20;
 
@@ -189,7 +207,6 @@ class RegistroSystem {
             boleta, puerta, id_tipo_registro
         });
 
-        // ✅ CAMBIO: Usar nuevo formato de datos
         const response = await fetch(`${this.apiBase}/registros`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -210,18 +227,42 @@ class RegistroSystem {
         return result;
     }
 
+    // ✅ NUEVO MÉTODO PARA FINES DE SEMANA
+    mostrarResultadoFinSemana(alumnoData, puerta, tipo) {
+        const alumno = alumnoData.alumno;
+        const ahora = new Date();
+        const horaActual = this.formatearHora(ahora);
+        const diaSemana = ahora.getDay();
+        const nombreDia = this.diasSemana[diaSemana];
+
+        // Mostrar datos del alumno
+        document.getElementById('nombre-output').value = alumno.nombre;
+        document.getElementById('boleta-output').value = alumno.boleta;
+        document.getElementById('grupo-output').value = alumno.nombre_grupo;
+        document.getElementById('horario-output').value = 'FIN DE SEMANA - SIN CLASES';
+        document.getElementById('retardos-output').value = alumno.retardos || 0;
+        document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0;
+
+        // Mensaje especial para fin de semana
+        const puertaFormateada = this.formatearNombrePuerta(puerta);
+        const mensaje = `${nombreDia.toUpperCase()} - SIN CLASES - ${tipo.toUpperCase()} registrada - Puerta: ${puertaFormateada} - Hora: ${horaActual}`;
+        
+        this.mostrarEstado(mensaje, 'warning');
+
+        setTimeout(() => {
+            document.getElementById('boleta-input').value = '';
+        }, 2000);
+    }
+
     mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, idTipoRegistro) {
         const alumno = alumnoData.alumno;
         const ahora = new Date();
         const horaActual = this.formatearHora(ahora);
 
-        // ✅ CAMBIO: Usar nuevos nombres de campos
         document.getElementById('nombre-output').value = alumno.nombre;
         document.getElementById('boleta-output').value = alumno.boleta;
         document.getElementById('grupo-output').value = alumno.nombre_grupo;
         document.getElementById('horario-output').value = this.obtenerHorarioTexto(alumnoData.horario);
-
-        // ✅ CAMBIO: Usar info_alumno para contadores
         document.getElementById('retardos-output').value = alumno.retardos || 0;
         document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0;
 
@@ -246,7 +287,6 @@ class RegistroSystem {
         
         let tipo = tipos[idTipoRegistro] || 'entrada_normal';
         
-        // Si tenemos retardo y sin credencial, mostrar ambos
         if (tieneRetardo && sinCredencial) {
             return 'retardo_sin_credencial';
         }
@@ -286,7 +326,15 @@ class RegistroSystem {
 
         if (statusIndicator && statusMessage) {
             statusMessage.textContent = mensaje;
-            statusIndicator.style.backgroundColor = tipo === 'success' ? '#4CAF50' : '#f44336';
+            
+            // Colores diferentes para cada tipo
+            const colores = {
+                'success': '#4CAF50',
+                'error': '#f44336',
+                'warning': '#ff9800'  // Naranja para advertencias
+            };
+            
+            statusIndicator.style.backgroundColor = colores[tipo] || '#4CAF50';
         }
     }
 
