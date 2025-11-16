@@ -1,4 +1,4 @@
-// backend/server.js - VERSIÓN CORREGIDA PARA HORA LOCAL
+// backend/server.js - VERSIÓN SOLO STORED PROCEDURES
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -21,45 +21,115 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'n0m3l0',
-    database: 'CECYT9',
-    port: 3306,
-    timezone: '-06:00' // ← ¡IMPORTANTE! Agregar timezone de México
+    password: 'Qeqrqt131415',
+    database: 'cecyt9',
+    port: 3306
 };
 
-// --- ENDPOINTS ---
+// --- FUNCIÓN HELPER PARA EJECUTAR STORED PROCEDURES ---
+async function ejecutarSP(nombreSP, parametros = []) {
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [results] = await connection.query(`CALL ${nombreSP}(?)`, parametros);
+        return results;
+    } finally {
+        await connection.end();
+    }
+}
+
+// --- ENDPOINTS EXCLUSIVAMENTE CON STORED PROCEDURES ---
 
 // Endpoint básico para probar
 app.get('/api/test', (req, res) => {
-    res.json({ message: '✅ API funcionando correctamente' });
+    res.json({ message: 'API funcionando correctamente' });
 });
 
-// Endpoint para obtener alumno básico
-// Obtener incidencias de un alumno (actualizado)
-app.get('/api/incidencias/alumno/:boleta', async (req, res) => {
+// Obtener datos completos del alumno usando SP
+app.get('/api/alumno/:boleta', async (req, res) => {
     try {
-        const { boleta } = req.params;
+        const boleta = parseInt(req.params.boleta);
+        
+        const results = await ejecutarSP('sp_obtener_alumno_completo', [boleta]);
+
+        if (results[0].length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Alumno no encontrado' 
+            });
+        }
+
+        res.json({
+            success: true,
+            alumno: results[0][0],
+            horario: results[1],
+            materiasAcreditadas: results[2]
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo alumno:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor' 
+        });
+    }
+});
+
+// Crear registro de entrada/salida usando SP
+app.post('/api/registros', async (req, res) => {
+    try {
+        const { boleta, puerta, id_tipo_registro } = req.body;
+        
+        console.log('[REGISTRO] Datos recibidos:', { boleta, puerta, id_tipo_registro });
         
         const connection = await mysql.createConnection(dbConfig);
         
-        // ✅ Obtener registros que son incidencias (no salidas ni entradas normales)
-        // Y que NO tengan reporte de justificación
-        const [rows] = await connection.query(
-            `SELECT r.* 
-             FROM Registros r
-             LEFT JOIN Reportes rep ON r.id_registro = rep.id_registro
-             WHERE r.Boleta = ? 
-             AND r.tipo IN ('retardo', 'sin_credencial')  -- ← Solo tipos individuales ahora
-             AND rep.id_registro IS NULL  -- Solo incidencias no justificadas
-             ORDER BY r.Registro DESC`,
-            [boleta]
-        );
+        try {
+            // Crear registro usando SP
+            const [result] = await connection.query(
+                'CALL sp_crear_registro(?, ?, ?)', 
+                [boleta, puerta, id_tipo_registro]
+            );
+            
+            const id_registro = result[0][0].id_registro;
+            
+            // Si es incidencia, incrementar contador usando SP
+            if (id_tipo_registro === 2 || id_tipo_registro === 4) {
+                const tipo_incidencia = id_tipo_registro === 2 ? 'retardo' : 'sin_credencial';
+                await connection.query(
+                    'CALL sp_actualizar_contadores_alumno(?, ?, ?)',
+                    [boleta, tipo_incidencia, 'incrementar']
+                );
+            }
+            
+            res.json({ 
+                success: true, 
+                message: 'Registro creado correctamente',
+                id_registro: id_registro
+            });
+            
+        } finally {
+            await connection.end();
+        }
+        
+    } catch (error) {
+        console.error('❌ Error creando registro:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error creando registro: ' + error.message
+        });
+    }
+});
 
-        await connection.end();
+// Obtener incidencias del alumno usando SP
+app.get('/api/incidencias/alumno/:boleta', async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        
+        const results = await ejecutarSP('sp_obtener_incidencias_alumno', [boleta]);
 
         res.json({ 
             success: true, 
-            incidencias: rows 
+            incidencias: results[0] 
         });
         
     } catch (error) {
@@ -71,260 +141,155 @@ app.get('/api/incidencias/alumno/:boleta', async (req, res) => {
     }
 });
 
-// Crear reporte de justificación
-// Endpoint corregido para crear reportes
-app.post('/api/reportes', async (req, res) => {
+// Crear justificación usando SP
+app.post('/api/justificaciones', async (req, res) => {
     try {
-        const { id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte } = req.body;
+        const { id_registro, justificacion, id_tipo_anterior } = req.body;
         
-        console.log('[REPORTE] Datos recibidos:', {
-            id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte
-        });
+        console.log('[JUSTIFICACION] Datos recibidos:', { id_registro, justificacion, id_tipo_anterior });
         
         const connection = await mysql.createConnection(dbConfig);
-
-        // Convertir fechas ISO a formato MySQL
-        const convertirFechaMySQL = (fechaISO) => {
-            if (!fechaISO) return new Date().toISOString().slice(0, 19).replace('T', ' ');
-            
-            const fecha = new Date(fechaISO);
-            // Ajustar a zona horaria México (UTC-6)
-            const offsetMexico = -6 * 60 * 60 * 1000; // UTC-6 en milisegundos
-            const fechaMexico = new Date(fecha.getTime() + offsetMexico);
-            
-            return fechaMexico.toISOString().slice(0, 19).replace('T', ' ');
-        };
-
-        const fechaIncidenciaMySQL = convertirFechaMySQL(fecha_incidencia);
-        const fechaReporteMySQL = convertirFechaMySQL(fecha_reporte);
         
-        console.log('[REPORTE] Fechas convertidas:', {
-            fechaIncidenciaMySQL,
-            fechaReporteMySQL
-        });
-        
-        const [result] = await connection.query(
-            `INSERT INTO Reportes (id_registro, tipo_incidencia, fecha_incidencia, justificacion, fecha_reporte) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [id_registro, tipo_incidencia, fechaIncidenciaMySQL, justificacion, fechaReporteMySQL]
-        );
-
-        await connection.end();
-
-        res.json({ 
-            success: true, 
-            message: 'Reporte creado correctamente',
-            id_reporte: result.insertId
-        });
+        try {
+            const [result] = await connection.query(
+                'CALL sp_crear_justificacion(?, ?, ?)', 
+                [id_registro, justificacion, id_tipo_anterior]
+            );
+            
+            const id_justificacion = result[0][0].id_justificacion;
+            
+            res.json({ 
+                success: true, 
+                message: 'Justificación creada correctamente',
+                id_justificacion: id_justificacion
+            });
+            
+        } finally {
+            await connection.end();
+        }
         
     } catch (error) {
-        console.error('❌ Error creando reporte:', error);
+        console.error('❌ Error creando justificación:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Error creando reporte: ' + error.message,
-            sql: error.sql
+            message: 'Error creando justificación: ' + error.message
         });
     }
 });
 
-// Ruta para obtener datos completos del alumno con horario
-app.get('/api/horarios/alumno/:boleta', async (req, res) => {
-    const boleta = req.params.boleta;
-
-    console.log(`[DEBUG] Recibí boleta: [${boleta}] (Tipo: ${typeof boleta})`);
-
+// Bloquear/Desbloquear credencial usando SP
+app.put('/api/alumnos/bloquear/:boleta', async (req, res) => {
     try {
+        const boleta = parseInt(req.params.boleta);
+        
         const connection = await mysql.createConnection(dbConfig);
         
-        const [alumnoRows] = await connection.query(
-            `SELECT a.Boleta, a.Nombre, a.Grupo, a.Sin_credencial, a.Retardos, 
-                    a.Puerta_abierta, c.nombre as carrera, ea.estado as estado_academico
-             FROM ALumnos a 
-             LEFT JOIN Carrera c ON a.id_carrera = c.id_carrera 
-             LEFT JOIN EstadoAcademico ea ON a.id_estado_academico = ea.id_estado
-             WHERE a.Boleta = ?`,
-            [boleta]
-        );
-
-        if (alumnoRows.length === 0) {
-            await connection.end();
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Alumno no encontrado' 
+        try {
+            await connection.query(
+                'CALL sp_actualizar_contadores_alumno(?, ?, ?)',
+                [boleta, 'bloqueado', 'incrementar'] // Usamos el mismo SP para bloquear
+            );
+            
+            res.json({ 
+                success: true, 
+                message: 'Credencial bloqueada correctamente'
             });
-        }
-
-        const alumno = alumnoRows[0];
-
-        const [horarioRows] = await connection.query(
-            `SELECT ha.Dia, ha.Hora, ha.HoraInicio, ha.HoraFin, 
-                    m.nombre as materia, ha.Activa
-             FROM HorarioAlumno ha
-             JOIN Materia m ON ha.id_materia = m.id_materia
-             WHERE ha.Boleta = ?
-             ORDER BY 
-                 FIELD(ha.Dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'),
-                 ha.Hora`,
-            [boleta]
-        );
-
-        // CALCULAR PRIMERA Y ÚLTIMA HORA
-        let primeraHora = null;
-        let ultimaHora = null;
-
-        if (horarioRows.length > 0) {
-            const horasOrdenadas = horarioRows
-                .map(h => h.HoraInicio)
-                .sort();
             
-            primeraHora = horasOrdenadas[0];
-            ultimaHora = horasOrdenadas[horasOrdenadas.length - 1];
-            
-            alumno.horarioFormateado = `${primeraHora.substring(0, 5)} - ${ultimaHora.substring(0, 5)}`;
-        } else {
-            alumno.horarioFormateado = "Sin horario";
+        } finally {
+            await connection.end();
         }
+        
+    } catch (error) {
+        console.error('Error bloqueando credencial:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error bloqueando credencial' 
+        });
+    }
+});
 
-        const [acreditadasRows] = await connection.query(
-            `SELECT m.nombre, ma.fecha_acreditacion
-             FROM MateriasAcreditadas ma
-             JOIN Materia m ON ma.id_materia = m.id_materia
-             WHERE ma.boleta = ?`,
-            [boleta]
-        );
+app.put('/api/alumnos/desbloquear/:boleta', async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        
+        const connection = await mysql.createConnection(dbConfig);
+        
+        try {
+            await connection.query(
+                'CALL sp_actualizar_contadores_alumno(?, ?, ?)',
+                [boleta, 'bloqueado', 'decrementar'] // Usamos el mismo SP para desbloquear
+            );
+            
+            res.json({ 
+                success: true, 
+                message: 'Credencial desbloqueada correctamente'
+            });
+            
+        } finally {
+            await connection.end();
+        }
+        
+    } catch (error) {
+        console.error('Error desbloqueando credencial:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error desbloqueando credencial' 
+        });
+    }
+});
 
-        await connection.end();
+// Obtener foto del alumno (si tienes un SP para esto)
+app.get('/api/alumnos/foto/:boleta', async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        
+        // Si tienes un SP para fotos, úsalo aquí
+        // const results = await ejecutarSP('sp_obtener_foto_alumno', [boleta]);
+        
+        // Por ahora retornamos un placeholder
+        res.json({ 
+            success: true, 
+            foto: null // o la URL de la foto si la obtienes del SP
+        });
+        
+    } catch (error) {
+        console.error('Error obteniendo foto:', error);
+        res.json({ 
+            success: false, 
+            message: 'Error obteniendo foto' 
+        });
+    }
+});
 
-        res.json({
+// Endpoint para diagnóstico usando SPs
+app.get('/api/diagnostico/alumno/:boleta', async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        
+        // Usamos el SP principal para obtener datos del alumno
+        const results = await ejecutarSP('sp_obtener_alumno_completo', [boleta]);
+        
+        const alumno = results[0][0] || null;
+        const incidenciasSinJustificar = results[0].filter(row => 
+            !row.justificado // Asumiendo que tu SP retorna este campo
+        ).length;
+
+        res.json({ 
             success: true,
             alumno: alumno,
-            horario: horarioRows,
-            horarioFormateado: alumno.horarioFormateado,
-            materiasAcreditadas: acreditadasRows
+            incidencias_sin_justificar: incidenciasSinJustificar
         });
-
+        
     } catch (error) {
-        console.error('Error en la consulta:', error);
+        console.error('Error en diagnóstico:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Error interno del servidor' 
+            message: 'Error en diagnóstico' 
         });
-    }
-});
-
-// ✅ ENDPOINT MODIFICADO - Crear registros separados para retardo_sin_credencial
-app.post('/api/registros', async (req, res) => {
-    try {
-        const { boleta, grupo, puerta, registro, tipo, tieneRetardo, sinCredencial } = req.body;
-        
-        console.log(`[REGISTRO] Datos recibidos:`, {
-            boleta, grupo, puerta, tipo, tieneRetardo, sinCredencial
-        });
-        
-        const connection = await mysql.createConnection(dbConfig);
-        
-        // CONVERTIR fecha ISO a formato MySQL
-        const fechaMySQL = new Date(registro).toISOString().slice(0, 19).replace('T', ' ');
-        
-        let resultados = [];
-        
-        // ✅ MODIFICACIÓN: Si es retardo_sin_credencial, crear 2 registros separados
-        if (tipo === 'retardo_sin_credencial') {
-            console.log(`[REGISTRO] Creando 2 registros separados para retardo_sin_credencial`);
-            
-            // Registro 1: Retardo
-            const [result1] = await connection.query(
-                'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
-                [boleta, grupo, puerta, fechaMySQL, 'retardo']
-            );
-            resultados.push(result1);
-            
-            // Registro 2: Sin credencial
-            const [result2] = await connection.query(
-                'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
-                [boleta, grupo, puerta, fechaMySQL, 'sin_credencial']
-            );
-            resultados.push(result2);
-            
-            console.log(`[REGISTRO] Creados 2 registros: Retardo(ID:${result1.insertId}), SinCredencial(ID:${result2.insertId})`);
-            
-        } else {
-            // Registro normal (entrada, salida, retardo individual, sin_credencial individual)
-            const [result] = await connection.query(
-                'INSERT INTO Registros (Boleta, Grupo, Puerta, Registro, tipo) VALUES (?, ?, ?, ?, ?)',
-                [boleta, grupo, puerta, fechaMySQL, tipo]
-            );
-            resultados.push(result);
-            console.log(`[REGISTRO] Insertado con ID: ${result.insertId}`);
-        }
-
-        // ✅ ACTUALIZAR CONTADORES SOLO AL REGISTRAR (NO al justificar)
-        if (tipo !== 'salida') {
-            console.log(`[REGISTRO] Actualizando contadores para boleta ${boleta}`);
-            
-            let updateQuery = 'UPDATE ALumnos SET ';
-            const updates = [];
-            const params = [];
-            
-            if (tieneRetardo) {
-                updates.push('Retardos = Retardos + 1');
-            }
-            if (sinCredencial) {
-                updates.push('Sin_credencial = Sin_credencial + 1');
-            }
-            
-            if (updates.length > 0) {
-                updateQuery += updates.join(', ') + ' WHERE Boleta = ?';
-                params.push(boleta);
-                
-                await connection.query(updateQuery, params);
-                console.log(`[REGISTRO] Contadores actualizados: ${updates.join(', ')}`);
-            }
-        }
-
-        await connection.end();
-
-        res.json({ 
-            success: true, 
-            message: 'Registro(s) creado(s) correctamente',
-            tipo: tipo,
-            ids_registros: resultados.map(r => r.insertId),
-            registros_creados: resultados.length
-        });
-        
-    } catch (error) {
-        console.error('❌ Error creando registro:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error creando registro: ' + error.message,
-            sql: error.sql
-        });
-    }
-});
-
-// Endpoint para ver registros recientes (para debug)
-app.get('/api/registros/recientes', async (req, res) => {
-    try {
-        const connection = await mysql.createConnection(dbConfig);
-        const [rows] = await connection.query(
-            'SELECT * FROM Registros ORDER BY id_registro DESC LIMIT 10'
-        );
-        await connection.end();
-        
-        res.json({ success: true, registros: rows });
-    } catch (error) {
-        console.error('Error obteniendo registros:', error);
-        res.status(500).json({ success: false, message: 'Error obteniendo registros' });
     }
 });
 
 // --- Inicia el servidor ---
 app.listen(PORT, () => {
-    console.log(`✅ Servidor API corriendo en http://localhost:${PORT}`);
-    console.log(`📊 Endpoints disponibles:`);
-    console.log(`   http://localhost:${PORT}/api/test`);
-    console.log(`   http://localhost:${PORT}/api/alumno/2024090001`);
-    console.log(`   http://localhost:${PORT}/api/horarios/alumno/2024090001`);
-    console.log(`   http://localhost:${PORT}/api/registros`);
-    console.log(`   http://localhost:${PORT}/api/registros/recientes ← Para debug`);
+    console.log(`Servidor API corriendo en http://localhost:${PORT}`);
 });
