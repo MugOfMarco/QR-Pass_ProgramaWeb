@@ -1,67 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>QR Pass</title>
-        <link rel="icon" href="./imgs/logo(2).png" type="image/svg+xml">
-        <link rel="stylesheet" href="./css/styleestructura.css">
-    
-    </head>
-    
-    <body>
-        <header class="site-header">
-            <div class="header-container-main">
-                <div class="title-main">
-                    <h1>QR Pass</h1>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - QR Pass</title>
+    <link rel="stylesheet" href="../css/login.css">
+</head>
 
-                    <img src="./imgs/logo(2).png" class="logo" alt="">
+<body>
+    <header class="site-header">
+        <div class="header-container-main">
+            <div class="title-main">
+                <h1>QR Pass</h1>
+                <img src="./imgs/logo(2).png" class="logo" alt="Logo QR Pass">
+            </div>
+        </div>
+    </header>
+    
+    <div class="main-container">
 
+        <div class="login-box">
+            <h2>Iniciar Sesión</h2>
+            
+            <form action="/loginServlet" method="POST">
+                
+                <div class="input-group">
+                    <label for="username">Usuario:</label>
+                    <input type="text" id="username" name="username" placeholder="Escribe tu usuario" required>
                 </div>
 
-            </div>
-        </header>
+                <div class="input-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" name="password" placeholder="Escribe tu contraseña" required>
+                </div>
 
-        <div class="container">
+                <button type="submit" class="btn-login">Ingresar</button>
 
-            <a href="./frontend/Entrada_Salida.html">
-                Entrada y Salida
-            </a>
-
-            <a href="./frontend/Incidencias.html">
-                Incidencias
-            </a>
-
-            <a href="./frontend/BuscarAlumno.html">
-                Buscar Alumno
-            </a>
-
-            <a href="./frontend/BloquearCredencial.html">
-                Bloquear Credencial
-            </a>
-
-            <a href="./frontend/DescargasBD.html">
-                Descargar Respaldo BD
-            </a>
-
-            <a href="./frontend/ModificarAlumno.html">
-                Modificar Alumno
-            </a>
-
-            <a href="./frontend/RegistrarAlumno.html">
-                Registrar Alumno
-            </a>
+                </form>
+        </div>
         </div>
 
+    <footer class="site-header">
+        <div class="footer-container-main">
+            <p>2024 QR Pass. Todos los derechos reservados.</p>
+        </div>  
+    </footer>
 
-        <footer class="site-header">
-            
-            <div class="footer-container-main">
-                <p>2024 QR Pass. Todos los derechos reservados.</p>
-            </div>  
-        </footer>
-
-    </body>
-
-
+</body>
 </html>
