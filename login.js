@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log(`Login exitoso como: ${data.tipo}`);
                     
                     if (data.tipo === 'Administrador') {
-                        window.location.href = '/admin-dashboard.html'; 
+                        window.location.href = '/menu.html'; 
                     } 
                     else if (data.tipo === 'Prefecto') {
                         window.location.href = '/Entrada_Salida.html'; 
