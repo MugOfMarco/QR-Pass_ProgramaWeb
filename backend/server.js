@@ -1,6 +1,7 @@
-// backend/server.js - VERSIÓN FINAL COMPLETA (Login + SPs)
+// backend/server.js - VERSIÓN FINAL Y CONSOLIDADA
 
-// 1. Importaciones
+// 1. Importaciones y Configuración de DOTENV
+require('dotenv').config(); // Lee el archivo .env
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -10,42 +11,43 @@ const session = require('express-session');
 
 // 2. Configuración de la App
 const app = express();
-const PORT = 3000;
+const PORT = process.env.SERVER_PORT || 3000;
 
-// 3. Configuración de la Base de Datos
+// 3. Configuración de la Base de Datos (Leyendo del .env)
 const dbConfig = {
-    host: 'localhost',
-    user: 'root',
-    password: 'n0m3l0', // Tu contraseña actual
-    database: 'cecyt9',
-    port: 3306
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD, 
+    database: process.env.DB_DATABASE,
+    port: process.env.DB_PORT
 };
 
 // 4. Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Configuración de Sesión (Para el Login)
+// Configuración de Sesión
 app.use(session({
-    secret: 'cecyt9_clave_secreta_super_segura', // Puedes cambiar esto
+    secret: process.env.SESSION_SECRET, // Clave de seguridad crítica
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // 'false' porque estamos en localhost (http)
+    cookie: { secure: false } // 'false' para localhost
 }));
 
-// 5. Archivos Estáticos (Frontend)
-// Sirve archivos desde la carpeta 'frontend' (donde está index.html, css, js)
-app.use(express.static(path.join(__dirname, '../frontend')));
-// Sirve archivos desde la raíz (donde tienes login.html y login.js)
-app.use(express.static(path.join(__dirname, '..')));
+// Archivos Estáticos (Frontend)
+// Asumimos que los archivos están en la raíz y/o una carpeta 'frontend'
+app.use(express.static(path.join(__dirname, '..'))); 
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 
-// 6. Función Helper para ejecutar Stored Procedures (Limpia el código)
+// 5. FUNCIÓN HELPER para ejecutar Stored Procedures
 async function ejecutarSP(nombreSP, parametros = []) {
     const connection = await mysql.createConnection(dbConfig);
     try {
-        // Prepara los signos de interrogación según la cantidad de parámetros
+        // Genera la cadena de ? basándose en la cantidad de parámetros
         const placeholders = parametros.map(() => '?').join(',');
+        // La sintaxis 'CALL nombreSP(?, ?, ?)' se construye dinámicamente
         const [results] = await connection.query(`CALL ${nombreSP}(${placeholders})`, parametros);
         return results;
     } finally {
@@ -54,65 +56,91 @@ async function ejecutarSP(nombreSP, parametros = []) {
 }
 
 
-// ==========================================
-// RUTAS DE NAVEGACIÓN (VISTAS HTML)
-// ==========================================
+// =================================================================
+// RUTAS DE NAVEGACIÓN (Protección y Redirección)
+// =================================================================
 
-// Ruta Raíz -> Manda al Login
+// Ruta Raíz ('/') -> ACTÚA COMO REDIRECTOR INTELIGENTE
 app.get('/', (req, res) => {
-    // Si ya hay sesión iniciada, redirigir según rol (Opcional, por ahora mandamos al login)
-    res.sendFile(path.join(__dirname, '../login.html')); 
+    // 1. Verificar si ya hay una sesión activa
+    if (req.session.user) {
+        
+        // Redirigir según el rol
+        if (req.session.user.tipo === 'Administrador') {
+            return res.redirect('/admin-dashboard.html');
+        } 
+        else if (req.session.user.tipo === 'Prefecto') {
+            return res.redirect('/Entrada_Salida.html');
+        }
+    }
+
+    // 2. Si NO hay sesión activa, servir la página de Login (index.html)
+    res.sendFile(path.join(__dirname, '..', 'index.html')); 
 });
 
-// Ruta Protegida -> El Escáner QR (Solo Prefectos)
-app.get('/index.html', (req, res) => {
-    // Verificar si el usuario está logueado y es Prefecto
-    if (req.session.user && req.session.user.tipo === 'Prefecto') {
-        res.sendFile(path.join(__dirname, '../frontend/index.html'));
+
+// Ruta Protegida: ESCÁNER (Entrada_Salida.html)
+app.get('/Entrada_Salida.html', (req, res) => {
+    // 1. Requerir Login
+    if (!req.session.user) {
+        return res.redirect('/'); 
+    }
+    
+    // 2. Verificar Permisos (Prefecto o Administrador)
+    const userType = req.session.user.tipo;
+    if (userType === 'Prefecto' || userType === 'Administrador') {
+        res.sendFile(path.join(__dirname, '..', 'Entrada_Salida.html'));
     } else {
-        // Si no tiene permiso, regresar al login
-        res.redirect('/');
+        res.status(403).send('Permiso Denegado: Rol insuficiente.');
+    }
+});
+
+// Ruta Protegida: DASHBOARD ADMIN (admin-dashboard.html)
+app.get('/admin-dashboard.html', (req, res) => {
+    // 1. Requerir Login
+    if (!req.session.user) {
+        return res.redirect('/');
+    }
+    
+    // 2. Verificar Permisos (Solo Administrador)
+    const userType = req.session.user.tipo;
+    if (userType === 'Administrador') {
+        res.sendFile(path.join(__dirname, '..', 'admin-dashboard.html'));
+    } else {
+        res.status(403).send('Permiso Denegado. Solo administradores pueden acceder.');
     }
 });
 
 
-// ==========================================
+// =================================================================
 // API ENDPOINTS (LÓGICA)
-// ==========================================
+// =================================================================
 
-// --- AUTENTICACIÓN (LOGIN / LOGOUT) ---
-
+// --- 1. AUTENTICACIÓN (LOGIN) ---
 app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-
-    // --- AÑADE ESTA LÍNEA (1) ---
-    console.log(`[DEBUG LOGIN] Intento de: ${usuario}`);
+    // Coincide con las claves que el frontend envía: 'username' y 'password'
+    const { username, password } = req.body; 
 
     try {
         // 1. Buscar usuario en BD usando SP
-        const results = await ejecutarSP('sp_obtener_usuario_login', [usuario]);
+        // El SP espera el username
+        const results = await ejecutarSP('sp_obtener_usuario_login', [username]); 
         const usuariosEncontrados = results[0];
 
-        if (usuariosEncontrados.length === 0) {
-            // --- AÑADE ESTA LÍNEA (2) ---
-            console.log(`[DEBUG LOGIN] 🛑 Error: Usuario ${usuario} no encontrado en BD.`);
-            return res.status(401).json({ success: false, message: 'Usuario no encontrado' });
+        if (!usuariosEncontrados || usuariosEncontrados.length === 0) {
+            return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
         }
 
         const userDb = usuariosEncontrados[0];
 
-        // --- AÑADE ESTA LÍNEA (3) ---
-        console.log(`[DEBUG LOGIN] Hash BD recuperado: ${userDb.password}`);
-
-        // 2. Verificar contraseña encriptada
-        // NOTA: Asegúrate de haber insertado usuarios con contraseñas hasheada en la BD
+        // 2. Verificar contraseña encriptada (bcrypt)
         const passwordValida = await bcrypt.compare(password, userDb.password);
 
         if (!passwordValida) {
-            return res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
+            return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
         }
 
-        // 3. Guardar sesión
+        // 3. Crear Sesión
         req.session.user = {
             id: userDb.id_usuario,
             usuario: userDb.usuario,
@@ -132,11 +160,11 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// --- 2. LOGOUT ---
 app.post('/api/logout', (req, res) => {
     req.session.destroy();
     res.json({ success: true, message: 'Sesión cerrada correctamente' });
 });
-
 
 // --- LÓGICA DE ALUMNOS (Usando tus SPs) ---
 
@@ -312,9 +340,8 @@ app.get('/api/diagnostico/alumno/:boleta', async (req, res) => {
 });
 
 
-// 7. Iniciar Servidor
+// 6. Iniciar Servidor
 app.listen(PORT, () => {
     console.log(`✅ Servidor API corriendo en http://localhost:${PORT}`);
     console.log(`   - Login: http://localhost:${PORT}/`);
-    console.log(`   - Scanner: http://localhost:${PORT}/index.html`);
 });
