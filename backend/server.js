@@ -16,7 +16,7 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'Qeqrqt131415', // Tu contraseña actual
+    password: 'n0m3l0', // Tu contraseña actual
     database: 'cecyt9',
     port: 3306
 };
@@ -83,18 +83,26 @@ app.get('/index.html', (req, res) => {
 // --- AUTENTICACIÓN (LOGIN / LOGOUT) ---
 
 app.post('/api/login', async (req, res) => {
-    const { usuario, password } = req.body;
+    const { username, password } = req.body;
+
+    // --- AÑADE ESTA LÍNEA (1) ---
+    console.log(`[DEBUG LOGIN] Intento de: ${usuario}`);
 
     try {
         // 1. Buscar usuario en BD usando SP
         const results = await ejecutarSP('sp_obtener_usuario_login', [usuario]);
         const usuariosEncontrados = results[0];
 
-        if (!usuariosEncontrados || usuariosEncontrados.length === 0) {
+        if (usuariosEncontrados.length === 0) {
+            // --- AÑADE ESTA LÍNEA (2) ---
+            console.log(`[DEBUG LOGIN] 🛑 Error: Usuario ${usuario} no encontrado en BD.`);
             return res.status(401).json({ success: false, message: 'Usuario no encontrado' });
         }
 
         const userDb = usuariosEncontrados[0];
+
+        // --- AÑADE ESTA LÍNEA (3) ---
+        console.log(`[DEBUG LOGIN] Hash BD recuperado: ${userDb.password}`);
 
         // 2. Verificar contraseña encriptada
         // NOTA: Asegúrate de haber insertado usuarios con contraseñas hasheada en la BD

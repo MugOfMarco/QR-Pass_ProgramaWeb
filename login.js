@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Login exitoso');
                     
                     // Redirige al usuario a la página principal de la aplicación
-                    window.location.href = 'Entrada&Salida.html'; 
+                    window.location.href = 'Entrada_Salida.html'; 
                 
                 } else {
                     // Si el servidor dijo "Error" (código 401 o 500)
