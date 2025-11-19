@@ -15,11 +15,19 @@ const PORT = process.env.SERVER_PORT || 3000;
 
 // 3. Configuración de la Base de Datos (Leyendo del .env)
 const dbConfig = {
+<<<<<<< HEAD
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD, 
     database: process.env.DB_DATABASE,
     port: process.env.DB_PORT
+=======
+    host: 'localhost',
+    user: 'root',
+    password: 'n0m3l0', // Tu contraseña actual
+    database: 'cecyt9',
+    port: 3306
+>>>>>>> af4deee7b36ffb380254a054a61be2acd5cc9ecb
 };
 
 // 4. Middlewares
