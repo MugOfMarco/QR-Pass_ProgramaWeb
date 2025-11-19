@@ -16,7 +16,7 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: 'Qeqrqt131415', // Tu contraseña actual
+    password: 'n0m3l0', // Tu contraseña actual
     database: 'cecyt9',
     port: 3306
 };
