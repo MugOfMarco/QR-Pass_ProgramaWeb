@@ -195,48 +195,50 @@ app.get('/api/alumno/:boleta', async (req, res) => {
 
 // Crear registro de entrada/salida
 app.post('/api/registros', async (req, res) => {
+    // 1. Recibir datos, incluyendo las nuevas banderas booleanas
+    const { boleta, puerta, id_tipo_registro, tieneRetardo, sinCredencial } = req.body;
+    
+    // (Asegúrate de que la función ejecutarSP soporte múltiples parámetros)
+    
+    const connection = await mysql.createConnection(dbConfig);
+    
     try {
-        const { boleta, puerta, id_tipo_registro } = req.body;
+        // 2. Crear registro principal
+        const [result] = await connection.query(
+            'CALL sp_crear_registro(?, ?, ?)', 
+            [boleta, puerta, id_tipo_registro]
+        );
         
-        console.log('[REGISTRO] Datos recibidos:', { boleta, puerta, id_tipo_registro });
-        
-        const connection = await mysql.createConnection(dbConfig);
-        
-        try {
-            // 1. Crear registro
-            const [result] = await connection.query(
-                'CALL sp_crear_registro(?, ?, ?)', 
-                [boleta, puerta, id_tipo_registro]
+        // 3. Actualizar contadores DE FORMA INDIVIDUAL (según las banderas)
+        if (tieneRetardo) {
+            await connection.query(
+                'CALL sp_actualizar_contadores_alumno(?, ?, ?)', 
+                [boleta, 'retardo', 'incrementar']
             );
-            
-            const id_registro = result[0][0].id_registro;
-            
-            // 2. Actualizar contadores si es incidencia
-            // Tipos: 2 = Retardo, 4 = Justificado (pero aquí debe ser Sin Credencial, id 3 según tu SQL)
-            // REVISIÓN: En tu SQL pusiste: 2='retardo', 3='sin_credencial'. Ajusto la lógica:
-            
-            if (id_tipo_registro === 2 || id_tipo_registro === 3) { 
-                const tipo_incidencia = id_tipo_registro === 2 ? 'retardo' : 'sin_credencial';
-                
-                await connection.query(
-                    'CALL sp_actualizar_contadores_alumno(?, ?, ?)',
-                    [boleta, tipo_incidencia, 'incrementar']
-                );
-            }
-            
-            res.json({ 
-                success: true, 
-                message: 'Registro creado correctamente',
-                id_registro: id_registro
-            });
-            
-        } finally {
-            await connection.end();
         }
+        
+        if (sinCredencial) {
+            await connection.query(
+                'CALL sp_actualizar_contadores_alumno(?, ?, ?)', 
+                [boleta, 'sin_credencial', 'incrementar']
+            );
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Registro creado correctamente',
+            id_registro: result[0][0].id_registro
+        });
         
     } catch (error) {
         console.error('❌ Error creando registro:', error);
-        res.status(500).json({ success: false, message: 'Error creando registro: ' + error.message });
+        // Si el error es una violación de clave foránea (Boleta no existe), el frontend ya lo manejó
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error creando registro: ' + error.message
+        });
+    } finally {
+         await connection.end();
     }
 });
 
