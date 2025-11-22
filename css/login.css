@@ -1,0 +1,207 @@
+/* ======================================= */
+/* 1. RESET Y BASE                         */
+/* ======================================= */
+:root {
+    /* Paleta de Colores heredada de tu header */
+    --color-ipn-dark: #3d1422; /* Tono oscuro del degradado */
+    --color-ipn-main: #5c1f33; /* Tono principal (Guinda/Marrón) */
+    --color-accent: #ffb800;  /* Dorado/Amarillo para resaltar */
+    --color-background-soft: #f0f0f5; /* Fondo claro general */
+    --color-text: #333;
+    --color-white: #ffffff;
+    --color-error: #d32f2f;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background: var(--color-background-soft);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ======================================= */
+/* 2. ENCABEZADO (Mantenemos tu estilo)    */
+/* ======================================= */
+.site-header {
+    /* Manteniendo tu degradado original */
+    background: linear-gradient(135deg, var(--color-ipn-main) 0%, var(--color-ipn-dark) 100%);
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
+}
+
+.title-main {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centrar título en el login */
+}
+
+.title-main h1 {
+    color: var(--color-white);
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.logo {
+    margin-left: 15px;
+    filter: brightness(0) invert(1); /* Hace que el logo sea blanco para contrastar */
+}
+
+.logo img {
+    width: 60px;
+    height: 60px;
+}
+
+/* ======================================= */
+/* 3. CONTENEDOR PRINCIPAL (CENTRADO)      */
+/* ======================================= */
+.main-container {
+    flex-grow: 1; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 20px;
+}
+
+/* ======================================= */
+/* 4. CAJA DE LOGIN (ESTILO "CABRÓN")      */
+/* ======================================= */
+.login-box {
+    background: var(--color-white);
+    padding: 50px 35px;
+    border-radius: 12px; /* Esquinas ligeramente curvas */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), /* Sombra fuerte */
+                0 0 0 5px rgba(92, 31, 51, 0.1); /* Anillo sutil del color principal */
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.login-box:hover {
+    transform: translateY(-5px); /* Pequeño efecto de elevación al pasar el mouse */
+}
+
+.login-box h2 {
+    color: var(--color-ipn-main);
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+/* 5. INPUTS Y TOGGLE */
+
+.input-username,
+.input-password {
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.input-username label,
+.input-password label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.input-username input,
+.password-wrapper input {
+    width: 100%;
+    padding: 14px 15px;
+    border: 2px solid #bdbdbd;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    color: var(--color-text);
+    transition: border-color 0.3s;
+}
+
+.input-username input:focus,
+.password-wrapper input:focus {
+    border-color: var(--color-ipn-main);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(92, 31, 51, 0.3);
+}
+
+/* CONTENEDOR DEL ICONO */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    cursor: pointer;
+    color: var(--color-ipn-main);
+    font-size: 1.3rem;
+    transition: color 0.2s;
+}
+
+.password-toggle:hover {
+    color: var(--color-accent);
+}
+
+/* 6. BOTÓN DE INGRESO */
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background-color: var(--color-ipn-main);
+    color: var(--color-white);
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    margin-top: 15px;
+    box-shadow: 0 4px 10px rgba(92, 31, 51, 0.4);
+}
+
+.btn-login:hover {
+    background-color: #4a192b; 
+    transform: translateY(-2px);
+}
+
+/* 7. MENSAJE DE ERROR */
+#error-message {
+    color: var(--color-error);
+    font-weight: bold;
+    margin-top: 20px;
+    font-size: 1rem;
+}
+
+/* 8. FOOTER */
+.footer-container-main {
+    background-color: var(--color-ipn-dark);
+    color: var(--color-white);
+    padding: 15px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* ===== RESPONSIVE BÁSICO (Para móviles) ===== */
+@media (max-width: 500px) {
+    .login-box {
+        margin: 20px;
+        padding: 30px 20px;
+    }
+    
+    .title-main h1 {
+        font-size: 2rem;
+    }
+    
+    .input-username input,
+    .password-wrapper input {
+        padding: 12px 10px;
+        font-size: 1rem;
+    }
+}
