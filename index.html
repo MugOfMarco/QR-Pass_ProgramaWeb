@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - QR Pass</title>
-    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="./css/login.css">
 </head>
 
 <body>
@@ -16,14 +17,14 @@
             </div>
         </div>
     </header>
-    
+
     <div class="main-container">
 
         <div class="login-box">
             <h2>Iniciar Sesión</h2>
-            
+
             <form id="login-form">
-                
+
                 <div class="input-username">
                     <label for="username">Usuario:</label>
                     <input type="text" id="username" name="username" placeholder="Escribe tu usuario" required>
@@ -31,12 +32,22 @@
 
                 <div class="input-password">
                     <label for="password">Contraseña:</label>
-                    <input type="password" id="password" name="password" placeholder="Escribe tu contraseña" required>
+
+                    <div class="password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Escribe tu contraseña"
+                            required>
+
+                        <span class="password-toggle" id="togglePassword">
+                            👁️
+                        </span>
+                    </div>
                 </div>
 
-                <button type="submit" class="btn-login"></button>
+                <button type="submit" class="btn-login">
+                    Iniciar Sesión
+                </button>
 
-                </form>
+            </form>
         </div>
 
     </div>
@@ -51,4 +62,5 @@
     <script src="login.js"></script>
 
 </body>
+
 </html>

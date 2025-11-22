@@ -5,6 +5,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message'); // Asume que el ID existe
+    const passwordInput = document.getElementById('password');
+    const toggleButton = document.getElementById('togglePassword');
+
+    if (passwordInput && toggleButton) {
+        toggleButton.addEventListener('click', function (e) {
+            
+            // Alterna el atributo 'type'
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Opcional: Cambia el ícono (👁️ <-> 🔒)
+            this.textContent = type === 'password' ? '👁️' : '🔒';
+        });
+    }
 
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
