@@ -69,6 +69,15 @@ class RegistroSystem {
             const data = await response.json();
 
             if (data.success) {
+                const bloqueadoResponse = await fetch(`${this.apiBase}/verificar-bloqueo/${boleta}`);
+                const bloqueadoData = await bloqueadoResponse.json();
+
+            if (bloqueadoData.success && bloqueadoData.bloqueado) {
+                alert('ALUMNO BLOQUEADO - No se puede registrar entrada/salida');
+                this.mostrarError('ALUMNO BLOQUEADO - Contacte con administración');
+                document.getElementById('boleta-input').value = '';
+                return;
+    }
                 await this.procesarRegistro(data, tipoEntrada);
             } else {
                 this.mostrarError('Alumno no encontrado');
@@ -333,3 +342,5 @@ class RegistroSystem {
 document.addEventListener('DOMContentLoaded', () => {
     new RegistroSystem();
 });
+
+data.success

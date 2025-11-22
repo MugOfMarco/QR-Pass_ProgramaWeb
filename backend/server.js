@@ -347,3 +347,97 @@ app.listen(PORT, () => {
     console.log(`✅ Servidor API corriendo en http://localhost:${PORT}`);
     console.log(`   - Login: http://localhost:${PORT}/`);
 });
+
+// Agregar estos endpoints al archivo server.js después de los endpoints existentes
+
+// Endpoint para verificar estado de credencial
+app.get('/api/verificar-estado-credencial/:boleta', async (req, res) => {
+    const { boleta } = req.params;
+    
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [results] = await connection.query(
+            'SELECT bloqueado FROM Info_alumno WHERE boleta = ?',
+            [boleta]
+        );
+        
+        if (results.length > 0) {
+            res.json({ 
+                bloqueado: results[0].bloqueado === 1,
+                boleta: boleta
+            });
+        } else {
+            res.status(404).json({ 
+                error: 'Alumno no encontrado',
+                boleta: boleta
+            });
+        }
+    } catch (error) {
+        console.error('Error en verificar-estado-credencial:', error);
+        res.status(500).json({ 
+            error: 'Error en el servidor',
+            message: error.message
+        });
+    } finally {
+        await connection.end();
+    }
+});
+
+// Endpoint para bloquear/desbloquear credencial
+app.post('/api/bloquear-credencial', async (req, res) => {
+    const { boleta, bloqueado } = req.body;
+    
+    if (!boleta || bloqueado === undefined) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Faltan parámetros: boleta y bloqueado son requeridos' 
+        });
+    }
+    
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [result] = await connection.query(
+            'UPDATE Info_alumno SET bloqueado = ? WHERE boleta = ?',
+            [bloqueado, boleta]
+        );
+        
+        if (result.affectedRows > 0) {
+            res.json({ 
+                success: true, 
+                message: bloqueado === 1 ? 'Credencial bloqueada' : 'Credencial desbloqueada',
+                boleta: boleta,
+                bloqueado: bloqueado
+            });
+        } else {
+            res.status(404).json({ 
+                success: false, 
+                message: 'Alumno no encontrado' 
+            });
+        }
+    } catch (error) {
+        console.error('Error en bloquear-credencial:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error en el servidor: ' + error.message
+        });
+    } finally {
+        await connection.end();
+    }
+});
+
+app.get('/api/verificar-bloqueo/:boleta', async (req, res) => {
+    const { boleta } = req.params;
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [results] = await connection.query(
+            'SELECT bloqueado FROM Info_alumno WHERE boleta = ?',
+            [boleta]
+        );
+        res.json({ 
+            success: true,
+            bloqueado: results.length > 0 && results[0].bloqueado === 1
+        });
+    } finally {
+        await connection.end();
+    }
+});
