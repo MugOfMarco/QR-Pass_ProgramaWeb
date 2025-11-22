@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 
-const passwordPlana = 'qwerty12345'; // <--- Pon aquí la contraseña que quieras
+const passwordPlana = 'asdfgh123'; // <--- Pon aquí la contraseña que quieras
 const saltRounds = 10;
 
 bcrypt.hash(passwordPlana, saltRounds, function(err, hash) {
