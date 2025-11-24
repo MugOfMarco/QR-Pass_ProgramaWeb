@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modificar Alumno</title>
-    <link rel="stylesheet" href="../css/modificarAlumno.css"> </head>
+    <title>Gestión de Alumnos</title>
+    <link rel="stylesheet" href="../css/modificarAlumno.css">
+</head>
 <body>
 
     <header class="site-header">
@@ -14,7 +15,7 @@
                     <img src="../imgs/menu.png" alt="">
                 </button>
             </div>
-            <h1 class="title">Modificar Alumno</h1>
+            <h1 class="title">Gestión de Alumnos</h1>
             <div class="logo">
                 <img src="../imgs/logo(2).png" alt="">
             </div>
@@ -27,22 +28,13 @@
                 <a href="./Entrada_Salida.html">Registro de entrada y salida</a>
             </li>
             <li>
-                <a href="./Incidencias.html">Incidencias</a>
-            </li>
-            <li>
                 <a href="./BuscarAlumno.html">Buscar alumno</a>
-            </li>
-            <li>
-                <a href="./BloquearCredencial.html">Bloquear credencial</a>
             </li>
             <li>
                 <a href="./DescargasBD.html">Descargar BD</a>
             </li>
             <li>
-                <a href="./ModificarAlumno.html">Modificar alumno</a>
-            </li>
-            <li>
-                <a href="./RegistrarAlumno.html">Registrar alumno</a>
+                <a href="./GestionAlumnos.html">Gestión de alumnos</a>
             </li>
         </ul>
     </nav>
@@ -51,11 +43,13 @@
     
     <div class="main-container">
 
+        <!-- Sección de búsqueda -->
         <section class="student-search-section">
             <div class="container">
+                <h2 class="section-title">Buscar Alumno</h2>
                 <div class="input-group">
                     <label for="search-boleta" class="label-highlight">Ingresar boleta</label>
-                    <input type="text" id="search-boleta-mod" name="search-boleta-mod" class="input-solo-numeros">
+                    <input type="text" id="search-boleta" name="search-boleta" class="input-solo-numeros" placeholder="Buscar por boleta...">
                 </div>
                 <div class="action-button-container">
                     <button type="button" id="btn-buscar">Buscar Alumno</button>
@@ -63,56 +57,63 @@
             </div>
         </section>
 
-        <section class="student-edit-section">
+        <!-- Sección de formulario -->
+        <section class="student-form-section">
             <div class="container">
+                <h2 class="section-title" id="form-title">Registrar Nuevo Alumno</h2>
                 
-                <fieldset class="student-data-form">
-                    <legend>Datos del Alumno</legend>
-                    
-                    <div class="field">
-                        <label for="edit-boleta">Boleta</label>
-                        <input type="text" id="edit-boleta" name="boleta" readonly>
-                    </div>
+                <form id="student-form">
+                    <fieldset class="student-data-form">
+                        <legend id="fieldset-legend">Datos del Alumno</legend>
+                        
+                        <div class="field">
+                            <label for="form-boleta">Boleta</label>
+                            <input type="text" id="form-boleta" name="boleta" required class="input-solo-numeros">
+                        </div>
 
-                    <div class="field">
-                        <label for="edit-nombre">Nombre del Alumno</label>
-                        <input type="text" id="edit-nombre" name="nombre" disabled>
-                    </div>
+                        <div class="field">
+                            <label for="form-nombre">Nombre del Alumno</label>
+                            <input type="text" id="form-nombre" name="nombre" required class="input-solo-letras">
+                        </div>
 
-                    <div class="field">
-                        <label for="edit-grupo">Grupo</label>
-                        <input type="text" id="edit-grupo" name="grupo" disabled>
-                    </div>
+                        <div class="field">
+                            <label for="form-grupo">Grupo</label>
+                            <input type="text" id="form-grupo" name="grupo">
+                        </div>
 
-                    <div class="field">
-                        <label for="edit-horario">Horario</label>
-                        <input type="text" id="edit-horario" name="horario" disabled>
-                    </div>
-                    
-                    <div class="field">
-                        <label for="edit-estatus">Estatus</label>
-                        <select id="edit-estatus" name="estatus" disabled>
-                            <option value="activo">Activo</option>
-                            <option value="inactivo">Inactivo</option>
-                            <option value="egresado">Egresado</option>
-                        </select>
-                    </div>
+                        <div class="field">
+                            <label for="form-horario">Horario</label>
+                            <input type="text" id="form-horario" name="horario">
+                        </div>
+                        
+                        <div class="field">
+                            <label for="form-estatus">Estatus</label>
+                            <select id="form-estatus" name="estatus">
+                                <option value="activo" selected>Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                                <option value="egresado">Egresado</option>
+                            </select>
+                        </div>
 
-                    <div class="checkbox-field">
-                        <input type="checkbox" id="edit-puertas-abiertas" name="puertas-abiertas" disabled>
-                        <label for="edit-puertas-abiertas">Permitir puertas abiertas</label>
+                        <div class="checkbox-field">
+                            <input type="checkbox" id="form-puertas-abiertas" name="puertas-abiertas">
+                            <label for="form-puertas-abiertas">Permitir puertas abiertas</label>
+                        </div>
+
+                    </fieldset>
+
+                    <div class="action-buttons">
+                        <button type="submit" id="btn-guardar" class="button-primary">
+                            Registrar Alumno
+                        </button>
+                        <button type="button" id="btn-eliminar" class="button-danger" style="display: none;">
+                            Eliminar Alumno
+                        </button>
+                        <button type="button" id="btn-cancelar" class="button-secondary">
+                            Limpiar Campos
+                        </button>
                     </div>
-
-                </fieldset>
-
-                <div class="action-buttons">
-                    <button type="button" id="btn-guardar" class="button-primary" disabled>
-                        Guardar Cambios
-                    </button>
-                    <button type="button" id="btn-cancelar" class="button-secondary" disabled>
-                        Cancelar
-                    </button>
-                </div>
+                </form>
 
             </div>
         </section>
@@ -121,10 +122,11 @@
 
     <footer class="site-footer">
         <div class="footer-container">
-            <p>foote r del qr pass.</p>
+            <p>Footer del QR Pass</p>
         </div>
     </footer>
 
     <script src="./JS/validaciones.js"></script>
+    <script src="./JS/gestionAlumnos.js"></script>
 </body>
 </html>
