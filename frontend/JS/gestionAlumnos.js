@@ -231,4 +231,4 @@ class GestionAlumnos {
 // Inicialización del sistema al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
     new GestionAlumnos();
-});
+}); 
