@@ -1,3 +1,4 @@
+//este es mi archivo original
 // gestionAlumnos.js - Lógica para Registrar, Buscar y Modificar Alumnos
 
 class GestionAlumnos {
