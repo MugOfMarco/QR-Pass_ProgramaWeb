@@ -9,7 +9,7 @@ require('dotenv').config();
 
 // Importar Routers
 const authRouter = require('./routers/auth.router'); 
-// const alumnosRouter = require('./routers/alumnos.router'); // Cuando lo crees
+const alumnosRouter = require('./routers/alumnos.router'); 
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3000;
@@ -38,6 +38,8 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 // ==========================================
 // Todas las rutas de autenticación definidas en auth.router.js se prefijan con /api
 app.use('/api', authRouter); 
+app.use('/api', alumnosRouter);
+
 // app.use('/api', alumnosRouter); // Descomentar al crear el router de alumnos
 
 
@@ -56,7 +58,7 @@ app.get('/', (req, res) => {
             return res.redirect('/Entrada_Salida.html'); 
         }
     }
-    res.sendFile(path.join(__dirname, '..', 'index.html')); // index.html es el login
+    res.sendFile(path.join(__dirname, '..', 'login.html')); // index.html es el login
 });
 
 // Ruta Protegida: ESCÁNER (Ejemplo, usa la misma lógica de server.js)
