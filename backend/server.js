@@ -9,18 +9,16 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 
+//modelos es todas las querys, donde se define una clase y lo unico que hacemos es llamarla desde controller
+//controller es la validación antes de pasasr a modelos
+//router es el mtedodo (get, post, put, delete) y la ruta, tambien se pone el 
+
+
 // 2. Configuración de la App
 const app = express();
 const PORT = process.env.SERVER_PORT || 3000;
 
-// 3. Configuración de la Base de Datos (Leyendo del .env)
-const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    port: process.env.DB_PORT
-};
+const __dirname = path.resolve();
 
 // 4. Middlewares
 app.use(cors());
