@@ -1,11 +1,9 @@
-// registro.js - VERSIÓN FINAL Y CONSOLIDADA
 class RegistroSystem {
     constructor() {
         this.apiBase = 'http://localhost:3000/api';
         this.urlPrefix = 'https://coatl.cecyt9.ipn.mx/app/qr_system/accessprocess.php?boleta=';
         this.initEventListeners();
         
-        // Mapeo de tipos de registro a IDs (según tu tabla Tipo_registro)
         this.tiposRegistro = {
             'entrada_normal': 0,
             'salida': 1, 
@@ -14,7 +12,6 @@ class RegistroSystem {
             'justificado': 4
         };
 
-        // Mapeo de días en español
         this.diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     }
 
@@ -56,8 +53,8 @@ class RegistroSystem {
         if (boleta.length < 5) return;
 
         try {
-            // Usa el endpoint que devuelve toda la información del alumno
-            const response = await fetch(`${this.apiBase}/alumno/${boleta}`);
+            // ✅ CAMBIO 1: Cambiar "/alumno/" por "/alumnos/"
+            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -69,15 +66,17 @@ class RegistroSystem {
             const data = await response.json();
 
             if (data.success) {
-                const bloqueadoResponse = await fetch(`${this.apiBase}/verificar-bloqueo/${boleta}`);
+                // ✅ CAMBIO 2: Agregar "/alumnos/" al inicio
+                const bloqueadoResponse = await fetch(`${this.apiBase}/alumnos/verificar-bloqueo/${boleta}`);
                 const bloqueadoData = await bloqueadoResponse.json();
 
-            if (bloqueadoData.success && bloqueadoData.bloqueado) {
-                alert('ALUMNO BLOQUEADO - No se puede registrar entrada/salida');
-                this.mostrarError('ALUMNO BLOQUEADO - Contacte con administración');
-                document.getElementById('boleta-input').value = '';
-                return;
-    }
+                if (bloqueadoData.success && bloqueadoData.bloqueado) {
+                    alert('ALUMNO BLOQUEADO - No se puede registrar entrada/salida');
+                    this.mostrarError('ALUMNO BLOQUEADO - Contacte con administración');
+                    document.getElementById('boleta-input').value = '';
+                    return;
+                }
+                
                 await this.procesarRegistro(data, tipoEntrada);
             } else {
                 this.mostrarError('Alumno no encontrado');
@@ -99,7 +98,6 @@ class RegistroSystem {
             const hoy = new Date();
             const diaSemana = hoy.getDay();
             
-            // 1. VERIFICAR FIN DE SEMANA
             if (diaSemana === 0 || diaSemana === 6) {
                 this.mostrarResultadoFinSemana(alumnoData, puerta, tipo);
                 return;
@@ -109,30 +107,28 @@ class RegistroSystem {
             let tieneRetardo = false;
             let sinCredencial = false;
 
-            // 2. LÓGICA DE INCIDENCIA
             if (tipo === 'entrada') {
-                sinCredencial = tipoEntrada === 'manual'; // True si es manual
+                sinCredencial = tipoEntrada === 'manual';
                 tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
                 
-                // ASIGNACIÓN DE ID (Prioridad: Retardo > Sin Credencial > Normal)
                 if (tieneRetardo) {
-                    idTipoRegistro = this.tiposRegistro.retardo; // ID 2
+                    idTipoRegistro = this.tiposRegistro.retardo;
                 } else if (sinCredencial) {
-                    idTipoRegistro = this.tiposRegistro.entrada_sin_credencial; // ID 3
+                    idTipoRegistro = this.tiposRegistro.entrada_sin_credencial;
                 } else {
-                    idTipoRegistro = this.tiposRegistro.entrada_normal; // ID 0
+                    idTipoRegistro = this.tiposRegistro.entrada_normal;
                 }
             } else if (tipo === 'salida') {
-                idTipoRegistro = this.tiposRegistro.salida; // ID 1
+                idTipoRegistro = this.tiposRegistro.salida;
             }
 
-            // 3. CREAR REGISTRO PRINCIPAL (El backend se encarga de los contadores)
+            // ✅ ESTA LÍNEA YA ESTÁ BIEN (usa /api/registros)
             await this.crearRegistroBD(
                 alumnoData.alumno.boleta,
                 puerta,
                 idTipoRegistro,
-                tieneRetardo, // Bandera de retardo
-                sinCredencial // Bandera de sin credencial
+                tieneRetardo,
+                sinCredencial
             );
 
             this.mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, idTipoRegistro);
@@ -148,7 +144,6 @@ class RegistroSystem {
         const diaSemana = hoy.getDay();
         const diaActualConAcentos = this.diasSemana[diaSemana];
         
-        // FIX: Normalizar a minúsculas y sin acentos para coincidir con la BD
         const diaActual = diaActualConAcentos
             .toLowerCase()
             .normalize("NFD")
@@ -173,7 +168,6 @@ class RegistroSystem {
         const diferenciaMs = hoy - horaInicioClase;
         const diferenciaMinutos = Math.floor(diferenciaMs / (1000 * 60));
 
-        // Consideramos retardo si son más de 20 minutos
         return diferenciaMinutos > 20;
     }
 
@@ -185,8 +179,8 @@ class RegistroSystem {
                 boleta: parseInt(boleta),
                 puerta: puerta,
                 id_tipo_registro: id_tipo_registro,
-                tieneRetardo: tieneRetardo, // ENVIAMOS BANDERA
-                sinCredencial: sinCredencial // ENVIAMOS BANDERA
+                tieneRetardo: tieneRetardo,
+                sinCredencial: sinCredencial
             })
         });
 
@@ -199,14 +193,10 @@ class RegistroSystem {
         return result;
     }
 
-    // Métodos auxiliares (mostrarResultado, mostrarError, formatearHora, etc. van aquí)
-    // ... (Mantén el resto de tus métodos auxiliares) ...
-    
     convertirHoraAMinutos(horaString) {
         const [horas, minutos] = horaString.split(':').map(Number);
         return horas * 60 + minutos;
     }
-    //... (Otros métodos que no cambian)
     mostrarResultadoFinSemana(alumnoData, puerta, tipo) {
         const alumno = alumnoData.alumno;
         const ahora = new Date();

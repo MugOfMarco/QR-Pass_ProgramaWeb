@@ -1,33 +1,51 @@
-// backend/database/db.js
-
 const mysql = require('mysql2/promise');
-require('dotenv').config(); 
+require('dotenv').config();
 
-// Configuración de la Base de Datos (Leyendo del .env)
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD, 
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    port: process.env.DB_PORT
+    port: process.env.DB_PORT,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 };
 
-// FUNCIÓN HELPER para ejecutar Stored Procedures
+const pool = mysql.createPool(dbConfig);
+
 async function ejecutarSP(nombreSP, parametros = []) {
-    const connection = await mysql.createConnection(dbConfig);
+    const connection = await pool.getConnection();
     try {
         const placeholders = parametros.map(() => '?').join(',');
-        const [results] = await connection.query(`CALL ${nombreSP}(${placeholders})`, parametros);
+        const [results] = await connection.query(
+            `CALL ${nombreSP}(${placeholders})`,
+            parametros
+        );
         return results;
     } catch (error) {
-        // Enviar errores específicos del SP a la consola para debug
-        console.error(`Error al ejecutar SP ${nombreSP}:`, error);
+        console.error(`Error en SP ${nombreSP}:`, error.message);
         throw error;
     } finally {
-        await connection.end();
+        connection.release();
+    }
+}
+
+async function verificarConexion() {
+    try {
+        const connection = await pool.getConnection();
+        console.log('Conexión a MySQL establecida');
+        connection.release();
+        return true;
+    } catch (error) {
+        console.error('Error conectando a MySQL:', error.message);
+        return false;
     }
 }
 
 module.exports = {
-    ejecutarSP
+    ejecutarSP,
+    verificarConexion,
+    pool,
+    dbConfig
 };
