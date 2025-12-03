@@ -50,12 +50,20 @@ body {
 
 .logo {
     margin-left: 15px;
-    filter: brightness(0) invert(1); /* Hace que el logo sea blanco para contrastar */
+    /* filter: brightness(0) invert(1); */  /* ← Comentada para ver colores originales */
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .logo img {
     width: 60px;
     height: 60px;
+    object-fit: contain; /* Mantiene las proporciones de la imagen */
+    max-width: 100%;
+    max-height: 100%;
 }
 
 /* ======================================= */
@@ -197,6 +205,16 @@ body {
     
     .title-main h1 {
         font-size: 2rem;
+    }
+    
+    .logo {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .logo img {
+        width: 50px;
+        height: 50px;
     }
     
     .input-username input,

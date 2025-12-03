@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const session = require('express-session');
 
+<<<<<<< HEAD
 const authRoutes = require('./routes/auth.routes');
 const alumnosRoutes = require('./routes/alumnos.routes');
 const registrosRoutes = require('./routes/registros.routes');
@@ -15,6 +16,30 @@ const PORT = process.env.SERVER_PORT || 3000;
 app.use(cors({
     origin: `http://localhost:${PORT}`,
     credentials: true
+=======
+//modelos es todas las querys, donde se define una clase y lo unico que hacemos es llamarla desde controller
+//controller es la validación antes de pasasr a modelos
+//router es el mtedodo (get, post, put, delete) y la ruta, tambien se pone el 
+
+
+// 2. Configuración de la App
+const app = express();
+const PORT = process.env.SERVER_PORT || 3000;
+
+const __dirname = path.resolve();
+
+// 4. Middlewares
+app.use(cors());
+app.use(express.json()); // Para procesar req.body en formato JSON
+app.use(express.urlencoded({ extended: true })); // Para procesar datos de formularios estándar
+
+// Configuración de Sesión
+app.use(session({
+    secret: process.env.SESSION_SECRET, // Clave de seguridad CRÍTICA
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // 'false' para localhost
+>>>>>>> 0c61e1fff00ddc1f7e6011bd3b1c125f2cad8337
 }));
 
 app.use(express.json());
