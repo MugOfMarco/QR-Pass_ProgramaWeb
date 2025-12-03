@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (response.ok) {
                     if (data.tipo === 'Administrador') {
-                        window.location.href = '/menu.html';
+                        window.location.href = '/Entrada_Salida.html';
                     } else if (data.tipo === 'Prefecto') {
                         window.location.href = '/Entrada_Salida.html';
                     } else {

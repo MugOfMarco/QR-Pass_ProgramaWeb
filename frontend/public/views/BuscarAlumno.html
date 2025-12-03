@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscar Alumno</title>
     <link rel="stylesheet" href="../css/buscarAlumno.css">
 </head>
+
 <body>
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton"> 
+                <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton">
                     <img src="../imgs/menu.png" alt="">
                 </button>
             </div>
@@ -31,20 +33,20 @@
                 <a href="./BuscarAlumno.html">Buscar alumno</a>
             </li>
 
-            <li>
-                <a href="./DescargasBD.html">Descargar BD</a>
-            </li>
-            <li>
+            <li class="admin-only-link">
+
                 <a href="./ModificarAlumno.html">Modificar alumno</a>
-            </li>
-            <li>
-                <a href="./RegistrarAlumno.html">Registrar alumno</a>
-            </li>
+                </li>
+
+                <li class="admin-only-link">
+
+                    <a href="./RegistrarAlumno.html">Registrar alumno</a>
+                </li>
         </ul>
     </nav>
 
     <div id="menu-overlay" class="menu-overlay"></div>
-    
+
     <div class="main-container">
         <!-- Columna Izquierda: Datos del Alumno -->
         <section class="student-search-section">
@@ -119,9 +121,10 @@
                     <!-- Foto del estudiante a la izquierda -->
                     <div class="photo-container">
                         <div class="placeholder-box photo-box">
-                            <img id="student-photo" src="" alt="Foto del estudiante" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                            <img id="student-photo" src="" alt="Foto del estudiante"
+                                style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
                         </div>
-                        
+
                         <!-- Botones de credencial -->
                         <div class="credential-buttons">
                             <button type="button" id="btn-bloquear-credencial" class="btn-credential btn-block">
@@ -136,12 +139,12 @@
                     <!-- Sección de Incidencias -->
                     <div class="incidents-section">
                         <h2 class="section-title">Incidencias</h2>
-                        
+
                         <div class="table-container">
                             <table class="incidents-table">
                                 <thead>
                                     <tr>
-                                        
+
                                         <th width="120">Puerta</th>
                                         <th width="100">Fecha</th>
                                         <th width="80">Hora</th>
@@ -163,7 +166,7 @@
                 <!-- Controles de tabla (Select y botones de justificación) -->
                 <div class="justification-section">
                     <h3 class="justification-title">Justificación</h3>
-                    
+
                     <select name="item-selector" id="item-selector">
                         <option value="item1">Selecciona una justificación...</option>
                         <option value="item2">Se habló con el tutor/a</option>
@@ -195,7 +198,8 @@
             <p>© 2024 Sistema de Control Escolar - CECyT 9</p>
         </div>
     </footer>
-
-    <script src="./JS/buscarAlumno.js"></script>
+    <script src="../js/navigation.js"></script>
+    <script src="../js/buscarAlumno.js"></script>
 </body>
+
 </html>

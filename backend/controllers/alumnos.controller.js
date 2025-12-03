@@ -1,6 +1,9 @@
-const Alumno = require('../models/Alumno');
+// backend/controllers/alumnos.controller.js
 
-exports.obtenerAlumno = async (req, res) => {
+import Alumno from '../models/Alumno.js'; // Usamos la sintaxis ESM y añadimos la extensión .js
+
+// Función: Obtener datos completos del alumno (para escáner)
+const obtenerAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const alumnoData = await Alumno.obtenerCompleto(boleta);
@@ -28,12 +31,14 @@ exports.obtenerAlumno = async (req, res) => {
     }
 };
 
-exports.bloquearCredencial = async (req, res) => {
+// Función: Bloquear Credencial (Admin-only)
+const bloquearCredencial = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.bloquear(boleta);
+        // El Modelo Alumno.bloquear debe devolver un indicador de éxito/fracaso
+        const result = await Alumno.bloquear(boleta); 
 
-        if (!result) {
+        if (!result) { 
             return res.status(404).json({
                 success: false,
                 message: 'Alumno no encontrado'
@@ -54,7 +59,8 @@ exports.bloquearCredencial = async (req, res) => {
     }
 };
 
-exports.desbloquearCredencial = async (req, res) => {
+// Función: Desbloquear Credencial (Admin-only)
+const desbloquearCredencial = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const result = await Alumno.desbloquear(boleta);
@@ -80,7 +86,8 @@ exports.desbloquearCredencial = async (req, res) => {
     }
 };
 
-exports.verificarBloqueo = async (req, res) => {
+// Función: Verificar el estado de bloqueo
+const verificarBloqueo = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const result = await Alumno.verificarBloqueo(boleta);
@@ -106,7 +113,8 @@ exports.verificarBloqueo = async (req, res) => {
     }
 };
 
-exports.buscarAlumnos = async (req, res) => {
+// Función: Buscar alumnos por nombre/boleta (Admin)
+const buscarAlumnos = async (req, res) => {
     try {
         const { query } = req.query;
         const alumnos = await Alumno.buscar(query);
@@ -125,8 +133,8 @@ exports.buscarAlumnos = async (req, res) => {
     }
 };
 
-// Si necesitas obtener registros desde el controller de alumnos
-exports.obtenerRegistrosAlumno = async (req, res) => {
+// Función: Obtener registros de asistencia (Debería ir en registros.controller, pero la ajustamos)
+const obtenerRegistrosAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const alumno = await Alumno.obtenerCompleto(boleta);
@@ -138,7 +146,8 @@ exports.obtenerRegistrosAlumno = async (req, res) => {
             });
         }
 
-        // Aquí necesitarías importar el modelo Registro o tener un método en Alumno
+        // Si la lógica está aquí, se debería llamar a Alumno.obtenerRegistros o importar el Modelo Registro.
+        // Dado que ya tienes registros.controller.js, este endpoint está duplicado, pero lo mantenemos funcional:
         res.json({
             success: true,
             registros: [] // Placeholder
@@ -151,4 +160,17 @@ exports.obtenerRegistrosAlumno = async (req, res) => {
             message: 'Error obteniendo registros'
         });
     }
+};
+
+// =================================================================
+// Exportación Final (ESM)
+// =================================================================
+
+export {
+    obtenerAlumno,
+    bloquearCredencial,
+    desbloquearCredencial,
+    verificarBloqueo,
+    buscarAlumnos,
+    obtenerRegistrosAlumno
 };

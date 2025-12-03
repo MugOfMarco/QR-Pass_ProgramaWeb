@@ -1,23 +1,29 @@
-// backend/server.js
+// backend/server.js (Verificación de la sección de imports)
 
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const session = require('express-session');
+import 'dotenv/config'; 
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import session from 'express-session';
+import { fileURLToPath } from 'url'; 
 
-// 1. IMPORTACIÓN DE RUTAS (Routers) y Base de Datos (Core)
-// Ahora server.js sabe dónde encontrar los endpoints de la API
-const authRoutes = require('./routes/auth.routes'); 
-const alumnosRoutes = require('./routes/alumnos.routes');
-const registrosRoutes = require('./routes/registros.routes');
-const { verificarConexion } = require('./database/db'); // Necesario para el chequeo inicial
+// Importación de Routers
+import authRoutes from './routes/auth.routes.js'; 
+import alumnosRoutes from './routes/alumnos.routes.js';
+import registrosRoutes from './routes/registros.routes.js';
+
+// Importación de DB check (ESTA ES LA ÚNICA LÍNEA CORRECTA para DB)
+import { verificarConexion } from './database/db.js'; 
+
+// ... (El resto del código sigue)
+
+// AGREGAR o CONFIRMAR estas líneas después de importar 'path' y 'url'
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3000;
-
-// Necesario para que path.join funcione correctamente
-const __dirname = path.resolve(); 
 
 // 2. Middlewares Globales
 app.use(cors());
@@ -46,33 +52,29 @@ app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
 app.use((req, res, next) => {
     const ruta = req.path;
     
-    // Si es un archivo HTML (protegido)
     if (ruta.endsWith('.html')) {
         const paginasPublicas = ['/login.html', '/index.html']; 
         
+        // 1. CHEQUEO: Si la página es pública, simplemente pasa al siguiente middleware/ruta.
         if (paginasPublicas.includes(ruta)) {
             return next();
         }
         
+        // 2. CHEQUEO DE SESIÓN: Solo si la página NO es pública, verificamos la sesión.
         if (!req.session.user) {
-            return res.redirect('/login.html');
+            // Si intenta acceder a una página privada (ej. /Entrada_Salida.html) sin sesión,
+            // lo enviamos al login.html
+            return res.redirect('/login.html'); 
         }
 
         const userType = req.session.user.tipo;
 
-        // Reglas de acceso a páginas específicas
+        // 3. CHEQUEO DE ROL: Solo si tiene sesión, verificamos el rol.
         if (ruta === '/Entrada_Salida.html') {
             if (userType !== 'Prefecto' && userType !== 'Administrador') {
                 return res.status(403).send('<h1>Acceso Denegado</h1><p>No tienes permisos.</p><a href="/">Volver al inicio</a>');
             }
         }
-
-        // Puedes agregar más reglas aquí para otras páginas de admin (ej: /RegistrarAlumno.html)
-        // if (ruta === '/admin-dashboard.html' || ruta === '/RegistrarAlumno.html' || ruta === '/ModificarAlumno.html') {
-        //     if (userType !== 'Administrador') {
-        //         return res.status(403).send('<h1>Acceso Denegado</h1><p>Solo administradores.</p><a href="/">Volver al inicio</a>');
-        //     }
-        // }
     }
     
     next();
@@ -105,23 +107,21 @@ const rutasHTML = [
     '/DescargasBD.html',
     '/ModificarAlumno.html',
     '/RegistrarAlumno.html',
-    '/menu.html'
 ];
 
 rutasHTML.forEach(ruta => {
     app.get(ruta, (req, res) => {
-        const filePath = path.join(__dirname, '..', 'frontend', 'public', ruta);
-        // El middleware superior ya chequeó los permisos
+        // CORRECCIÓN: Agregamos 'views'
+        const filePath = path.join(__dirname, '..', 'frontend', 'public', 'views', ruta); 
         res.sendFile(filePath);
     });
 });
 
-
 // 6. Manejo de Errores (404 y 500)
 app.use((req, res) => {
-    // ... (Tu manejo de 404 está bien)
     if (req.accepts('html')) {
-        const filePath = path.join(__dirname, '..', 'frontend', 'public', '404.html');
+        // CORRECCIÓN: Agregamos 'views'
+        const filePath = path.join(__dirname, '..', 'frontend', 'public', 'views'); 
         res.status(404).sendFile(filePath);
     } else if (req.accepts('json')) {
         res.status(404).json({ success: false, message: 'Ruta no encontrada' });

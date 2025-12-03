@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,11 +8,12 @@
     <link rel="stylesheet" href="../css/en_sa.css">
 
 </head>
+
 <body>
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton"> 
+                <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton">
                     <img src="../imgs/menu.png" alt="">
                 </button>
             </div>
@@ -32,13 +34,13 @@
                 <a href="./BuscarAlumno.html">Buscar alumno</a>
             </li>
 
-            <li>
-                <a href="./DescargasBD.html">Descargar BD</a>
-            </li>
-            <li>
+            <li class="admin-only-link">
+
                 <a href="./ModificarAlumno.html">Modificar alumno</a>
             </li>
-            <li>
+
+            <li class="admin-only-link">
+
                 <a href="./RegistrarAlumno.html">Registrar alumno</a>
             </li>
         </ul>
@@ -48,54 +50,54 @@
 
     <div class="status-container">
         <div id="status-indicator"></div>
-        <h2 id="status-message">Esperando registro... </h2> 
+        <h2 id="status-message">Esperando registro... </h2>
 
-    <div class="main-container">
+        <div class="main-container">
 
-        <section>
-            <div class="container">
+            <section>
+                <div class="container">
 
-                <fieldset class="option-group">
-                    <legend>Puerta de ingreso</legend>
-                    <input type="radio" id="mexico-tacuba" name="puerta" value="mexico-tacuba" checked required>
-                    <label for="mexico">México-Tacuba</label>
-                    <input type="radio" id="mar" name="puerta" value="mar" required>
-                    <label for="mar">Mar-Mediterraneo</label>
-                </fieldset>
-            
-                <div class="placeholder-box Registro">
-                    <div class="inner-box">
-                    
+                    <fieldset class="option-group">
+                        <legend>Puerta de ingreso</legend>
+                        <input type="radio" id="mexico-tacuba" name="puerta" value="mexico-tacuba" checked required>
+                        <label for="mexico">México-Tacuba</label>
+                        <input type="radio" id="mar" name="puerta" value="mar" required>
+                        <label for="mar">Mar-Mediterraneo</label>
+                    </fieldset>
+
+                    <div class="placeholder-box Registro">
+                        <div class="inner-box">
+
+                        </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
 
-        <section>
-            <div class="container">
-                <fieldset class="option-group">
-                    <legend>Tipo</legend>
-                    <input type="radio" id="entrada" name="tipo" value="entrada" checked required>
-                <label for="entrada">Entrada</label>
-                <input type="radio" id="salida" name="tipo" value="salida" required>
-                <label for="salida">Salida</label>
-                </fieldset>
-            
-                <div class="placeholder-box info-box">
-                    
+            <section>
+                <div class="container">
+                    <fieldset class="option-group">
+                        <legend>Tipo</legend>
+                        <input type="radio" id="entrada" name="tipo" value="entrada" checked required>
+                        <label for="entrada">Entrada</label>
+                        <input type="radio" id="salida" name="tipo" value="salida" required>
+                        <label for="salida">Salida</label>
+                    </fieldset>
+
+                    <div class="placeholder-box info-box">
+
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-    </div>
-    
+        </div>
 
-    <div class="column-outputs">
+
+        <div class="column-outputs">
 
             <div class="text-entry field">
                 <label for="qr-input">Registro por QR</label>
-                <input type="text" id="boleta-input" name="qr-input" class="qr-input-url" >
+                <input type="text" id="boleta-input" name="qr-input" class="qr-input-url">
             </div>
 
             <div class="text-entry field">
@@ -131,9 +133,10 @@
 
             </div>
 
-    </div>
-
-    <script src="./JS/registro.js" defer></script>
-    <script src="./JS/validaciones.js" defer></script>
+        </div>
+        <script src="../js/navigation.js"></script>
+        <script src="../js/registro.js" defer></script>
+        <script src="../js/validaciones.js" defer></script>
 </body>
+
 </html>
