@@ -1,19 +1,23 @@
-const { ejecutarSP } = require('../database/db');
+// backend/models/Alumno.js
+
+// ANTES: const { ejecutarSP } = require('../database/db');
+import { ejecutarSP } from '../database/db.js'; // Importación ESM y añadimos la extensión .js
 
 class Alumno {
-    static async obtenerCompleto(boleta) {
-        const results = await ejecutarSP('sp_obtener_alumno_completo', [boleta]);
-        
-        if (!results[0] || results[0].length === 0) {
-            return null;
-        }
+    static async obtenerCompleto(boleta) {
+        const results = await ejecutarSP('sp_obtener_alumno_completo', [boleta]);
+        
+        if (!results[0] || results[0].length === 0) {
+            return null;
+        }
 
-        return {
-            info: results[0][0],
-            horario: results[1],
-            materiasAcreditadas: results[2]
-        };
-    }
+        // Aseguramos que la estructura de datos sea limpia para el Controller
+        return {
+            info: results[0][0],
+            horario: results[1],
+            materiasAcreditadas: results[2]
+        };
+    }
 
     static async buscar(query) {
         const results = await ejecutarSP('sp_buscar_alumnos', [query]);
@@ -46,4 +50,5 @@ class Alumno {
     }
 }
 
-module.exports = Alumno;
+// ANTES: module.exports = Alumno;
+export default Alumno;

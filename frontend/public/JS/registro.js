@@ -1,3 +1,5 @@
+// registro.js - VERSIÓN FINAL RESUELTA (con límite de 4 sin credencial)
+
 class RegistroSystem {
     constructor() {
         this.apiBase = 'http://localhost:3000/api';
@@ -90,6 +92,10 @@ class RegistroSystem {
         }
     }
 
+    // =================================================================
+    // FUNCIÓN DE PROCESAMIENTO (LÓGICA CONFLICTIVA RESUELTA)
+    // =================================================================
+
     async procesarRegistro(alumnoData, tipoEntrada) {
         try {
             const puertaSeleccionada = document.querySelector('input[name="puerta"]:checked');
@@ -111,19 +117,21 @@ class RegistroSystem {
             let tieneRetardo = false;
             let sinCredencial = false;
 
+            // 2. LÓGICA DE INCIDENCIA Y VALIDACIÓN DE LÍMITE (DE AMBAS VERSIONES)
             if (tipo === 'entrada') {
                 sinCredencial = tipoEntrada === 'manual';
                 tieneRetardo = await this.verificarRetardoConHorario(alumnoData.horario);
                 
+                // ASIGNACIÓN DE ID (Prioridad: Retardo > Sin Credencial > Normal)
                 if (tieneRetardo) {
-                    idTipoRegistro = this.tiposRegistro.retardo;
+                    idTipoRegistro = this.tiposRegistro.retardo; // ID 2
                 } else if (sinCredencial) {
-                    idTipoRegistro = this.tiposRegistro.entrada_sin_credencial;
+                    idTipoRegistro = this.tiposRegistro.entrada_sin_credencial; // ID 3
                 } else {
                     idTipoRegistro = this.tiposRegistro.entrada;
                 }
             } else if (tipo === 'salida') {
-                idTipoRegistro = this.tiposRegistro.salida;
+                idTipoRegistro = this.tiposRegistro.salida; // ID 1
             }
 
             await this.crearRegistroBD(
@@ -134,7 +142,8 @@ class RegistroSystem {
                 sinCredencial
             );
 
-            this.mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, idTipoRegistro);
+            // 4. Mostrar resultado con advertencia si aplica (Lógica de tu versión)
+            this.mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, idTipoRegistro, contadorActual);
 
         } catch (error) {
             console.error('Error en procesarRegistro:', error);
@@ -190,7 +199,7 @@ class RegistroSystem {
                 boleta: parseInt(boleta),
                 puerta: puerta,
                 id_tipo_registro: id_tipo_registro,
-                tieneRetardo: tieneRetardo,
+                tieneRetardo: tieneRetardo, 
                 sinCredencial: sinCredencial
             })
         });
@@ -203,6 +212,39 @@ class RegistroSystem {
 
         return result;
     }
+
+    mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, idTipoRegistro, contadorActual) {
+        const alumno = alumnoData.alumno;
+        const ahora = new Date();
+        const horaActual = this.formatearHora(ahora);
+
+        document.getElementById('nombre-output').value = alumno.nombre;
+        document.getElementById('boleta-output').value = alumno.boleta;
+        document.getElementById('grupo-output').value = alumno.nombre_grupo;
+        this.obtenerHorarioTexto(alumnoData.horario);
+        
+        // Los contadores no se actualizan en el frontend, se leen como están
+        document.getElementById('retardos-output').value = alumno.retardos || 0; 
+        document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0; 
+
+        const tipoRegistroTexto = this.obtenerTipoRegistroTexto(idTipoRegistro, tieneRetardo, sinCredencial);
+        let mensaje = this.generarMensajeResultado(tipoRegistroTexto, puerta, horaActual);
+
+        // ADVERTENCIA AL LLEGAR AL LÍMITE (Si es la tercera falta)
+        // Se asume que el contador actual AÚN NO incluye la falta que se acaba de registrar.
+        if (sinCredencial && contadorActual === 3) {
+            mensaje += ' ⚠️ PRÓXIMO SIN CREDENCIAL, NO PASA';
+            alert('⚠️ ADVERTENCIA: Próximo sin credencial, NO PASA');
+        }
+
+        this.mostrarEstado(mensaje, 'success');
+
+        setTimeout(() => {
+            document.getElementById('boleta-input').value = '';
+        }, 2000);
+    }
+    
+    // ... (El resto de métodos auxiliares va aquí: mostrarEstado, formatearHora, etc.)
 
     convertirHoraAMinutos(horaString) {
         const [horas, minutos] = horaString.split(':').map(Number);

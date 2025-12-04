@@ -1,11 +1,20 @@
-const Registro = require('../models/Registro');
-const Alumno = require('../models/Alumno');
+// backend/controllers/registros.controller.js
+// Lógica para crear registros y obtener reportes de asistencia.
 
-exports.crearRegistro = async (req, res) => {
+import Registro from '../models/Registro.js'; // Importación ESM del Modelo
+import Alumno from '../models/Alumno.js'; // Importación ESM para validar existencia
+
+
+// ===============================================
+// FUNCIÓN PRINCIPAL: CREAR REGISTRO DE ASISTENCIA
+// ===============================================
+
+const crearRegistro = async (req, res) => {
     try {
+        // Los datos vienen del frontend (registro.js)
         const { boleta, puerta, id_tipo_registro, tieneRetardo, sinCredencial } = req.body;
 
-        // Validar que el alumno existe
+        // 1. Validar que el alumno existe antes de registrar
         const alumno = await Alumno.obtenerCompleto(boleta);
         if (!alumno) {
             return res.status(404).json({
@@ -14,14 +23,14 @@ exports.crearRegistro = async (req, res) => {
             });
         }
 
-        // Crear registro principal
+        // 2. Crear registro principal (Llamando al Modelo de Registro)
         const registro = await Registro.crear({
             boleta,
             puerta,
             id_tipo_registro
         });
 
-        // Actualizar contadores si es necesario
+        // 3. Actualizar contadores si aplica (Llamando al Modelo de Registro)
         if (tieneRetardo) {
             await Registro.actualizarContadores(boleta, 'retardo', 'incrementar');
         }
@@ -30,18 +39,11 @@ exports.crearRegistro = async (req, res) => {
             await Registro.actualizarContadores(boleta, 'sin_credencial', 'incrementar');
         }
 
+        // 4. Respuesta de éxito
         res.json({
             success: true,
             message: 'Registro creado correctamente',
-            id_registro: registro.id_registro,
-            data: {
-                boleta,
-                puerta,
-                tipo_registro: id_tipo_registro,
-                tieneRetardo,
-                sinCredencial,
-                fecha: new Date().toISOString()
-            }
+            id_registro: registro.id_registro
         });
 
     } catch (error) {
@@ -53,17 +55,17 @@ exports.crearRegistro = async (req, res) => {
     }
 };
 
-exports.obtenerRegistrosPorAlumno = async (req, res) => {
+// ===============================================
+// FUNCIONES DE CONSULTA (R)
+// ===============================================
+
+const obtenerRegistrosPorAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         
-        // Verificar que el alumno existe
         const alumno = await Alumno.obtenerCompleto(boleta);
         if (!alumno) {
-            return res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
+            return res.status(404).json({ success: false, message: 'Alumno no encontrado' });
         }
 
         const registros = await Registro.obtenerPorAlumno(boleta);
@@ -76,19 +78,16 @@ exports.obtenerRegistrosPorAlumno = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error obteniendo registros:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error obteniendo registros'
-        });
+        console.error('Error obteniendo registros por alumno:', error);
+        res.status(500).json({ success: false, message: 'Error obteniendo registros' });
     }
 };
 
-exports.obtenerRegistrosPorFecha = async (req, res) => {
+const obtenerRegistrosPorFecha = async (req, res) => {
     try {
-        const { fecha } = req.params;
-        // Necesitarías un SP para esto
-        // const registros = await Registro.obtenerPorFecha(fecha);
+        const { fecha } = req.params; 
+        
+        // **PENDIENTE** Aquí se llamaría a un método del Modelo: Registro.obtenerPorFecha(fecha);
         
         res.json({
             success: true,
@@ -98,19 +97,13 @@ exports.obtenerRegistrosPorFecha = async (req, res) => {
 
     } catch (error) {
         console.error('Error obteniendo registros por fecha:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error obteniendo registros por fecha'
-        });
+        res.status(500).json({ success: false, message: 'Error obteniendo registros por fecha' });
     }
 };
 
-exports.obtenerEstadisticas = async (req, res) => {
+const obtenerEstadisticas = async (req, res) => {
     try {
-        const { fecha } = req.query;
-        
-        // Aquí podrías agregar lógica para estadísticas
-        // Ej: total registros, entradas vs salidas, etc.
+        // **PENDIENTE** Aquí se llamaría a un método del Modelo para obtener estadísticas.
         
         res.json({
             success: true,
@@ -125,9 +118,17 @@ exports.obtenerEstadisticas = async (req, res) => {
 
     } catch (error) {
         console.error('Error obteniendo estadísticas:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error obteniendo estadísticas'
-        });
+        res.status(500).json({ success: false, message: 'Error obteniendo estadísticas' });
     }
+};
+
+// ===============================================
+// EXPORTACIÓN FINAL (ESM)
+// ===============================================
+
+export {
+    crearRegistro,
+    obtenerRegistrosPorAlumno,
+    obtenerRegistrosPorFecha,
+    obtenerEstadisticas
 };

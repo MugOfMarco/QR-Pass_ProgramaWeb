@@ -1,7 +1,10 @@
-const bcrypt = require('bcrypt');
-const Usuario = require('../models/Usuario');
+// backend/controllers/auth.controller.js
 
-exports.login = async (req, res) => {
+import bcrypt from 'bcrypt';
+import Usuario from '../models/Usuario.js'; // Usamos la sintaxis ESM y añadimos la extensión .js
+
+// Función: Iniciar Sesión (Login)
+const login = async (req, res) => {
     try {
         const { username, password } = req.body;
 
@@ -23,6 +26,7 @@ exports.login = async (req, res) => {
             });
         }
 
+        // Crea Sesión
         req.session.user = {
             id: usuario.id_usuario,
             usuario: usuario.usuario,
@@ -48,7 +52,8 @@ exports.login = async (req, res) => {
     }
 };
 
-exports.logout = (req, res) => {
+// Función: Cerrar Sesión (Logout)
+const logout = (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({
@@ -63,7 +68,8 @@ exports.logout = (req, res) => {
     });
 };
 
-exports.checkAuth = (req, res) => {
+// Función: Verificar el estado de autenticación (Para el frontend)
+const checkAuth = (req, res) => {
     if (req.session.user) {
         res.json({
             isAuthenticated: true,
@@ -74,4 +80,14 @@ exports.checkAuth = (req, res) => {
             isAuthenticated: false
         });
     }
+};
+
+// =================================================================
+// Exportación Final (ESM)
+// =================================================================
+
+export {
+    login,
+    logout,
+    checkAuth
 };

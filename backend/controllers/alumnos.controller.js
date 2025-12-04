@@ -2,7 +2,8 @@ const Alumno = require('../models/Alumno');
 const Registro = require('../models/Registro');
 const Justificacion = require('../models/Justificacion');
 
-exports.obtenerAlumno = async (req, res) => {
+// Función: Obtener datos completos del alumno (para escáner)
+const obtenerAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const alumno = await Alumno.obtenerCompleto(boleta);
@@ -65,10 +66,12 @@ exports.obtenerRegistrosAlumno = async (req, res) => {
     }
 };
 
-exports.bloquearCredencial = async (req, res) => {
+// Función: Bloquear Credencial (Admin-only)
+const bloquearCredencial = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.bloquear(boleta);
+        // El Modelo Alumno.bloquear debe devolver un indicador de éxito/fracaso
+        const result = await Alumno.bloquear(boleta); 
 
         if (result.filas_afectadas > 0) {
             res.json({
@@ -91,7 +94,8 @@ exports.bloquearCredencial = async (req, res) => {
     }
 };
 
-exports.desbloquearCredencial = async (req, res) => {
+// Función: Desbloquear Credencial (Admin-only)
+const desbloquearCredencial = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const result = await Alumno.desbloquear(boleta);
@@ -117,7 +121,8 @@ exports.desbloquearCredencial = async (req, res) => {
     }
 };
 
-exports.verificarBloqueo = async (req, res) => {
+// Función: Verificar el estado de bloqueo
+const verificarBloqueo = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const result = await Alumno.verificarBloqueo(boleta);
@@ -144,7 +149,8 @@ exports.verificarBloqueo = async (req, res) => {
     }
 };
 
-exports.buscarAlumnos = async (req, res) => {
+// Función: Buscar alumnos por nombre/boleta (Admin)
+const buscarAlumnos = async (req, res) => {
     try {
         const query = req.query.q || '';
         const alumnos = await Alumno.buscar(query);
@@ -215,4 +221,17 @@ exports.obtenerJustificacionesAlumno = async (req, res) => {
             message: 'Error obteniendo justificaciones'
         });
     }
+};
+
+// =================================================================
+// Exportación Final (ESM)
+// =================================================================
+
+export {
+    obtenerAlumno,
+    bloquearCredencial,
+    desbloquearCredencial,
+    verificarBloqueo,
+    buscarAlumnos,
+    obtenerRegistrosAlumno
 };
