@@ -8,6 +8,8 @@ const obtenerAlumno = async (req, res) => {
         const boleta = parseInt(req.params.boleta);
         const alumnoData = await Alumno.obtenerCompleto(boleta);
 
+        console.log(`Buscando Boleta: [${boleta}], Tipo: [${typeof boleta}]`);
+
         if (!alumnoData) {
             return res.status(404).json({
                 success: false,
