@@ -1,132 +1,8 @@
 const Alumno = require('../models/Alumno');
+const Registro = require('../models/Registro');
+const Justificacion = require('../models/Justificacion');
 
 exports.obtenerAlumno = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const alumnoData = await Alumno.obtenerCompleto(boleta);
-
-        if (!alumnoData) {
-            return res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
-        }
-
-        res.json({
-            success: true,
-            alumno: alumnoData.info,
-            horario: alumnoData.horario,
-            materiasAcreditadas: alumnoData.materiasAcreditadas
-        });
-
-    } catch (error) {
-        console.error('Error obteniendo alumno:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor'
-        });
-    }
-};
-
-exports.bloquearCredencial = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.bloquear(boleta);
-
-        if (!result) {
-            return res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Credencial bloqueada correctamente'
-        });
-
-    } catch (error) {
-        console.error('Error al bloquear credencial:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error en el servidor al bloquear'
-        });
-    }
-};
-
-exports.desbloquearCredencial = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.desbloquear(boleta);
-
-        if (!result) {
-            return res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Credencial desbloqueada correctamente'
-        });
-
-    } catch (error) {
-        console.error('Error al desbloquear credencial:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error en el servidor al desbloquear'
-        });
-    }
-};
-
-exports.verificarBloqueo = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.verificarBloqueo(boleta);
-
-        if (!result) {
-            return res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
-        }
-
-        res.json({
-            success: true,
-            bloqueado: result.bloqueado === 1
-        });
-
-    } catch (error) {
-        console.error('Error al verificar bloqueo:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error en el servidor al verificar'
-        });
-    }
-};
-
-exports.buscarAlumnos = async (req, res) => {
-    try {
-        const { query } = req.query;
-        const alumnos = await Alumno.buscar(query);
-
-        res.json({
-            success: true,
-            alumnos
-        });
-
-    } catch (error) {
-        console.error('Error buscando alumnos:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error en la búsqueda'
-        });
-    }
-};
-
-// Si necesitas obtener registros desde el controller de alumnos
-exports.obtenerRegistrosAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const alumno = await Alumno.obtenerCompleto(boleta);
@@ -138,10 +14,46 @@ exports.obtenerRegistrosAlumno = async (req, res) => {
             });
         }
 
-        // Aquí necesitarías importar el modelo Registro o tener un método en Alumno
+        // Verificar regla de 3 incidencias sin credencial
+        const bloqueado = alumno.info.bloqueado;
+        const sinCredencial = alumno.info.sin_credencial;
+        
+        let mensajeAcceso = '';
+        if (bloqueado) {
+            mensajeAcceso = 'CREDENCIAL BLOQUEADA';
+        } else if (sinCredencial >= 3) {
+            mensajeAcceso = 'ACCESO DENEGADO - 3+ incidencias sin credencial';
+        }
+
         res.json({
             success: true,
-            registros: [] // Placeholder
+            alumno: alumno.info,
+            horario: alumno.horario,
+            materiasAcreditadas: alumno.materiasAcreditadas,
+            bloqueado: bloqueado,
+            sinCredencial: sinCredencial,
+            mensajeAcceso: mensajeAcceso
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error obteniendo datos del alumno'
+        });
+    }
+};
+
+exports.obtenerRegistrosAlumno = async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        const registros = await Alumno.obtenerRegistros(boleta);
+
+        res.json({
+            success: true,
+            boleta: boleta,
+            registros: registros,
+            total: registros.length
         });
 
     } catch (error) {
@@ -149,6 +61,158 @@ exports.obtenerRegistrosAlumno = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error obteniendo registros'
+        });
+    }
+};
+
+exports.bloquearCredencial = async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        const result = await Alumno.bloquear(boleta);
+
+        if (result.filas_afectadas > 0) {
+            res.json({
+                success: true,
+                message: 'Credencial bloqueada exitosamente'
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Alumno no encontrado'
+            });
+        }
+
+    } catch (error) {
+        console.error('Error bloqueando credencial:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error bloqueando credencial'
+        });
+    }
+};
+
+exports.desbloquearCredencial = async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        const result = await Alumno.desbloquear(boleta);
+
+        if (result.filas_afectadas > 0) {
+            res.json({
+                success: true,
+                message: 'Credencial desbloqueada exitosamente'
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Alumno no encontrado'
+            });
+        }
+
+    } catch (error) {
+        console.error('Error desbloqueando credencial:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error desbloqueando credencial'
+        });
+    }
+};
+
+exports.verificarBloqueo = async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        const result = await Alumno.verificarBloqueo(boleta);
+
+        if (result) {
+            res.json({
+                success: true,
+                bloqueado: result.bloqueado,
+                nombre: result.nombre
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Alumno no encontrado'
+            });
+        }
+
+    } catch (error) {
+        console.error('Error verificando bloqueo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error verificando estado de credencial'
+        });
+    }
+};
+
+exports.buscarAlumnos = async (req, res) => {
+    try {
+        const query = req.query.q || '';
+        const alumnos = await Alumno.buscar(query);
+
+        res.json({
+            success: true,
+            alumnos: alumnos,
+            total: alumnos.length
+        });
+
+    } catch (error) {
+        console.error('Error buscando alumnos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error buscando alumnos'
+        });
+    }
+};
+
+exports.crearJustificacion = async (req, res) => {
+    try {
+        const { id_registro, justificacion, id_tipo_anterior } = req.body;
+
+        const result = await Justificacion.crear({
+            id_registro: id_registro,
+            justificacion: justificacion,
+            id_tipo_anterior: id_tipo_anterior
+        });
+
+        if (result) {
+            res.json({
+                success: true,
+                message: 'Incidencia justificada correctamente',
+                id_justificacion: result.id_justificacion
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Error al crear justificación'
+            });
+        }
+
+    } catch (error) {
+        console.error('Error creando justificación:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creando justificación: ' + error.message
+        });
+    }
+};
+
+exports.obtenerJustificacionesAlumno = async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        const justificaciones = await Justificacion.obtenerPorAlumno(boleta);
+
+        res.json({
+            success: true,
+            boleta: boleta,
+            justificaciones: justificaciones,
+            total: justificaciones.length
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo justificaciones:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error obteniendo justificaciones'
         });
     }
 };

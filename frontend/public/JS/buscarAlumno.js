@@ -49,8 +49,7 @@ class SistemaAlumnos {
         }
 
         try {
-            // Usar tu stored procedure para obtener datos completos
-            const response = await fetch(`${this.apiBase}/alumno/${boleta}`);
+            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
             
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
@@ -91,79 +90,51 @@ class SistemaAlumnos {
         this.actualizarEstadoCredencial();
     }
 
-    // En tu clase SistemaAlumnos, actualiza el método mostrarHorario:
-mostrarHorario(horario) {
-    const tbody = document.getElementById('horario-tbody');
-    
-    if (!horario || horario.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="3" style="text-align: center; padding: 1rem;">
-                    No hay horario disponible
-                </td>
-            </tr>
-        `;
-        return;
+    mostrarHorario(horario) {
+        const tbody = document.getElementById('horario-tbody');
+        
+        if (!horario || horario.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 1rem;">
+                        No hay horario disponible
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        
+        // Ordenar por día y hora
+        const diasOrden = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+        const horarioOrdenado = horario.sort((a, b) => {
+            const diaA = diasOrden.indexOf(a.dia);
+            const diaB = diasOrden.indexOf(b.dia);
+            if (diaA !== diaB) return diaA - diaB;
+            return a.hora - b.hora;
+        });
+
+        horarioOrdenado.forEach(clase => {
+            const tr = document.createElement('tr');
+            tr.className = `dia-${clase.dia}`;
+            
+            // Formatear hora
+            const horaInicio = clase.inicio.substring(0, 5);
+            const horaFin = clase.fin.substring(0, 5);
+            
+            tr.innerHTML = `
+                <td>${this.capitalizeFirstLetter(clase.dia)}</td>
+                <td>${horaInicio} - ${horaFin}</td>
+                <td>${clase.materia}</td>
+            `;
+            
+            tbody.appendChild(tr);
+        });
     }
 
-    tbody.innerHTML = '';
-    
-    // Ordenar por día y hora
-    const diasOrden = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
-    const horarioOrdenado = horario.sort((a, b) => {
-        const diaA = diasOrden.indexOf(a.dia);
-        const diaB = diasOrden.indexOf(b.dia);
-        if (diaA !== diaB) return diaA - diaB;
-        return a.hora - b.hora;
-    });
-
-    horarioOrdenado.forEach(clase => {
-        const tr = document.createElement('tr');
-        tr.className = `dia-${clase.dia}`;
-        
-        // Formatear hora (quitar segundos si existen)
-        const horaInicio = clase.inicio.substring(0, 5);
-        const horaFin = clase.fin.substring(0, 5);
-        
-        tr.innerHTML = `
-            <td>${this.capitalizeFirstLetter(clase.dia)}</td>
-            <td>${horaInicio} - ${horaFin}</td>
-            <td>${clase.materia}</td>
-        `;
-        
-        tbody.appendChild(tr);
-    });
-}
-
-capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-    formatearHorario(horario) {
-        // Agrupar por día
-        const horarioPorDia = {};
-        horario.forEach(clase => {
-            if (!horarioPorDia[clase.dia]) {
-                horarioPorDia[clase.dia] = [];
-            }
-            horarioPorDia[clase.dia].push(clase);
-        });
-
-        // Formatear texto
-        let texto = '';
-        const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
-        
-        dias.forEach(dia => {
-            if (horarioPorDia[dia]) {
-                texto += `${dia.charAt(0).toUpperCase() + dia.slice(1)}:\n`;
-                horarioPorDia[dia].forEach(clase => {
-                    texto += `  ${clase.inicio} - ${clase.fin} | ${clase.materia}\n`;
-                });
-                texto += '\n';
-            }
-        });
-
-        return texto.trim();
+    capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
     }
 
     async cargarFotoAlumno(boleta) {
@@ -189,15 +160,29 @@ capitalizeFirstLetter(string) {
         document.getElementById('display-boleta').value = '';
         document.getElementById('display-alumno').value = '';
         document.getElementById('display-grupo').value = '';
-        document.getElementById('display-horario').value = '';
         
         // Limpiar contadores
         document.getElementById('total-incidencias').textContent = '0';
         document.getElementById('total-retardos').textContent = '0';
         
-        // Limpiar tabla
-        const tbody = document.getElementById('incidents-tbody');
-        if (tbody) tbody.innerHTML = '';
+        // Limpiar tablas
+        const horarioTbody = document.getElementById('horario-tbody');
+        if (horarioTbody) horarioTbody.innerHTML = `
+            <tr>
+                <td colspan="3" style="text-align: center; padding: 1rem;">
+                    Ingrese una boleta para cargar el horario
+                </td>
+            </tr>
+        `;
+        
+        const incidentsTbody = document.getElementById('incidents-tbody');
+        if (incidentsTbody) incidentsTbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 2rem;">
+                    Ingrese una boleta para buscar
+                </td>
+            </tr>
+        `;
         
         // Limpiar foto
         const img = document.getElementById('student-photo');
@@ -214,6 +199,8 @@ capitalizeFirstLetter(string) {
     }
 
     actualizarEstadoCredencial() {
+        if (!this.alumnoActual) return;
+        
         const bloqueado = this.alumnoActual.bloqueado || false;
         const estadoElement = document.getElementById('estado-credencial');
         
@@ -226,15 +213,14 @@ capitalizeFirstLetter(string) {
     limpiarEstadoCredencial() {
         const estadoElement = document.getElementById('estado-credencial');
         if (estadoElement) {
-            estadoElement.textContent = '';
+            estadoElement.textContent = '-';
             estadoElement.className = '';
         }
     }
 
     async cargarIncidencias(boleta) {
         try {
-            // Usar tu stored procedure para obtener incidencias
-            const response = await fetch(`${this.apiBase}/incidencias/alumno/${boleta}`);
+            const response = await fetch(`${this.apiBase}/alumnos/${boleta}/registros`);
             
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
@@ -243,7 +229,7 @@ capitalizeFirstLetter(string) {
             const data = await response.json();
             
             if (data.success) {
-                this.incidencias = data.incidencias || [];
+                this.incidencias = data.registros || [];
                 this.mostrarIncidencias();
             } else {
                 this.mostrarError('No se pudieron cargar las incidencias');
@@ -267,7 +253,7 @@ capitalizeFirstLetter(string) {
         if (this.incidencias.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 2rem;">No se encontraron incidencias</td>
+                    <td colspan="4" style="text-align: center; padding: 2rem;">No se encontraron registros</td>
                 </tr>
             `;
             return;
@@ -277,7 +263,7 @@ capitalizeFirstLetter(string) {
             const tr = document.createElement('tr');
             tr.dataset.idRegistro = incidencia.id_registro;
             
-            // Formatear fecha (ajustar por la diferencia de hora de México)
+            // Formatear fecha y hora
             const fecha = new Date(incidencia.fecha);
             const fechaFormateada = fecha.toLocaleDateString('es-MX');
             const horaFormateada = fecha.toLocaleTimeString('es-MX', { 
@@ -302,7 +288,7 @@ capitalizeFirstLetter(string) {
     formatearNombrePuerta(puertaValue) {
         const puertas = {
             'mexico-tacuba': 'México-Tacuba',
-            'mar-mediterraneo': 'Mar Mediterráneo',
+            'mar': 'Mar Mediterráneo',
             'entrada_principal': 'Entrada Principal'
         };
         return puertas[puertaValue] || puertaValue;
@@ -312,12 +298,12 @@ capitalizeFirstLetter(string) {
         const tipos = {
             'retardo': 'Retardo',
             'entrada_sin_credencial': 'Sin credencial',
-            'entrada': 'Entrada normal'
+            'entrada': 'Entrada normal',
+            'salida': 'Salida'
         };
         return tipos[tipo] || tipo;
     }
 
-    // Obtener incidencias seleccionadas
     obtenerIncidenciasSeleccionadas() {
         const checkboxes = document.querySelectorAll('.incidencia-checkbox:checked');
         return Array.from(checkboxes).map(checkbox => {
@@ -326,7 +312,6 @@ capitalizeFirstLetter(string) {
         }).filter(inc => inc !== undefined);
     }
 
-    // Justificar incidencias seleccionadas
     async justificarSeleccionadas() {
         const incidenciasSeleccionadas = this.obtenerIncidenciasSeleccionadas();
         
@@ -402,14 +387,22 @@ capitalizeFirstLetter(string) {
             const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
             
             for (const incidencia of incidencias) {
-                // Obtener id_tipo_anterior según el tipo de incidencia
+                // Solo justificar retardos y entradas sin credencial
+                if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'entrada_sin_credencial') {
+                    continue;
+                }
+                
                 const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
                 
-                await this.crearJustificacionBD(
-                    incidencia.id_registro, 
-                    justificacionTexto, 
-                    idTipoAnterior
-                );
+                await fetch(`${this.apiBase}/alumnos/justificaciones`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_registro: incidencia.id_registro,
+                        justificacion: justificacionTexto,
+                        id_tipo_anterior: idTipoAnterior
+                    })
+                });
             }
 
             this.mostrarExito(`Se justificaron ${incidencias.length} incidencia(s) correctamente`);
@@ -424,32 +417,11 @@ capitalizeFirstLetter(string) {
     }
 
     obtenerIdTipoAnterior(tipoIncidencia) {
-        // Mapear tipos de incidencia a id_tipo_registro
         const tipos = {
-            'retardo': 2,  // Asumiendo que 2 = retardo
-            'entrada_sin_credencial': 3  // Asumiendo que 3 = entrada_sin_credencial
+            'retardo': 2,  // id_tipo_registro para retardo
+            'entrada_sin_credencial': 3  // id_tipo_registro para entrada_sin_credencial
         };
         return tipos[tipoIncidencia] || 2;
-    }
-
-    async crearJustificacionBD(idRegistro, justificacion, idTipoAnterior) {
-        const response = await fetch(`${this.apiBase}/justificaciones`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id_registro: idRegistro,
-                justificacion: justificacion,
-                id_tipo_anterior: idTipoAnterior
-            })
-        });
-
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.message);
-        }
-
-        return result;
     }
 
     obtenerTextoJustificacion(valor) {
@@ -463,7 +435,79 @@ capitalizeFirstLetter(string) {
         return justificaciones[valor] || valor;
     }
 
-   
+    async bloquearCredencial() {
+    if (!this.alumnoActual) {
+        this.mostrarError('Primero busca un alumno');
+        return;
+    }
+
+    if (!confirm(`¿Estás seguro de bloquear la credencial de ${this.alumnoActual.nombre}?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${this.apiBase}/alumnos/bloquear/${this.alumnoActual.boleta}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            this.mostrarExito('Credencial bloqueada exitosamente');
+            // Actualizar estado local
+            this.alumnoActual.bloqueado = true;
+            this.actualizarEstadoCredencial();
+            
+            // Recargar datos para ver cambios
+            await this.buscarAlumno(this.alumnoActual.boleta);
+        } else {
+            this.mostrarError(data.message);
+        }
+    } catch (error) {
+        console.error('Error bloqueando credencial:', error);
+        this.mostrarError('Error al bloquear credencial');
+    }
+}
+
+async desbloquearCredencial() {
+    if (!this.alumnoActual) {
+        this.mostrarError('Primero busca un alumno');
+        return;
+    }
+
+    if (!confirm(`¿Estás seguro de desbloquear la credencial de ${this.alumnoActual.nombre}?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${this.apiBase}/alumnos/desbloquear/${this.alumnoActual.boleta}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            this.mostrarExito('Credencial desbloqueada exitosamente');
+            // Actualizar estado local
+            this.alumnoActual.bloqueado = false;
+            this.actualizarEstadoCredencial();
+            
+            // Recargar datos para ver cambios
+            await this.buscarAlumno(this.alumnoActual.boleta);
+        } else {
+            this.mostrarError(data.message);
+        }
+    } catch (error) {
+        console.error('Error desbloqueando credencial:', error);
+        this.mostrarError('Error al desbloquear credencial');
+    }
+}
 
     mostrarExito(mensaje) {
         this.mostrarNotificacion(mensaje, 'success');
@@ -522,145 +566,3 @@ capitalizeFirstLetter(string) {
 document.addEventListener('DOMContentLoaded', () => {
     new SistemaAlumnos();
 });
-
-// Funcionalidad para bloquear/desbloquear credenciales
-
-// Obtener referencias a los botones
-const btnBloquear = document.getElementById('btn-bloquear-credencial');
-const btnDesbloquear = document.getElementById('btn-desbloquear-credencial');
-const inputBoleta = document.getElementById('search-boleta-inc');
-const estadoCredencialSpan = document.getElementById('estado-credencial');
-
-// Variable para almacenar el estado actual de bloqueo
-let credencialBloqueada = false;
-let boletaActual = null;
-
-// Función para bloquear credencial
-btnBloquear.addEventListener('click', async () => {
-    const boleta = inputBoleta.value.trim();
-    
-    if (!boleta) {
-        alert('Por favor, ingrese una boleta primero');
-        return;
-    }
-    
-    try {
-        // Verificar el estado actual
-        const responseCheck = await fetch(`/api/verificar-estado-credencial/${boleta}`);
-        const dataCheck = await responseCheck.json();
-        
-        if (dataCheck.bloqueado) {
-            alert('La credencial ya está bloqueada');
-            return;
-        }
-        
-        // Bloquear la credencial
-        const response = await fetch('/api/bloquear-credencial', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ boleta: boleta, bloqueado: 1 })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            alert('Credencial bloqueada exitosamente');
-            credencialBloqueada = true;
-            estadoCredencialSpan.textContent = 'Bloqueada';
-            estadoCredencialSpan.style.color = 'red';
-        } else {
-            alert('Error al bloquear la credencial: ' + data.message);
-        }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al procesar la solicitud');
-    }
-});
-
-// Función para desbloquear credencial
-btnDesbloquear.addEventListener('click', async () => {
-    const boleta = inputBoleta.value.trim();
-    
-    if (!boleta) {
-        alert('Por favor, ingrese una boleta primero');
-        return;
-    }
-    
-    try {
-        // Verificar el estado actual
-        const responseCheck = await fetch(`/api/verificar-estado-credencial/${boleta}`);
-        const dataCheck = await responseCheck.json();
-        
-        if (!dataCheck.bloqueado) {
-            alert('La credencial ya está desbloqueada');
-            return;
-        }
-        
-        // Desbloquear la credencial
-        const response = await fetch('/api/bloquear-credencial', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ boleta: boleta, bloqueado: 0 })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            alert('Credencial desbloqueada exitosamente');
-            credencialBloqueada = false;
-            estadoCredencialSpan.textContent = 'Activa';
-            estadoCredencialSpan.style.color = 'green';
-        } else {
-            alert('Error al desbloquear la credencial: ' + data.message);
-        }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al procesar la solicitud');
-    }
-});
-
-// API endpoints que necesitas en tu backend (Node.js/Express ejemplo):
-
-/*
-// Endpoint para verificar estado de credencial
-app.get('/api/verificar-estado-credencial/:boleta', async (req, res) => {
-    const { boleta } = req.params;
-    
-    try {
-        const query = 'SELECT bloqueado FROM Info_alumno WHERE boleta = ?';
-        const [results] = await connection.query(query, [boleta]);
-        
-        if (results.length > 0) {
-            res.json({ bloqueado: results[0].bloqueado === 1 });
-        } else {
-            res.status(404).json({ error: 'Alumno no encontrado' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Error en el servidor' });
-    }
-});
-
-// Endpoint para bloquear/desbloquear credencial
-app.post('/api/bloquear-credencial', async (req, res) => {
-    const { boleta, bloqueado } = req.body;
-    
-    try {
-        const query = 'UPDATE Info_alumno SET bloqueado = ? WHERE boleta = ?';
-        const [result] = await connection.query(query, [bloqueado, boleta]);
-        
-        if (result.affectedRows > 0) {
-            res.json({ success: true, message: 'Estado actualizado' });
-        } else {
-            res.status(404).json({ success: false, message: 'Alumno no encontrado' });
-        }
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Error en el servidor' });
-    }
-});
-*/
