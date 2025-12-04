@@ -19,30 +19,35 @@ class Alumno {
         };
     }
 
-    static async buscar(query) {
-        // Utilizamos el comodín % en la consulta, como lo tenías definido.
-        const results = await ejecutarSP('sp_buscar_alumnos', [`%${query}%`]);
-        return results[0] || [];
-    }
+    static async buscar(query) {
+        const results = await ejecutarSP('sp_buscar_alumnos', [query]);
+        return results[0] || [];
+    }
 
-    static async bloquear(boleta) {
-        // Lógica: Llama al SP para bloquear (valor 1)
-        const results = await ejecutarSP('sp_bloquear_alumno', [boleta, 1]);
-        // Devuelve el primer resultado (o null si el alumno no existe/no se modificó)
-        return results[0] && results[0][0] ? results[0][0] : null; 
-    }
+    static async bloquear(boleta) {
+        const results = await ejecutarSP('sp_bloquear_alumno', [boleta]);
+        return {
+            filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
+        };
+    }
 
-    static async desbloquear(boleta) {
-        // Lógica: Llama al SP para desbloquear (valor 0)
-        const results = await ejecutarSP('sp_desbloquear_alumno', [boleta, 0]);
-        return results[0] && results[0][0] ? results[0][0] : null;
-    }
+    static async desbloquear(boleta) {
+        const results = await ejecutarSP('sp_desbloquear_alumno', [boleta]);
+        return {
+            filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
+        };
+    }
 
-    static async verificarBloqueo(boleta) {
-        // Lógica: Llama al SP para obtener el estado de bloqueo
-        const results = await ejecutarSP('sp_verificar_bloqueo_alumno', [boleta]);
-        return results[0] && results[0][0] ? results[0][0] : null;
-    }
+    static async verificarBloqueo(boleta) {
+        const results = await ejecutarSP('sp_verificar_bloqueo_alumno', [boleta]);
+        return results[0] && results[0][0] ? results[0][0] : null;
+    }
+
+    // CORREGIDO: Cambié el nombre del SP
+    static async obtenerRegistros(boleta) {
+        const results = await ejecutarSP('sp_obtener_registros_alumno', [boleta]);
+        return results[0] || [];
+    }
 }
 
 // ANTES: module.exports = Alumno;

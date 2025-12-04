@@ -18,6 +18,18 @@ router.get('/:boleta', alumnosController.obtenerAlumno);
 // Rutas protegidas: Todas las rutas que vienen después de aquí requieren autenticación
 router.use(requireAuth);
 
+// Obtener registros de alumno
+router.get('/:boleta/registros', alumnosController.obtenerRegistrosAlumno);
+
+// Obtener justificaciones de alumno
+router.get('/:boleta/justificaciones', alumnosController.obtenerJustificacionesAlumno);
+
+// Crear justificación
+router.post('/justificaciones', 
+    requireRole('Administrador', 'Prefecto'),
+    alumnosController.crearJustificacion
+);
+
 // Rutas de administración (solo administradores)
 router.put('/bloquear/:boleta', 
     requireRole('Administrador'), // Bloquea el acceso a Prefectos/otros
@@ -29,9 +41,10 @@ router.put('/desbloquear/:boleta',
     alumnosController.desbloquearCredencial
 );
 
-// Estas rutas requieren autenticación, pero el rol es verificado dentro del middleware
-// o se asume que cualquier usuario autenticado (Admin/Prefecto) puede ver estos datos
+// Verificar bloqueo
 router.get('/verificar-bloqueo/:boleta', alumnosController.verificarBloqueo);
+
+// Buscar alumnos
 router.get('/buscar/alumnos', alumnosController.buscarAlumnos);
 
 // Exportación Final (ESM)

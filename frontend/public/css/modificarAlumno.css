@@ -1,3 +1,8 @@
+/* ============================================
+   MODIFICARALUMNO.CSS - CORREGIDO
+   SIN DUPLICACIONES
+============================================ */
+
 /* Reset y estilos base */
 * {
     margin: 0;
@@ -308,7 +313,10 @@ body {
     font-size: 1rem;
 }
 
-/* Menu Navegación */
+/* ============================================
+   ESTILOS DEL MENÚ (CRÍTICOS)
+============================================ */
+
 .menu-navegacion {
     position: relative;
     z-index: 1000;
@@ -379,7 +387,10 @@ body {
     display: block;
 }
 
-/* Responsive */
+/* ============================================
+   RESPONSIVE
+============================================ */
+
 @media (max-width: 1024px) {
     .main-container {
         grid-template-columns: 1fr;

@@ -7,7 +7,7 @@ class RegistroSystem {
         this.initEventListeners();
         
         this.tiposRegistro = {
-            'entrada_normal': 0,
+            'entrada': 0,
             'salida': 1, 
             'retardo': 2,
             'entrada_sin_credencial': 3,
@@ -55,8 +55,8 @@ class RegistroSystem {
         if (boleta.length < 5) return;
 
         try {
-            // Usa el endpoint que devuelve toda la información del alumno
-            const response = await fetch(`${this.apiBase}/alumno/${boleta}`);
+            // Obtener datos del alumno
+            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -68,13 +68,16 @@ class RegistroSystem {
             const data = await response.json();
 
             if (data.success) {
-                // VERIFICACIÓN DE BLOQUEO DE CREDENCIAL EN SISTEMA
-                const bloqueadoResponse = await fetch(`${this.apiBase}/verificar-bloqueo/${boleta}`);
-                const bloqueadoData = await bloqueadoResponse.json();
+                // ✅ VALIDACIÓN 1: Verificar bloqueo
+                if (data.bloqueado) {
+                    this.mostrarError('CREDENCIAL BLOQUEADA - No se puede registrar entrada/salida');
+                    document.getElementById('boleta-input').value = '';
+                    return;
+                }
 
-                if (bloqueadoData.success && bloqueadoData.bloqueado) {
-                    alert('ALUMNO BLOQUEADO - Contacte con administración');
-                    this.mostrarError('ALUMNO BLOQUEADO - No se puede registrar entrada/salida');
+                // ✅ VALIDACIÓN 2: Verificar 3+ incidencias sin credencial
+                if (data.sinCredencial >= 3 && tipoEntrada === 'manual') {
+                    this.mostrarError('ACCESO DENEGADO - 3+ incidencias sin credencial');
                     document.getElementById('boleta-input').value = '';
                     return;
                 }
@@ -104,7 +107,7 @@ class RegistroSystem {
             const hoy = new Date();
             const diaSemana = hoy.getDay();
             
-            // 1. VERIFICAR FIN DE SEMANA
+            // Validar fin de semana
             if (diaSemana === 0 || diaSemana === 6) {
                 this.mostrarResultadoFinSemana(alumnoData, puerta, tipo);
                 return;
@@ -117,22 +120,7 @@ class RegistroSystem {
             // 2. LÓGICA DE INCIDENCIA Y VALIDACIÓN DE LÍMITE (DE AMBAS VERSIONES)
             if (tipo === 'entrada') {
                 sinCredencial = tipoEntrada === 'manual';
-                
-                // --- VERIFICACIÓN DE LÍMITE DE ENTRADAS SIN CREDENCIAL (CRÍTICO) ---
-                if (sinCredencial) {
-                    const contadorActual = alumnoData.alumno.sin_credencial || 0;
-                    
-                    // Si ya tiene 4 o más, NO registrar (LÍMITE DE SEGURIDAD)
-                    if (contadorActual >= 4) {
-                        alert('⛔ DEMASIADAS ENTRADAS SIN CREDENCIAL - EL ALUMNO NO PASA');
-                        this.mostrarError('DEMASIADAS ENTRADAS SIN CREDENCIAL - EL ALUMNO NO PASA');
-                        document.getElementById('boleta-input').value = '';
-                        return; // SALIR SIN REGISTRAR
-                    }
-                }
-                // -------------------------------------------------------------------
-                
-                tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
+                tieneRetardo = await this.verificarRetardoConHorario(alumnoData.horario);
                 
                 // ASIGNACIÓN DE ID (Prioridad: Retardo > Sin Credencial > Normal)
                 if (tieneRetardo) {
@@ -140,15 +128,12 @@ class RegistroSystem {
                 } else if (sinCredencial) {
                     idTipoRegistro = this.tiposRegistro.entrada_sin_credencial; // ID 3
                 } else {
-                    idTipoRegistro = this.tiposRegistro.entrada_normal; // ID 0
+                    idTipoRegistro = this.tiposRegistro.entrada;
                 }
             } else if (tipo === 'salida') {
                 idTipoRegistro = this.tiposRegistro.salida; // ID 1
             }
 
-            // 3. CREAR REGISTRO PRINCIPAL (El backend se encarga de los contadores)
-            const contadorActual = alumnoData.alumno.sin_credencial || 0; // Se usará para la advertencia
-            
             await this.crearRegistroBD(
                 alumnoData.alumno.boleta,
                 puerta,
@@ -165,17 +150,17 @@ class RegistroSystem {
             this.mostrarError('Error al procesar registro: ' + error.message);
         }
     }
-    
-    // =================================================================
-    // MÉTODOS AUXILIARES Y DE CÁLCULO
-    // =================================================================
 
-    async verificarRetardoSimple(horario) {
+    async verificarRetardoConHorario(horario) {
         const hoy = new Date();
         const diaSemana = hoy.getDay();
-        const diaActualConAcentos = this.diasSemana[diaSemana];
         
-        // FIX: Normalizar para coincidir con la BD (minúsculas y sin acentos)
+        // Si es domingo o sábado, no hay retardo
+        if (diaSemana === 0 || diaSemana === 6) {
+            return false;
+        }
+        
+        const diaActualConAcentos = this.diasSemana[diaSemana];
         const diaActual = diaActualConAcentos
             .toLowerCase()
             .normalize("NFD")
@@ -184,9 +169,10 @@ class RegistroSystem {
         const horarioHoy = horario.filter(h => h.dia === diaActual);
 
         if (horarioHoy.length === 0) {
-            return false;
+            return false; // No tiene clases hoy
         }
 
+        // Encontrar la primera clase del día
         const primeraClase = horarioHoy.sort((a, b) => {
             const horaA = this.convertirHoraAMinutos(a.inicio);
             const horaB = this.convertirHoraAMinutos(b.inicio);
@@ -197,10 +183,12 @@ class RegistroSystem {
         const horaInicioClase = new Date();
         horaInicioClase.setHours(horasClase, minutosClase, 0, 0);
 
-        const diferenciaMs = hoy - horaInicioClase;
+        const horaActual = new Date();
+        const diferenciaMs = horaActual - horaInicioClase;
         const diferenciaMinutos = Math.floor(diferenciaMs / (1000 * 60));
 
-        return diferenciaMinutos > 20; // 20 minutos de tolerancia
+        // Retardo si llega 10 minutos después de la primera clase
+        return diferenciaMinutos > 10;
     }
 
     async crearRegistroBD(boleta, puerta, id_tipo_registro, tieneRetardo, sinCredencial) {
@@ -262,96 +250,137 @@ class RegistroSystem {
         const [horas, minutos] = horaString.split(':').map(Number);
         return horas * 60 + minutos;
     }
+
     mostrarResultadoFinSemana(alumnoData, puerta, tipo) {
-        const alumno = alumnoData.alumno;
-        const ahora = new Date();
-        const horaActual = this.formatearHora(ahora);
-        const diaSemana = ahora.getDay();
-        const nombreDia = this.diasSemana[diaSemana];
+        const alumno = alumnoData.alumno;
+        const ahora = new Date();
+        const horaActual = this.formatearHora(ahora);
+        const diaSemana = ahora.getDay();
+        const nombreDia = this.diasSemana[diaSemana];
 
-        // Mostrar datos del alumno
-        document.getElementById('nombre-output').value = alumno.nombre;
-        document.getElementById('boleta-output').value = alumno.boleta;
-        document.getElementById('grupo-output').value = alumno.nombre_grupo;
-        document.getElementById('horario-output').value = 'FIN DE SEMANA - SIN CLASES';
-        document.getElementById('retardos-output').value = alumno.retardos || 0;
-        document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0;
+        // Mostrar datos del alumno
+        document.getElementById('nombre-output').value = alumno.nombre;
+        document.getElementById('boleta-output').value = alumno.boleta;
+        document.getElementById('grupo-output').value = alumno.nombre_grupo;
+        document.getElementById('horario-output').value = 'FIN DE SEMANA - SIN CLASES';
+        document.getElementById('retardos-output').value = alumno.retardos || 0;
+        document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0;
 
-        // Mensaje especial para fin de semana
-        const puertaFormateada = this.formatearNombrePuerta(puerta);
-        const mensaje = `${nombreDia.toUpperCase()} - SIN CLASES - ${tipo.toUpperCase()} registrada - Puerta: ${puertaFormateada} - Hora: ${horaActual}`;
-        
-        this.mostrarEstado(mensaje, 'warning');
+        // Mensaje especial para fin de semana
+        const puertaFormateada = this.formatearNombrePuerta(puerta);
+        const mensaje = `${nombreDia.toUpperCase()} - SIN CLASES - ${tipo.toUpperCase()} registrada - Puerta: ${puertaFormateada} - Hora: ${horaActual}`;
+        
+        this.mostrarEstado(mensaje, 'warning');
 
-        setTimeout(() => {
-            document.getElementById('boleta-input').value = '';
-        }, 2000);
-    }
+        setTimeout(() => {
+            document.getElementById('boleta-input').value = '';
+        }, 2000);
+    }
 
-    obtenerHorarioTexto(horario) {
-        if (!horario || horario.length === 0) return 'Sin horario';
+    mostrarResultado(alumnoData, tieneRetardo, sinCredencial, puerta, idTipoRegistro) {
+        const alumno = alumnoData.alumno;
+        const ahora = new Date();
+        const horaActual = this.formatearHora(ahora);
 
-        const horas = horario.map(h => h.inicio).sort();
-        if (horas.length === 0) return 'Sin horario';
+        document.getElementById('nombre-output').value = alumno.nombre;
+        document.getElementById('boleta-output').value = alumno.boleta;
+        document.getElementById('grupo-output').value = alumno.nombre_grupo;
+        document.getElementById('horario-output').value = this.obtenerHorarioTexto(alumnoData.horario);
+        document.getElementById('retardos-output').value = alumno.retardos || 0;
+        document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0;
 
-        const primeraHora = horas[0].substring(0, 5);
-        const ultimaHora = horas[horas.length - 1].substring(0, 5);
+        const tipoRegistroTexto = this.obtenerTipoRegistroTexto(idTipoRegistro, tieneRetardo, sinCredencial);
+        let mensaje = this.generarMensajeResultado(tipoRegistroTexto, puerta, horaActual);
 
-        return `${primeraHora} - ${ultimaHora}`;
-    }
+        this.mostrarEstado(mensaje, 'success');
 
-    mostrarEstado(mensaje, tipo) {
-    const statusIndicator = document.getElementById('status-indicator');
-    const statusMessage = document.getElementById('status-message');
+        setTimeout(() => {
+            document.getElementById('boleta-input').value = '';
+        }, 2000);
+    }
 
-    if (statusIndicator && statusMessage) {
-        statusMessage.textContent = mensaje;
-        
-        // Colores diferentes para cada tipo
-        const colores = {
-            'success': '#4CAF50',
-            'error': '#f44336',
-            'warning': '#ff9800'
-        };
-        
-        statusIndicator.style.backgroundColor = colores[tipo] || '#4CAF50';
+    obtenerTipoRegistroTexto(idTipoRegistro, tieneRetardo, sinCredencial) {
+        const tipos = {
+            0: 'entrada',
+            1: 'salida', 
+            2: 'retardo',
+            3: 'entrada_sin_credencial',
+            4: 'justificado'
+        };
+        
+        let tipo = tipos[idTipoRegistro] || 'entrada';
+        
+        if (tieneRetardo && sinCredencial) {
+            return 'retardo_sin_credencial';
+        }
+        
+        return tipo;
+    }
 
-        // AGREGAR ESTO:
-        const innerBox = document.querySelector('.inner-box');
-        if (innerBox) {
-            innerBox.textContent = mensaje;
-            innerBox.style.backgroundColor = colores[tipo] || '#4CAF50';
-            innerBox.style.color = 'white';
-            innerBox.style.padding = '20px';
-            innerBox.style.borderRadius = '8px';
-            innerBox.style.textAlign = 'center';
-            innerBox.style.fontSize = '16px';
-            innerBox.style.fontWeight = 'bold';
-        }
-    }
-}
+    generarMensajeResultado(tipoRegistro, puerta, hora) {
+        const puertaFormateada = this.formatearNombrePuerta(puerta);
 
-    mostrarError(mensaje) {
-        this.mostrarEstado(mensaje, 'error');
-    }
+        const mensajes = {
+            'entrada': `Entrada normal - Puerta: ${puertaFormateada} - Hora: ${hora}`,
+            'retardo': `ENTRADA CON RETARDO - Puerta: ${puertaFormateada} - Hora: ${hora}`,
+            'entrada_sin_credencial': `Entrada sin credencial - Puerta: ${puertaFormateada} - Hora: ${hora}`,
+            'retardo_sin_credencial': `ENTRADA CON RETARDO Y SIN CREDENCIAL - Puerta: ${puertaFormateada} - Hora: ${hora}`,
+            'salida': `Salida registrada - Puerta: ${puertaFormateada} - Hora: ${hora}`
+        };
 
-    formatearNombrePuerta(puertaValue) {
-        const puertas = {
-            'mexico-tacuba': 'México-Tacuba',
-            'mar-mediterraneo': 'Mar-Mediterráneo'
-        };
-        return puertas[puertaValue] || puertaValue;
-    }
+        return mensajes[tipoRegistro] || `Registro - Puerta: ${puertaFormateada} - Hora: ${hora}`;
+    }
 
-    formatearHora(fecha) {
-        const horas = fecha.getHours().toString().padStart(2, '0');
-        const minutos = fecha.getMinutes().toString().padStart(2, '0');
-        const segundos = fecha.getSeconds().toString().padStart(2, '0');
-        return `${horas}:${minutos}:${segundos}`;
-    }
+    obtenerHorarioTexto(horario) {
+        if (!horario || horario.length === 0) return 'Sin horario';
+
+        const horas = horario.map(h => h.inicio).sort();
+        if (horas.length === 0) return 'Sin horario';
+
+        const primeraHora = horas[0].substring(0, 5);
+        const ultimaHora = horas[horas.length - 1].substring(0, 5);
+
+        return `${primeraHora} - ${ultimaHora}`;
+    }
+
+    mostrarEstado(mensaje, tipo) {
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusMessage = document.getElementById('status-message');
+
+        if (statusIndicator && statusMessage) {
+            statusMessage.textContent = mensaje;
+            
+            const colores = {
+                'success': '#4CAF50',
+                'error': '#f44336',
+                'warning': '#ff9800'
+            };
+            
+            statusIndicator.style.backgroundColor = colores[tipo] || '#4CAF50';
+        }
+    }
+
+    mostrarError(mensaje) {
+        this.mostrarEstado(mensaje, 'error');
+    }
+
+    formatearNombrePuerta(puertaValue) {
+        const puertas = {
+            'mexico-tacuba': 'México-Tacuba',
+            'mar': 'Mar-Mediterráneo'
+        };
+        return puertas[puertaValue] || puertaValue;
+    }
+
+    formatearHora(fecha) {
+        const horas = fecha.getHours().toString().padStart(2, '0');
+        const minutos = fecha.getMinutes().toString().padStart(2, '0');
+        const segundos = fecha.getSeconds().toString().padStart(2, '0');
+        return `${horas}:${minutos}:${segundos}`;
+    }
 }
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
-    new RegistroSystem();
+    new RegistroSystem();
 });
