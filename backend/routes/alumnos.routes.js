@@ -26,7 +26,8 @@ router.post('/justificaciones',
     alumnosController.crearJustificacion
 );
 
-router.get('/verificar-bloqueo/:boleta', alumnosController.verificarBloqueo);
 router.get('/buscar/alumnos', alumnosController.buscarAlumnos);
+router.get('/verificar-bloqueo/:boleta', alumnosController.verificarBloqueo);
+router.get('/:boleta', alumnosController.obtenerAlumno); 
 
 export default router;
