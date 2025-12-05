@@ -1,9 +1,7 @@
-const Alumno = require('../models/Alumno');
-const Registro = require('../models/Registro');
-const Justificacion = require('../models/Justificacion');
+import Alumno from '../models/Alumno.js';
+import Justificacion from '../models/Justificacion.js';
 
-// Función: Obtener datos completos del alumno (para escáner)
-const obtenerAlumno = async (req, res) => {
+export const obtenerAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const alumno = await Alumno.obtenerCompleto(boleta);
@@ -15,7 +13,6 @@ const obtenerAlumno = async (req, res) => {
             });
         }
 
-        // Verificar regla de 3 incidencias sin credencial
         const bloqueado = alumno.info.bloqueado;
         const sinCredencial = alumno.info.sin_credencial;
         
@@ -45,7 +42,7 @@ const obtenerAlumno = async (req, res) => {
     }
 };
 
-exports.obtenerRegistrosAlumno = async (req, res) => {
+export const obtenerRegistrosAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const registros = await Alumno.obtenerRegistros(boleta);
@@ -66,12 +63,10 @@ exports.obtenerRegistrosAlumno = async (req, res) => {
     }
 };
 
-// Función: Bloquear Credencial (Admin-only)
-const bloquearCredencial = async (req, res) => {
+export const bloquearCredencial = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
-        // El Modelo Alumno.bloquear debe devolver un indicador de éxito/fracaso
-        const result = await Alumno.bloquear(boleta); 
+        const result = await Alumno.bloquear(boleta);
 
         if (result.filas_afectadas > 0) {
             res.json({
@@ -94,8 +89,7 @@ const bloquearCredencial = async (req, res) => {
     }
 };
 
-// Función: Desbloquear Credencial (Admin-only)
-const desbloquearCredencial = async (req, res) => {
+export const desbloquearCredencial = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const result = await Alumno.desbloquear(boleta);
@@ -121,8 +115,7 @@ const desbloquearCredencial = async (req, res) => {
     }
 };
 
-// Función: Verificar el estado de bloqueo
-const verificarBloqueo = async (req, res) => {
+export const verificarBloqueo = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const result = await Alumno.verificarBloqueo(boleta);
@@ -149,8 +142,7 @@ const verificarBloqueo = async (req, res) => {
     }
 };
 
-// Función: Buscar alumnos por nombre/boleta (Admin)
-const buscarAlumnos = async (req, res) => {
+export const buscarAlumnos = async (req, res) => {
     try {
         const query = req.query.q || '';
         const alumnos = await Alumno.buscar(query);
@@ -170,7 +162,7 @@ const buscarAlumnos = async (req, res) => {
     }
 };
 
-exports.crearJustificacion = async (req, res) => {
+export const crearJustificacion = async (req, res) => {
     try {
         const { id_registro, justificacion, id_tipo_anterior } = req.body;
 
@@ -202,7 +194,7 @@ exports.crearJustificacion = async (req, res) => {
     }
 };
 
-exports.obtenerJustificacionesAlumno = async (req, res) => {
+export const obtenerJustificacionesAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
         const justificaciones = await Justificacion.obtenerPorAlumno(boleta);
@@ -221,17 +213,4 @@ exports.obtenerJustificacionesAlumno = async (req, res) => {
             message: 'Error obteniendo justificaciones'
         });
     }
-};
-
-// =================================================================
-// Exportación Final (ESM)
-// =================================================================
-
-export {
-    obtenerAlumno,
-    bloquearCredencial,
-    desbloquearCredencial,
-    verificarBloqueo,
-    buscarAlumnos,
-    obtenerRegistrosAlumno
 };
