@@ -213,6 +213,7 @@ class RegistroSystem {
             'retardo': `ENTRADA CON RETARDO - Puerta: ${puertaFormateada} - Hora: ${hora}`,
             'entrada_sin_credencial': `Entrada sin credencial - Puerta: ${puertaFormateada} - Hora: ${hora}`,
             'retardo_sin_credencial': `ENTRADA CON RETARDO Y SIN CREDENCIAL - Puerta: ${puertaFormateada} - Hora: ${hora}`,
+            'salida_sin_credencial': `Salida sin credencial - Puerta: ${puertaFormateada} - Hora: ${hora}`,
             'salida': `Salida registrada - Puerta: ${puertaFormateada} - Hora: ${hora}`
         };
         return mensajes[tipoRegistro] || `Registro - Puerta: ${puertaFormateada} - Hora: ${hora}`;
