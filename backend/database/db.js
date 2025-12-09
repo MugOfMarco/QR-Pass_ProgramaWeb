@@ -31,8 +31,8 @@ async function ejecutarSP(nombreSP, parametros = []) {
         );
         return results;
     } catch (error) {
-        console.error(`Error en SP ${nombreSP}:`, error.message);
-        throw error;
+        console.error(`Error en SP ${nombreSP}:`, error.message); // ⬅️ ¡CRUCIAL!
+    throw error;
     } finally {
         connection.release();
     }

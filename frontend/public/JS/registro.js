@@ -119,38 +119,68 @@ class RegistroSystem {
                 const contadorActual = alumnoData.alumno.sin_credencial || 0;
                 console.log('Contador actual sin credencial:', contadorActual);
                 
-                // Si ya tiene 3 o más, NO registrar (se bloquea en la 3ra)
                 if (contadorActual >= 3) {
                     alert('⛔ DEMASIADAS ENTRADAS SIN CREDENCIAL - EL ALUMNO NO PASA');
                     this.mostrarError('DEMASIADAS ENTRADAS SIN CREDENCIAL - EL ALUMNO NO PASA');
                     document.getElementById('boleta-input').value = '';
-                    return; // SALIR SIN REGISTRAR
+                    return;
                 }
             }
             
             tieneRetardo = await this.verificarRetardoSimple(alumnoData.horario);
             
-            // ASIGNACIÓN DE ID
-            if (tieneRetardo) {
-                idTipoRegistro = this.tiposRegistro.retardo;
-            } else if (sinCredencial) {
-                idTipoRegistro = this.tiposRegistro.entrada_sin_credencial;
+            // CASO ESPECIAL: Retardo Y sin credencial → crear DOS registros
+            if (tieneRetardo && sinCredencial) {
+                // Crear registro de retardo
+                await this.crearRegistroBD(
+                    alumnoData.alumno.boleta,
+                    puerta,
+                    this.tiposRegistro.retardo,
+                    true,
+                    false
+                );
+                
+                // Crear registro de sin credencial
+                await this.crearRegistroBD(
+                    alumnoData.alumno.boleta,
+                    puerta,
+                    this.tiposRegistro.entrada_sin_credencial,
+                    false,
+                    true
+                );
+                
+                idTipoRegistro = this.tiposRegistro.retardo; // Para el mensaje
             } else {
-                idTipoRegistro = this.tiposRegistro.entrada_normal;
+                // ASIGNACIÓN DE ID normal
+                if (tieneRetardo) {
+                    idTipoRegistro = this.tiposRegistro.retardo;
+                } else if (sinCredencial) {
+                    idTipoRegistro = this.tiposRegistro.entrada_sin_credencial;
+                } else {
+                    idTipoRegistro = this.tiposRegistro.entrada_normal;
+                }
+                
+                // Crear un solo registro
+                await this.crearRegistroBD(
+                    alumnoData.alumno.boleta,
+                    puerta,
+                    idTipoRegistro,
+                    tieneRetardo,
+                    sinCredencial
+                );
             }
         } else if (tipo === 'salida') {
-            sinCredencial = tipoEntrada === 'manual'; // Detectar salida sin credencial
+            sinCredencial = tipoEntrada === 'manual';
             idTipoRegistro = this.tiposRegistro.salida;
+            
+            await this.crearRegistroBD(
+                alumnoData.alumno.boleta,
+                puerta,
+                idTipoRegistro,
+                false,
+                sinCredencial
+            );
         }
-
-        // 3. CREAR REGISTRO PRINCIPAL
-        await this.crearRegistroBD(
-            alumnoData.alumno.boleta,
-            puerta,
-            idTipoRegistro,
-            tieneRetardo,
-            sinCredencial
-        );
 
         // 4. Mostrar resultado con advertencia si aplica
         const contadorActual = alumnoData.alumno.sin_credencial || 0;

@@ -42,11 +42,12 @@ class SistemaAlumnos {
     }
 
     async buscarAlumno(boletaInput) {
-        const boleta = boletaInput.trim();
-        if (boleta.length < 10) {
-            this.limpiarDatos();
-            return;
-        }
+        const boleta = String(boletaInput).trim();
+    
+    if (boleta.length < 10) {
+        this.limpiarDatos();
+        return;
+    }
 
         try {
             const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
@@ -218,31 +219,37 @@ class SistemaAlumnos {
         }
     }
 
-    async cargarIncidencias(boleta) {
-        try {
-            const response = await fetch(`${this.apiBase}/alumnos/${boleta}/registros`);
-            
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                this.incidencias = data.registros || [];
-                this.mostrarIncidencias();
-            } else {
-                this.mostrarError('No se pudieron cargar las incidencias');
-                this.incidencias = [];
-                this.mostrarIncidencias();
-            }
-        } catch (error) {
-            console.error('Error cargando incidencias:', error);
-            this.mostrarError('Error al cargar incidencias');
+  async cargarIncidencias(boleta) {
+    try {
+        console.log('🔍 Cargando incidencias para boleta:', boleta);
+        
+        const response = await fetch(`${this.apiBase}/alumnos/${boleta}/registros`);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        console.log('📊 Registros recibidos del backend:', data.registros);
+        
+        if (data.success) {
+            this.incidencias = data.registros || [];
+            console.log('✅ Incidencias cargadas:', this.incidencias.length);
+            console.log('📋 Tipos de incidencias:', this.incidencias.map(i => `ID: ${i.id_registro}, Tipo: ${i.tipo} (${i.id_tipo_registro})`));
+            this.mostrarIncidencias();
+        } else {
+            this.mostrarError('No se pudieron cargar las incidencias');
             this.incidencias = [];
             this.mostrarIncidencias();
         }
+    } catch (error) {
+        console.error('Error cargando incidencias:', error);
+        this.mostrarError('Error al cargar incidencias');
+        this.incidencias = [];
+        this.mostrarIncidencias();
     }
+}
 
     mostrarIncidencias() {
         const tbody = document.getElementById('incidents-tbody');
@@ -295,14 +302,15 @@ class SistemaAlumnos {
     }
 
     formatearTipoIncidencia(tipo) {
-        const tipos = {
-            'retardo': 'Retardo',
-            'entrada_sin_credencial': 'Sin credencial',
-            'entrada': 'Entrada normal',
-            'salida': 'Salida'
-        };
-        return tipos[tipo] || tipo;
-    }
+    const tipos = {
+        'retardo': 'Retardo',
+        // Cambiar esta línea si usas 'sin_credencial' como clave en el JS
+        'sin_credencial': 'Sin credencial', 
+        'entrada': 'Entrada normal',
+        'salida': 'Salida'
+    };
+    return tipos[tipo] || tipo;
+}
 
     obtenerIncidenciasSeleccionadas() {
         const checkboxes = document.querySelectorAll('.incidencia-checkbox:checked');
@@ -383,46 +391,62 @@ class SistemaAlumnos {
     }
 
     async procesarJustificacion(incidencias, justificacion) {
-        try {
-            const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
-            
-            for (const incidencia of incidencias) {
-                // Solo justificar retardos y entradas sin credencial
-                if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'entrada_sin_credencial') {
-                    continue;
-                }
-                
-                const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
-                
-                await fetch(`${this.apiBase}/alumnos/justificaciones`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_registro: incidencia.id_registro,
-                        justificacion: justificacionTexto,
-                        id_tipo_anterior: idTipoAnterior
-                    })
-                });
+    try {
+        const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
+        
+        for (const incidencia of incidencias) {
+            if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'entrada_sin_credencial') {
+                continue;
             }
-
-            this.mostrarExito(`Se justificaron ${incidencias.length} incidencia(s) correctamente`);
             
-            // Recargar datos del alumno para actualizar contadores
-            await this.buscarAlumno(this.alumnoActual.boleta);
+            const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
             
-        } catch (error) {
-            console.error('Error justificando incidencias:', error);
-            this.mostrarError('Error al justificar incidencias: ' + error.message);
+            // 🔍 LOG CRÍTICO: Ver qué datos se están enviando
+            console.log('📤 ENVIANDO AL BACKEND:', {
+                id_registro: incidencia.id_registro,
+                justificacion: justificacionTexto,
+                id_tipo_anterior: idTipoAnterior,
+                tipo_incidencia_original: incidencia.tipo
+            });
+            
+            const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id_registro: incidencia.id_registro,
+                    justificacion: justificacionTexto,
+                    id_tipo_anterior: idTipoAnterior
+                })
+            });
+            
+            const result = await response.json();
+            console.log('📥 RESPUESTA BACKEND:', result);
         }
-    }
 
-    obtenerIdTipoAnterior(tipoIncidencia) {
-        const tipos = {
-            'retardo': 2,  // id_tipo_registro para retardo
-            'entrada_sin_credencial': 3  // id_tipo_registro para entrada_sin_credencial
-        };
-        return tipos[tipoIncidencia] || 2;
+        this.mostrarExito(`Se justificaron ${incidencias.length} incidencia(s) correctamente`);
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await this.buscarAlumno(String(this.alumnoActual.boleta));
+        
+    } catch (error) {
+        console.error('Error justificando incidencias:', error);
+        this.mostrarError('Error al justificar incidencias: ' + error.message);
     }
+}
+
+    // ✅ Modificación en buscarAlumno.js
+
+obtenerIdTipoAnterior(tipoIncidencia) {
+    // Los valores provienen del campo 'tipo' de la BD
+    const tipos = {
+        'retardo': 2,
+        'sin_credencial': 3 // CORREGIDO: Usar el valor exacto de la columna 'tipo'
+    };
+    
+    // Si tipoIncidencia es 'sin_credencial', ahora mapea correctamente a 3.
+    const id = tipos[tipoIncidencia] || 2; 
+    return id;
+}
 
     obtenerTextoJustificacion(valor) {
         const justificaciones = {

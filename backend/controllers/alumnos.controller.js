@@ -162,15 +162,20 @@ export const buscarAlumnos = async (req, res) => {
     }
 };
 
+// En alumnos.controller.js
 export const crearJustificacion = async (req, res) => {
     try {
         const { id_registro, justificacion, id_tipo_anterior } = req.body;
+        
+        console.log('📝 Creando justificación:', { id_registro, justificacion, id_tipo_anterior });
 
         const result = await Justificacion.crear({
             id_registro: id_registro,
             justificacion: justificacion,
             id_tipo_anterior: id_tipo_anterior
         });
+
+        console.log('✅ Resultado:', result);
 
         if (result) {
             res.json({
@@ -179,6 +184,7 @@ export const crearJustificacion = async (req, res) => {
                 id_justificacion: result.id_justificacion
             });
         } else {
+            console.error('❌ No se obtuvo resultado del SP');
             res.status(400).json({
                 success: false,
                 message: 'Error al crear justificación'
@@ -186,7 +192,7 @@ export const crearJustificacion = async (req, res) => {
         }
 
     } catch (error) {
-        console.error('Error creando justificación:', error);
+        console.error('❌ Error creando justificación:', error);
         res.status(500).json({
             success: false,
             message: 'Error creando justificación: ' + error.message

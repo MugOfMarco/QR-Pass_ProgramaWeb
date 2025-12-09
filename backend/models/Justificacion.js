@@ -5,14 +5,27 @@ import { ejecutarSP } from '../database/db.js'; // Importación ESM y añadimos 
 
 class Justificacion {
     static async crear(data) {
-        // Llama al SP para crear una nueva justificación
-        const results = await ejecutarSP('sp_crear_justificacion', [
-            data.id_registro,
-            data.justificacion,
-            data.id_tipo_anterior
-        ]);
-        return results[0] && results[0][0] ? results[0][0] : null;
-    }
+        const results = await ejecutarSP('sp_crear_justificacion', [
+            data.id_registro,
+            data.justificacion,
+            data.id_tipo_anterior
+        ]);
+        
+        // 1. Verificar si el SP devolvió una fila con el ID (Manejo de SELECT final en el SP)
+        if (results && results[0] && results[0][0]) {
+            return results[0][0]; // Devuelve la fila de datos si existe (e.g., { id_justificacion: X })
+        }
+
+        // 2. Si el SP se ejecutó sin errores pero no devolvió filas de datos (solo metadatos de UPDATE/INSERT),
+        // devolvemos un objeto de éxito simple. Esto garantiza que el controlador no falle.
+        if (results && results.length > 0) {
+            // Devolvemos un objeto 'truthy' con un ID nulo, suficiente para que el controller asuma el éxito
+            return { id_justificacion: null, success: true };
+        }
+        
+        // 3. Fallo total (Si results es null o vacío)
+        return null;
+    }
 
     static async obtenerPorAlumno(boleta) {
         // Llama al SP para obtener todas las justificaciones de un alumno
