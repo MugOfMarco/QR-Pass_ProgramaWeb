@@ -358,7 +358,7 @@ class SistemaAlumnos {
 
     async justificarTodasSinCredencial() {
         const incidenciasSinCredencial = this.incidencias.filter(inc => 
-            inc.tipo === 'entrada_sin_credencial'
+            inc.tipo === 'sin_credencial'
         );
         
         if (incidenciasSinCredencial.length === 0) {
@@ -395,19 +395,13 @@ class SistemaAlumnos {
         const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
         
         for (const incidencia of incidencias) {
-            if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'entrada_sin_credencial') {
+            if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'sin_credencial') {
                 continue;
             }
             
             const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
             
-            // 🔍 LOG CRÍTICO: Ver qué datos se están enviando
-            console.log('📤 ENVIANDO AL BACKEND:', {
-                id_registro: incidencia.id_registro,
-                justificacion: justificacionTexto,
-                id_tipo_anterior: idTipoAnterior,
-                tipo_incidencia_original: incidencia.tipo
-            });
+            // 🔍 LOG CRÍTICO: Ver qué datos se están envi
             
             const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
                 method: 'POST',
