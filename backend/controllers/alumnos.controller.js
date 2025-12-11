@@ -1,262 +1,348 @@
 import Alumno from '../models/Alumno.js';
-import Justificacion from '../models/Justificacion.js';
+import { cloudinary, getOptimizedImageUrl } from '../database/cloudinary.js';
 
+// Función para obtener alumno (FALTANTE)
 export const obtenerAlumno = async (req, res) => {
     try {
-        const boleta = parseInt(req.params.boleta);
-        const alumno = await Alumno.obtenerCompleto(boleta);
-
-        if (!alumno) {
-            return res.status(404).json({
+        const { boleta } = req.params;
+        const alumno = await Alumno.obtenerBasico(boleta);
+        
+        if (alumno) {
+            res.json({
+                success: true,
+                alumno: alumno
+            });
+        } else {
+            res.status(404).json({
                 success: false,
                 message: 'Alumno no encontrado'
             });
         }
-
-        const bloqueado = alumno.info.bloqueado;
-        const sinCredencial = alumno.info.sin_credencial;
-        
-        let mensajeAcceso = '';
-        if (bloqueado) {
-            mensajeAcceso = 'CREDENCIAL BLOQUEADA';
-        } else if (sinCredencial >= 3) {
-            mensajeAcceso = 'ACCESO DENEGADO - 3+ incidencias sin credencial';
-        }
-
-        res.json({
-            success: true,
-            alumno: alumno.info,  // Aquí ya viene la URL en alumno.info.url
-            horario: alumno.horario,
-            materiasAcreditadas: alumno.materiasAcreditadas,
-            bloqueado: bloqueado,
-            sinCredencial: sinCredencial,
-            mensajeAcceso: mensajeAcceso
-        });
-
     } catch (error) {
         console.error('Error obteniendo alumno:', error);
         res.status(500).json({
             success: false,
-            message: 'Error obteniendo datos del alumno'
+            message: 'Error obteniendo alumno: ' + error.message
         });
     }
 };
 
-export const obtenerRegistrosAlumno = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const registros = await Alumno.obtenerRegistros(boleta);
-
-        res.json({
-            success: true,
-            boleta: boleta,
-            registros: registros,
-            total: registros.length
-        });
-
-    } catch (error) {
-        console.error('Error obteniendo registros:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error obteniendo registros'
-        });
-    }
-};
-
-export const bloquearCredencial = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.bloquear(boleta);
-
-        if (result.filas_afectadas > 0) {
-            res.json({
-                success: true,
-                message: 'Credencial bloqueada exitosamente'
-            });
-        } else {
-            res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
-        }
-
-    } catch (error) {
-        console.error('Error bloqueando credencial:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error bloqueando credencial'
-        });
-    }
-};
-
-export const desbloquearCredencial = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.desbloquear(boleta);
-
-        if (result.filas_afectadas > 0) {
-            res.json({
-                success: true,
-                message: 'Credencial desbloqueada exitosamente'
-            });
-        } else {
-            res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
-        }
-
-    } catch (error) {
-        console.error('Error desbloqueando credencial:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error desbloqueando credencial'
-        });
-    }
-};
-
-export const verificarBloqueo = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const result = await Alumno.verificarBloqueo(boleta);
-
-        if (result) {
-            res.json({
-                success: true,
-                bloqueado: result.bloqueado,
-                nombre: result.nombre
-            });
-        } else {
-            res.status(404).json({
-                success: false,
-                message: 'Alumno no encontrado'
-            });
-        }
-
-    } catch (error) {
-        console.error('Error verificando bloqueo:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error verificando estado de credencial'
-        });
-    }
-};
-
+// Función para buscar alumnos (FALTANTE)
 export const buscarAlumnos = async (req, res) => {
     try {
-        const query = req.query.q || '';
+        const { query } = req.query;
         const alumnos = await Alumno.buscar(query);
-
+        
         res.json({
             success: true,
-            alumnos: alumnos,
-            total: alumnos.length
+            alumnos: alumnos
         });
-
     } catch (error) {
         console.error('Error buscando alumnos:', error);
         res.status(500).json({
             success: false,
-            message: 'Error buscando alumnos'
+            message: 'Error buscando alumnos: ' + error.message
         });
     }
 };
 
-export const crearJustificacion = async (req, res) => {
+// Función para verificar bloqueo (FALTANTE)
+export const verificarBloqueo = async (req, res) => {
     try {
-        const { id_registro, justificacion, id_tipo_anterior } = req.body;
+        const { boleta } = req.params;
+        const bloqueado = await Alumno.verificarBloqueo(boleta);
         
-        console.log('Creando justificación:', { id_registro, justificacion, id_tipo_anterior });
-
-        const result = await Justificacion.crear({
-            id_registro: id_registro,
-            justificacion: justificacion,
-            id_tipo_anterior: id_tipo_anterior
+        res.json({
+            success: true,
+            bloqueado: bloqueado
         });
+    } catch (error) {
+        console.error('Error verificando bloqueo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error verificando bloqueo: ' + error.message
+        });
+    }
+};
 
-        console.log('Resultado:', result);
-
-        if (result) {
+// Función para bloquear credencial (FALTANTE)
+export const bloquearCredencial = async (req, res) => {
+    try {
+        const { boleta } = req.params;
+        const result = await Alumno.bloquearCredencial(boleta);
+        
+        if (result.success) {
             res.json({
                 success: true,
-                message: 'Incidencia justificada correctamente',
-                id_justificacion: result.id_justificacion
+                message: result.message
             });
         } else {
-            console.error('No se obtuvo resultado del SP');
             res.status(400).json({
                 success: false,
-                message: 'Error al crear justificación'
+                message: result.message
             });
         }
-
     } catch (error) {
-        console.error('Error creando justificación:', error);
+        console.error('Error bloqueando credencial:', error);
         res.status(500).json({
             success: false,
-            message: 'Error creando justificación: ' + error.message
+            message: 'Error bloqueando credencial: ' + error.message
         });
     }
 };
 
-export const obtenerJustificacionesAlumno = async (req, res) => {
+// Función para desbloquear credencial (FALTANTE)
+export const desbloquearCredencial = async (req, res) => {
     try {
-        const boleta = parseInt(req.params.boleta);
-        const justificaciones = await Justificacion.obtenerPorAlumno(boleta);
-
-        res.json({
-            success: true,
-            boleta: boleta,
-            justificaciones: justificaciones,
-            total: justificaciones.length
-        });
-
-    } catch (error) {
-        console.error('Error obteniendo justificaciones:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error obteniendo justificaciones'
-        });
-    }
-};
-
-// NUEVO: Método para obtener solo la información básica con URL
-export const obtenerAlumnoBasico = async (req, res) => {
-    try {
-        const boleta = parseInt(req.params.boleta);
-        const alumno = await Alumno.obtenerCompleto(boleta);
-
-        if (!alumno) {
-            return res.status(404).json({
+        const { boleta } = req.params;
+        const result = await Alumno.desbloquearCredencial(boleta);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: result.message
+            });
+        } else {
+            res.status(400).json({
                 success: false,
-                message: 'Alumno no encontrado'
+                message: result.message
+            });
+        }
+    } catch (error) {
+        console.error('Error desbloqueando credencial:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error desbloqueando credencial: ' + error.message
+        });
+    }
+};
+
+// Función para obtener registros del alumno (FALTANTE)
+export const obtenerRegistrosAlumno = async (req, res) => {
+    try {
+        const { boleta } = req.params;
+        const registros = await Alumno.obtenerRegistros(boleta);
+        
+        res.json({
+            success: true,
+            registros: registros
+        });
+    } catch (error) {
+        console.error('Error obteniendo registros del alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error obteniendo registros del alumno: ' + error.message
+        });
+    }
+};
+
+// Funciones que ya tienes (las que me mostraste)
+export const registrarAlumno = async (req, res) => {
+    try {
+        const alumnoData = req.body;
+        
+        const result = await Alumno.registrar(alumnoData);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: result.message,
+                boleta: alumnoData.boleta
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: result.message
+            });
+        }
+    } catch (error) {
+        console.error('Error registrando alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error registrando alumno: ' + error.message
+        });
+    }
+};
+
+export const modificarAlumno = async (req, res) => {
+    try {
+        const { boleta } = req.params;
+        const alumnoData = req.body;
+        
+        const result = await Alumno.modificar(boleta, alumnoData);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: result.message,
+                boleta: boleta
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: result.message
+            });
+        }
+    } catch (error) {
+        console.error('Error modificando alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error modificando alumno: ' + error.message
+        });
+    }
+};
+
+export const eliminarAlumno = async (req, res) => {
+    try {
+        const { boleta } = req.params;
+        
+        const result = await Alumno.eliminar(boleta);
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: result.message
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: result.message
+            });
+        }
+    } catch (error) {
+        console.error('Error eliminando alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error eliminando alumno: ' + error.message
+        });
+    }
+};
+
+export const obtenerGrupos = async (req, res) => {
+    try {
+        const grupos = await Alumno.obtenerGrupos();
+        
+        res.json({
+            success: true,
+            grupos: grupos
+        });
+    } catch (error) {
+        console.error('Error obteniendo grupos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error obteniendo grupos'
+        });
+    }
+};
+
+export const obtenerEstadosAcademicos = async (req, res) => {
+    try {
+        const estados = await Alumno.obtenerEstadosAcademicos();
+        
+        res.json({
+            success: true,
+            estados: estados
+        });
+    } catch (error) {
+        console.error('Error obteniendo estados académicos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error obteniendo estados académicos'
+        });
+    }
+};
+
+export const obtenerCarreras = async (req, res) => {
+    try {
+        const carreras = await Alumno.obtenerCarreras();
+        
+        res.json({
+            success: true,
+            carreras: carreras
+        });
+    } catch (error) {
+        console.error('Error obteniendo carreras:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error obteniendo carreras'
+        });
+    }
+};
+
+// Funciones de upload que están en el mismo archivo
+export const uploadImage = async (req, res) => {
+    try {
+        console.log('Subiendo imagen...');
+        
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No se proporcionó ninguna imagen'
             });
         }
 
-        // Extraer solo la información básica con URL
-        const alumnoBasico = {
-            boleta: alumno.info.boleta,
-            nombre: alumno.info.nombre,
-            nombre_grupo: alumno.info.nombre_grupo,
-            carrera: alumno.info.carrera,
-            estado_academico: alumno.info.estado_academico,
-            sin_credencial: alumno.info.sin_credencial,
-            retardos: alumno.info.retardos,
-            puerta_abierta: alumno.info.puerta_abierta,
-            bloqueado: alumno.info.bloqueado,
-            url: alumno.info.url // URL de la imagen
-        };
+        // Convertir buffer a base64 para Cloudinary
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+        // Subir a Cloudinary desde data URI
+        const result = await cloudinary.uploader.upload(dataURI, {
+            folder: 'qrpass/alumnos',
+            resource_type: 'image',
+            transformation: [
+                { width: 300, height: 300, crop: 'fill', gravity: 'auto' },
+                { quality: 'auto', fetch_format: 'auto' }
+            ]
+        });
+
+        console.log('Imagen subida a Cloudinary:', result.secure_url);
+
+        // Obtener URL optimizada
+        const optimizedUrl = getOptimizedImageUrl(result.secure_url, {
+            width: 300,
+            height: 300,
+            crop: 'fill'
+        });
 
         res.json({
             success: true,
-            alumno: alumnoBasico
+            url: optimizedUrl,
+            public_id: result.public_id,
+            message: 'Imagen subida exitosamente'
         });
 
     } catch (error) {
-        console.error('Error obteniendo alumno basico:', error);
+        console.error('Error subiendo imagen:', error);
         res.status(500).json({
             success: false,
-            message: 'Error obteniendo datos básicos del alumno'
+            message: 'Error subiendo imagen: ' + error.message
+        });
+    }
+};
+
+export const deleteImage = async (req, res) => {
+    try {
+        const { public_id } = req.body;
+        
+        if (!public_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Se requiere public_id'
+            });
+        }
+
+        await cloudinary.uploader.destroy(public_id);
+        
+        res.json({
+            success: true,
+            message: 'Imagen eliminada de Cloudinary'
+        });
+
+    } catch (error) {
+        console.error('Error eliminando imagen:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error eliminando imagen: ' + error.message
         });
     }
 };

@@ -8,7 +8,8 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.routes.js'; 
 import alumnosRoutes from './routes/alumnos.routes.js';
 import registrosRoutes from './routes/registros.routes.js';
-import { verificarConexion } from './database/db.js'; 
+import { verificarConexion } from './database/db.js';
+import uploadRoutes from './routes/upload.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,6 +65,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/alumnos', alumnosRoutes);
 app.use('/api/registros', registrosRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/', (req, res) => {
     if (req.session.user) {
