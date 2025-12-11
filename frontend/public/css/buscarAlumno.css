@@ -759,3 +759,80 @@ body {
         max-height: 150px;
     }
 }
+
+/* Estilos para la foto del alumno en búsqueda */
+.photo-box {
+    width: 100%;
+    height: 300px; /* Aumentar altura */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+#student-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Mostrar imagen completa */
+    transition: transform 0.3s ease;
+    background-color: white;
+    padding: 5px;
+}
+
+#student-photo:hover {
+    transform: scale(1.02);
+}
+
+/* Estilo para cuando no hay foto */
+.photo-box:not(:has(img[src]))::before {
+    content: "Foto del alumno";
+    color: #6c757d;
+    font-style: italic;
+    font-size: 16px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+/* Estilos para foto bloqueada */
+#student-photo.bloqueado {
+    border: 4px solid #dc3545;
+    filter: grayscale(30%);
+    opacity: 0.9;
+}
+
+/* Ajustes para el contenedor de foto y botones */
+.photo-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+.credential-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Ajustar el layout del top-section */
+.top-section {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.photo-container {
+    flex: 0 0 300px; /* Ancho fijo para la foto */
+}
+
+.incidents-section {
+    flex: 1;
+}

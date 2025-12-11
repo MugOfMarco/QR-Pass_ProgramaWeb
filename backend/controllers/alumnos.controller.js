@@ -25,7 +25,7 @@ export const obtenerAlumno = async (req, res) => {
 
         res.json({
             success: true,
-            alumno: alumno.info,
+            alumno: alumno.info,  // Aquí ya viene la URL en alumno.info.url
             horario: alumno.horario,
             materiasAcreditadas: alumno.materiasAcreditadas,
             bloqueado: bloqueado,
@@ -162,12 +162,11 @@ export const buscarAlumnos = async (req, res) => {
     }
 };
 
-// En alumnos.controller.js
 export const crearJustificacion = async (req, res) => {
     try {
         const { id_registro, justificacion, id_tipo_anterior } = req.body;
         
-        console.log('📝 Creando justificación:', { id_registro, justificacion, id_tipo_anterior });
+        console.log('Creando justificación:', { id_registro, justificacion, id_tipo_anterior });
 
         const result = await Justificacion.crear({
             id_registro: id_registro,
@@ -175,7 +174,7 @@ export const crearJustificacion = async (req, res) => {
             id_tipo_anterior: id_tipo_anterior
         });
 
-        console.log('✅ Resultado:', result);
+        console.log('Resultado:', result);
 
         if (result) {
             res.json({
@@ -184,7 +183,7 @@ export const crearJustificacion = async (req, res) => {
                 id_justificacion: result.id_justificacion
             });
         } else {
-            console.error('❌ No se obtuvo resultado del SP');
+            console.error('No se obtuvo resultado del SP');
             res.status(400).json({
                 success: false,
                 message: 'Error al crear justificación'
@@ -192,7 +191,7 @@ export const crearJustificacion = async (req, res) => {
         }
 
     } catch (error) {
-        console.error('❌ Error creando justificación:', error);
+        console.error('Error creando justificación:', error);
         res.status(500).json({
             success: false,
             message: 'Error creando justificación: ' + error.message
@@ -217,6 +216,47 @@ export const obtenerJustificacionesAlumno = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error obteniendo justificaciones'
+        });
+    }
+};
+
+// NUEVO: Método para obtener solo la información básica con URL
+export const obtenerAlumnoBasico = async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        const alumno = await Alumno.obtenerCompleto(boleta);
+
+        if (!alumno) {
+            return res.status(404).json({
+                success: false,
+                message: 'Alumno no encontrado'
+            });
+        }
+
+        // Extraer solo la información básica con URL
+        const alumnoBasico = {
+            boleta: alumno.info.boleta,
+            nombre: alumno.info.nombre,
+            nombre_grupo: alumno.info.nombre_grupo,
+            carrera: alumno.info.carrera,
+            estado_academico: alumno.info.estado_academico,
+            sin_credencial: alumno.info.sin_credencial,
+            retardos: alumno.info.retardos,
+            puerta_abierta: alumno.info.puerta_abierta,
+            bloqueado: alumno.info.bloqueado,
+            url: alumno.info.url // URL de la imagen
+        };
+
+        res.json({
+            success: true,
+            alumno: alumnoBasico
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo alumno basico:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error obteniendo datos básicos del alumno'
         });
     }
 };

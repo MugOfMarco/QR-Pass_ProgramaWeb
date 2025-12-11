@@ -44,10 +44,10 @@ class SistemaAlumnos {
     async buscarAlumno(boletaInput) {
         const boleta = String(boletaInput).trim();
     
-    if (boleta.length < 10) {
-        this.limpiarDatos();
-        return;
-    }
+        if (boleta.length < 10) {
+            this.limpiarDatos();
+            return;
+        }
 
         try {
             const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
@@ -63,7 +63,8 @@ class SistemaAlumnos {
                 this.mostrarDatosAlumno();
                 this.mostrarHorario(data.horario);
                 await this.cargarIncidencias(boleta);
-                await this.cargarFotoAlumno(boleta);
+                // Cargar la foto del alumno
+                this.mostrarFotoAlumno(data.alumno);
             } else {
                 this.mostrarError('Alumno no encontrado');
                 this.limpiarDatos();
@@ -72,6 +73,41 @@ class SistemaAlumnos {
             console.error('Error:', error);
             this.mostrarError('Error de conexión: ' + error.message);
             this.limpiarDatos();
+        }
+    }
+
+    mostrarFotoAlumno(alumno) {
+        const fotoElement = document.getElementById('student-photo');
+        const photoBox = document.querySelector('.photo-box');
+        
+        if (!fotoElement || !photoBox) return;
+
+        if (alumno && alumno.url) {
+            fotoElement.src = alumno.url;
+            fotoElement.alt = `Foto de ${alumno.nombre}`;
+            fotoElement.style.display = 'block';
+            
+            // Agregar clase si está bloqueado
+            if (alumno.bloqueado) {
+                fotoElement.classList.add('bloqueado');
+                photoBox.style.borderColor = '#dc3545';
+            } else {
+                fotoElement.classList.remove('bloqueado');
+                photoBox.style.borderColor = '#dee2e6';
+            }
+            
+            // Manejar error de imagen
+            fotoElement.onerror = () => {
+                fotoElement.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765350850/default_avatar.jpg';
+                fotoElement.style.display = 'block';
+            };
+        } else {
+            fotoElement.src = '';
+            fotoElement.style.display = 'none';
+            fotoElement.classList.remove('bloqueado');
+            if (photoBox) {
+                photoBox.style.borderColor = '#dee2e6';
+            }
         }
     }
 
@@ -194,6 +230,13 @@ class SistemaAlumnos {
         
         // Limpiar estado de credencial
         this.limpiarEstadoCredencial();
+        
+        const fotoElement = document.getElementById('student-photo');
+        if (fotoElement) {
+            fotoElement.src = '';
+            fotoElement.style.display = 'none';
+            fotoElement.classList.remove('bloqueado');
+        }
         
         this.alumnoActual = null;
         this.incidencias = [];
