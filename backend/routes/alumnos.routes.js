@@ -5,6 +5,9 @@ import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
 
 router.get('/:boleta', alumnosController.obtenerAlumno);
 
+// Nueva ruta para información básica con URL
+router.get('/:boleta/basico', alumnosController.obtenerAlumnoBasico);
+
 router.use(requireAuth);
 
 router.put('/bloquear/:boleta', 
@@ -28,6 +31,5 @@ router.post('/justificaciones',
 
 router.get('/buscar/alumnos', alumnosController.buscarAlumnos);
 router.get('/verificar-bloqueo/:boleta', alumnosController.verificarBloqueo);
-router.get('/:boleta', alumnosController.obtenerAlumno); 
 
 export default router;

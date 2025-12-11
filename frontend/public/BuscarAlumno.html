@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscar Alumno</title>
     <link rel="stylesheet" href="../css/buscarAlumno.css">
 </head>
-
 <body>
     <header class="site-header">
         <div class="header-container">
@@ -28,27 +26,21 @@
             <li>
                 <a href="./Entrada_Salida.html">Registro de entrada y salida</a>
             </li>
-
             <li>
                 <a href="./BuscarAlumno.html">Buscar alumno</a>
             </li>
-
             <li class="admin-only-link">
-
                 <a href="./ModificarAlumno.html">Modificar alumno</a>
-                </li>
-
-                <li class="admin-only-link">
-
-                    <a href="./RegistrarAlumno.html">Registrar alumno</a>
-                </li>
+            </li>
+            <li class="admin-only-link">
+                <a href="./RegistrarAlumno.html">Registrar alumno</a>
+            </li>
         </ul>
     </nav>
 
     <div id="menu-overlay" class="menu-overlay"></div>
 
     <div class="main-container">
-        <!-- Columna Izquierda: Datos del Alumno -->
         <section class="student-search-section">
             <div class="container">
                 <div class="input-group">
@@ -95,7 +87,6 @@
                     </div>
                 </div>
 
-                <!-- Contadores de incidencias -->
                 <div class="incident-counters">
                     <div class="counter-item">
                         <span class="counter-label">Incidencias:</span>
@@ -105,7 +96,6 @@
                         <span class="counter-label">Retardos:</span>
                         <span class="counter-value" id="total-retardos">0</span>
                     </div>
-                    <!-- Estado de credencial -->
                     <div class="counter-item">
                         <span class="counter-label">Estado credencial:</span>
                         <span class="counter-value" id="estado-credencial">-</span>
@@ -114,18 +104,16 @@
             </div>
         </section>
 
-        <!-- Columna Derecha: Layout reorganizado -->
         <section class="student-actions-section">
             <div class="container">
                 <div class="top-section">
-                    <!-- Foto del estudiante a la izquierda -->
                     <div class="photo-container">
-                        <div class="placeholder-box photo-box">
-                            <img id="student-photo" src="" alt="Foto del estudiante"
-                                style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                        <!-- CONTENEDOR DE FOTO DEL ALUMNO -->
+                        <div class="placeholder-box photo-box" id="photo-box">
+                            <img id="student-photo" src="" alt="Foto del estudiante" 
+                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: none;">
                         </div>
 
-                        <!-- Botones de credencial -->
                         <div class="credential-buttons">
                             <button type="button" id="btn-bloquear-credencial" class="btn-credential btn-block">
                                 BLOQUEAR CREDENCIAL
@@ -136,15 +124,12 @@
                         </div>
                     </div>
 
-                    <!-- Sección de Incidencias -->
                     <div class="incidents-section">
                         <h2 class="section-title">Incidencias</h2>
-
                         <div class="table-container">
                             <table class="incidents-table">
                                 <thead>
                                     <tr>
-
                                         <th width="120">Puerta</th>
                                         <th width="100">Fecha</th>
                                         <th width="80">Hora</th>
@@ -163,17 +148,14 @@
                     </div>
                 </div>
 
-                <!-- Controles de tabla (Select y botones de justificación) -->
                 <div class="justification-section">
                     <h3 class="justification-title">Justificación</h3>
-
                     <select name="item-selector" id="item-selector">
                         <option value="item1">Selecciona una justificación...</option>
                         <option value="item2">Se habló con el tutor/a</option>
                         <option value="item3">Se habló con el estudiante</option>
                         <option value="item4">Error en el registro</option>
                     </select>
-
                     <div class="justification-buttons">
                         <button type="button" id="btn-justselec">
                             Justificar<br>selección
@@ -198,8 +180,8 @@
             <p>© 2024 Sistema de Control Escolar - CECyT 9</p>
         </div>
     </footer>
+    
     <script src="../js/navigation.js"></script>
     <script src="../js/buscarAlumno.js"></script>
 </body>
-
 </html>

@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro</title>
     <link rel="stylesheet" href="../css/en_sa.css">
-
 </head>
-
 <body>
     <header class="site-header">
         <div class="header-container">
@@ -29,18 +26,13 @@
             <li>
                 <a href="./Entrada_Salida.html">Registro de entrada y salida</a>
             </li>
-
             <li>
                 <a href="./BuscarAlumno.html">Buscar alumno</a>
             </li>
-
             <li class="admin-only-link">
-
                 <a href="./ModificarAlumno.html">Modificar alumno</a>
             </li>
-
             <li class="admin-only-link">
-
                 <a href="./RegistrarAlumno.html">Registrar alumno</a>
             </li>
         </ul>
@@ -50,31 +42,31 @@
 
     <div class="status-container">
         <div id="status-indicator"></div>
-        <h2 id="status-message">Esperando registro... </h2>
+        <h2 id="status-message">Esperando registro...</h2>
 
         <div class="main-container">
-
+            <!-- COLUMNA IZQUIERDA: Puerta y Foto -->
             <section>
                 <div class="container">
-
                     <fieldset class="option-group">
                         <legend>Puerta de ingreso</legend>
                         <input type="radio" id="mexico-tacuba" name="puerta" value="mexico-tacuba" checked required>
                         <label for="mexico">México-Tacuba</label>
                         <input type="radio" id="mar" name="puerta" value="mar" required>
                         <label for="mar">Mar-Mediterraneo</label>
-
                     </fieldset>
-
-                    <div class="placeholder-box Registro">
+                    
+                    <!-- AQUÍ VA LA FOTO DEL ALUMNO -->
+                     <div class="placeholder-box Registro">
                         <div class="inner-box">
-
+                            <!-- Mensajes de registro aparecen aquí -->
                         </div>
                     </div>
+                    
                 </div>
             </section>
 
-
+            <!-- COLUMNA DERECHA: Tipo y Resultado -->
             <section>
                 <div class="container">
                     <fieldset class="option-group">
@@ -84,18 +76,16 @@
                         <input type="radio" id="salida" name="tipo" value="salida" required>
                         <label for="salida">Salida</label>
                     </fieldset>
-
-                    <div class="placeholder-box info-box">
-
+                    
+                    <!-- AQUÍ VA EL MENSAJE DE ENTRADA/SALIDA -->
+                    <div class="placeholder-box info-box" id="info-box">
+                        <img id="student-photo" src="" alt="Foto del alumno" style="display: none;">
                     </div>
                 </div>
             </section>
-
         </div>
 
-
         <div class="column-outputs">
-
             <div class="text-entry field">
                 <label for="qr-input">Registro por QR</label>
                 <input type="text" id="boleta-input" name="qr-input" class="qr-input-url">
@@ -126,18 +116,16 @@
                     <input type="text" id="retardos-output" name="retardos" readonly>
                     <label for="retardos">Retardos</label>
                 </div>
-
                 <div class="text-entry field">
                     <input type="text" id="sin-credencial-output" name="sin-credencial" readonly>
                     <label for="sin-credencial">Sin credencial</label>
                 </div>
-
             </div>
-
         </div>
-        <script src="../js/navigation.js"></script>
-        <script src="../js/registro.js" defer></script>
-        <script src="../js/validaciones.js" defer></script>
-</body>
+    </div>
 
+    <script src="../js/navigation.js"></script>
+    <script src="../js/registro.js" defer></script>
+    <script src="../js/validaciones.js" defer></script>
+</body>
 </html>

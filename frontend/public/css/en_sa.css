@@ -437,3 +437,220 @@ body {
         padding: 0.8rem 1.2rem;
     }
 }
+
+/* Estilos para la foto del alumno en registro */
+#info-box {
+    width: 100%;
+    height: 250px; /* Aumentar altura */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    margin-top: 15px;
+}
+
+#student-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Mostrar imagen completa */
+    transition: transform 0.3s ease;
+    background-color: white;
+    padding: 5px;
+}
+
+#student-photo:hover {
+    transform: scale(1.02);
+}
+
+/* Estilo para cuando no hay foto */
+#info-box:not(:has(img[src]))::before {
+    content: "Foto del alumno aparecerá aquí";
+    color: #6c757d;
+    font-style: italic;
+    font-size: 16px;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Estilos para cuando el alumno está bloqueado */
+#student-photo.bloqueado {
+    border: 4px solid #dc3545;
+    filter: grayscale(30%);
+    opacity: 0.9;
+}
+
+.main-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    width: 100%;
+}
+
+.main-container section {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenedor de cada columna */
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Estilos para la columna izquierda (puerta y tipo) */
+.option-group {
+    border: 3px solid #333;
+    border-radius: 15px;
+    padding: 1.5rem;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.option-group legend {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
+    padding: 0 1rem;
+}
+
+.option-group input[type="radio"] {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    accent-color: #5c1f33;
+}
+
+.option-group label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+}
+
+/* Estilos para la columna derecha (foto y mensaje) */
+#info-box {
+    width: 100%;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+#student-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+    background-color: white;
+    padding: 10px;
+}
+
+#student-photo:hover {
+    transform: scale(1.02);
+}
+
+/* Estilo para cuando no hay foto */
+#info-box:not(:has(img[src]))::before {
+    content: "Foto del alumno aparecerá aquí";
+    color: #6c757d;
+    font-style: italic;
+    font-size: 16px;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Estilos para cuando el alumno está bloqueado */
+#student-photo.bloqueado {
+    border: 4px solid #dc3545;
+    filter: grayscale(30%);
+    opacity: 0.9;
+}
+
+/* Caja para el mensaje de registro */
+.Registro {
+    min-height: 200px;
+    border: 3px solid #8b4513;
+    border-radius: 15px;
+    background: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#registro-mensaje {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+/* Colores para diferentes tipos de mensaje */
+#registro-mensaje.success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#registro-mensaje.error {
+    background-color: #f44336;
+    color: white;
+}
+
+#registro-mensaje.warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .main-container {
+        grid-template-columns: 1fr;
+    }
+    
+    #info-box {
+        height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 1rem;
+    }
+    
+    .option-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    #info-box {
+        height: 250px;
+    }
+    
+    .Registro {
+        min-height: 150px;
+    }
+}
