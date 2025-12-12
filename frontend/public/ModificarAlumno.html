@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="./css/modificarAlumno.css">
 </head>
 <body>
-
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
@@ -31,18 +30,15 @@
             <li>
                 <a href="./BuscarAlumno.html">Buscar alumno</a>
             </li>
-                        <li class="admin-only-link">
-
+            <li class="admin-only-link">
                 <a href="./ModificarAlumno.html">Modificar alumno</a>
             </li>
-
         </ul>
     </nav>
 
     <div id="menu-overlay" class="menu-overlay"></div>
     
     <div class="main-container">
-
         <!-- Sección de búsqueda -->
         <section class="student-search-section">
             <div class="container">
@@ -62,10 +58,26 @@
             <div class="container">
                 <h2 class="section-title" id="form-title">Registrar Nuevo Alumno</h2>
                 
+                <!-- Vista previa de la foto -->
+                <div class="photo-preview-container">
+                    <div id="photo-preview" class="photo-preview">
+                        <img id="preview-image" src="" alt="Vista previa de la foto" style="display: none;">
+                        <div id="no-photo-message">No hay foto seleccionada</div>
+                    </div>
+                    <button type="button" id="btn-remove-photo" style="display: none;">✕ Quitar foto</button>
+                </div>
+                
                 <form id="student-form">
                     <fieldset class="student-data-form">
                         <legend id="fieldset-legend">Datos del Alumno</legend>
                         
+                        <!-- Campo para subir foto -->
+                        <div class="field">
+                            <label for="form-foto">Foto del Alumno</label>
+                            <input type="file" id="form-foto" name="foto" accept="image/*" class="input-foto">
+                            <small class="form-text">Formatos: JPG, PNG, GIF. Máx: 5MB</small>
+                        </div>
+
                         <div class="field">
                             <label for="form-boleta">Boleta</label>
                             <input type="text" id="form-boleta" name="boleta" required class="input-solo-numeros">
@@ -114,10 +126,8 @@
                         </button>
                     </div>
                 </form>
-
             </div>
         </section>
-
     </div>
 
     <footer class="site-footer">
@@ -126,13 +136,7 @@
         </div>
     </footer>
 
-<<<<<<< HEAD:frontend/public/ModificarAlumno.html
     <script src="./JS/validaciones.js"></script>
     <script src="./JS/gestionAlumnos.js"></script>
-=======
-    <script src="../js/navigation.js"></script>
-    <script src="../js/validaciones.js"></script>
-    <script src="../js/gestionAlumnos.js"></script>
->>>>>>> ac5fdc0b39b781422969de84572c9e45f530d668:frontend/public/views/ModificarAlumno.html
 </body>
 </html>

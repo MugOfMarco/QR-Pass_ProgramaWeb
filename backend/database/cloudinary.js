@@ -1,5 +1,7 @@
-require('dotenv').config();
-const cloudinary = require('cloudinary').v2;
+import 'dotenv/config';
+import cloudinaryPackage from 'cloudinary';
+
+const cloudinary = cloudinaryPackage.v2;
 
 // Configurar Cloudinary
 cloudinary.config({
@@ -9,16 +11,14 @@ cloudinary.config({
 });
 
 // Función para obtener URL optimizada
-function getOptimizedImageUrl(imageUrl, options = {}) {
+export function getOptimizedImageUrl(imageUrl, options = {}) {
     if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
         return imageUrl;
     }
     
-    // Si ya es una URL de Cloudinary, aplicar transformaciones
     const baseUrl = imageUrl.split('/upload/')[0];
     const imagePath = imageUrl.split('/upload/')[1];
     
-    // Transformaciones por defecto
     const defaultTransformations = {
         width: options.width || 300,
         height: options.height || 300,
@@ -28,7 +28,6 @@ function getOptimizedImageUrl(imageUrl, options = {}) {
         fetch_format: 'auto'
     };
     
-    // Crear string de transformaciones
     const transformations = Object.entries(defaultTransformations)
         .map(([key, value]) => `${key}_${value}`)
         .join(',');
@@ -36,8 +35,8 @@ function getOptimizedImageUrl(imageUrl, options = {}) {
     return `${baseUrl}/upload/${transformations}/${imagePath}`;
 }
 
-// Función para subir imagen (si necesitas subir desde el backend)
-async function uploadImage(filePath, folder = 'qrpass/alumnos') {
+// Función para subir imagen
+export async function uploadImage(filePath, folder = 'qrpass/alumnos') {
     try {
         const result = await cloudinary.uploader.upload(filePath, {
             folder: folder,
@@ -50,9 +49,5 @@ async function uploadImage(filePath, folder = 'qrpass/alumnos') {
     }
 }
 
-// Exportar
-module.exports = {
-    cloudinary,
-    getOptimizedImageUrl,
-    uploadImage
-};
+// Exportar Cloudinary
+export { cloudinary };

@@ -122,7 +122,7 @@ class RegistroSystem {
             
             // Manejar error de imagen
             fotoElement.onerror = () => {
-                fotoElement.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765350850/default_avatar.jpg';
+                fotoElement.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp';
             };
         } else if (fotoElement) {
             this.limpiarFotoAlumno();
