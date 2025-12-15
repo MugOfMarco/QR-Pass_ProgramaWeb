@@ -220,3 +220,75 @@ export const obtenerJustificacionesAlumno = async (req, res) => {
         });
     }
 };
+
+const registrarAlumno = async (req, res) => {
+    try {
+        const alumnoData = req.body;
+        
+        // PENDIENTE: Validar datos
+        
+        const nuevoAlumno = await Alumno.crear(alumnoData); 
+
+        res.status(201).json({ 
+            success: true, 
+            message: 'Alumno registrado exitosamente.',
+            data: nuevoAlumno
+        });
+
+    } catch (error) {
+        console.error('Error al registrar alumno:', error);
+        res.status(500).json({ success: false, message: error.message || 'Error interno del servidor al registrar.' });
+    }
+};
+
+const modificarAlumno = async (req, res) => {
+    try {
+        const boleta = req.params.boleta;
+        const alumnoData = req.body;
+        
+        // PENDIENTE: Validar datos y llamar a Alumno.modificar(boleta, alumnoData)
+        
+        // Simulación de éxito
+        res.json({ 
+            success: true, 
+            message: `Alumno ${boleta} modificado exitosamente.` 
+        });
+
+    } catch (error) {
+        console.error('Error al modificar alumno:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor al modificar.' });
+    }
+};
+
+const eliminarAlumno = async (req, res) => {
+    try {
+        const boleta = req.params.boleta;
+        
+        // PENDIENTE: Llamar a Alumno.eliminar(boleta)
+        
+        // Simulación de éxito
+        res.status(204).json(); // 204 No Content, estándar para DELETE exitoso
+
+    } catch (error) {
+        console.error('Error al eliminar alumno:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor al eliminar.' });
+    }
+};
+
+// backend/controllers/alumnos.controller.js (BLOQUE FINAL DE EXPORTACIÓN)
+
+export {
+    // ... (tus funciones existentes)
+    obtenerAlumno,
+    bloquearCredencial,
+    desbloquearCredencial,
+    verificarBloqueo,
+    buscarAlumnos,
+    
+    // 🚨 ASEGÚRATE DE QUE ESTÉN ESTAS TRES 🚨
+    registrarAlumno,
+    modificarAlumno,
+    eliminarAlumno,
+
+    // ... (otras funciones como obtenerRegistrosAlumno, crearJustificacion, etc.)
+};

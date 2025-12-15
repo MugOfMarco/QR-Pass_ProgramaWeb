@@ -94,14 +94,17 @@ rutasHTML.forEach(ruta => {
 });
 
 app.use((req, res) => {
+    // 🚨 CORRECCIÓN/VERIFICACIÓN: Si es una llamada a la API, forzar JSON
+    if (req.originalUrl.startsWith('/api')) {
+        return res.status(404).json({ success: false, message: `Ruta de API no encontrada: ${req.originalUrl}` });
+    }
+    
+    // Si no es una llamada a la API, maneja HTML
     if (req.accepts('html')) {
-        const filePath = path.join(__dirname, '..', 'frontend', 'public', '404.html');
+        const filePath = path.join(__dirname, '..', 'frontend', 'public', 'views', '404.html');
         res.status(404).sendFile(filePath);
     } else if (req.accepts('json')) {
-        res.status(404).json({
-            success: false,
-            message: 'Ruta no encontrada'
-        });
+        res.status(404).json({ success: false, message: 'Ruta no encontrada' });
     } else {
         res.status(404).send('Página no encontrada');
     }

@@ -1,4 +1,3 @@
-//este es mi archivo original
 // gestionAlumnos.js - Lógica para Registrar, Buscar y Modificar Alumnos
 
 class GestionAlumnos {
@@ -71,11 +70,22 @@ class GestionAlumnos {
     // =========================================================
 
     async buscarAlumno() {
+        // Validación básica de input
         const boleta = this.dom.searchBoleta.value.trim();
-        if (boleta.length < 5) return alert('Ingrese una boleta válida.');
+        if (boleta.length < 5 || isNaN(parseInt(boleta))) { 
+             alert('Ingrese una boleta válida (solo números, mínimo 5 dígitos).');
+             return;
+        }
 
         try {
-            const response = await fetch(`${this.apiBase}/alumno/${boleta}`);
+            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
+
+            // Manejo de errores de autenticación o permiso (401/403)
+            if (response.status === 401 || response.status === 403) {
+                 alert('Su sesión ha expirado o no tiene permisos. Por favor, inicie sesión.');
+                 window.location.href = '/login.html'; 
+                 return;
+            }
 
             if (response.status === 404) {
                 alert(`Alumno con boleta ${boleta} no encontrado. Listo para registrar.`);
@@ -85,15 +95,17 @@ class GestionAlumnos {
             }
 
             if (!response.ok) {
-                throw new Error('Error al obtener datos del alumno.');
+                throw new Error(`Error ${response.status} al obtener datos del alumno.`);
             }
 
+            // El servidor debe devolver JSON en caso de éxito o 404
             const data = await response.json();
-            this.llenarFormulario(data.alumno);
+            this.llenarFormulario(data.alumno.info); // Asumo que el alumno viene en data.alumno.info
 
         } catch (error) {
-            console.error('Error en búsqueda:', error);
-            alert('Error al conectar con el servidor o buscar al alumno.');
+            console.error('Error en búsqueda o parsing:', error);
+            // Si el error fue un JSON.parse, el servidor mandó algo inesperado (HTML, etc.)
+            alert('Error al conectar con el servidor o buscar al alumno. Verifique su sesión.');
         }
     }
 
@@ -102,34 +114,37 @@ class GestionAlumnos {
     // =========================================================
     
     async cargarSelectores() {
-        // En una implementación real, esto llenaría los <select> de carrera y estatus
-        // con datos obtenidos de tus endpoints /api/carreras y /api/estados_academicos
         console.log('Cargando datos para selectores...');
+        // Aquí iría la lógica para cargar carreras y estatus de la DB
     }
 
     llenarFormulario(alumno) {
-        // Asumiendo que el endpoint /api/alumno/:boleta devuelve:
-        // boleta, nombre, nombre_grupo (grupo), estado_academico (estatus), puerta_abierta
+        // Los IDs del formulario deben coincidir con las propiedades del objeto 'alumno'
         
-        this.dom.formBoleta.value = alumno.boleta;
+        this.dom.formBoleta.value = alumno.boleta || '';
         this.dom.formBoleta.readOnly = true; // Bloquea la boleta para modificación
         this.dom.formTitle.textContent = 'Modificar Alumno Existente';
         this.dom.btnGuardar.textContent = 'Guardar Cambios';
         this.dom.btnEliminar.style.display = 'block';
 
-        document.getElementById('form-nombre').value = alumno.nombre || '';
-        document.getElementById('form-grupo').value = alumno.nombre_grupo || '';
-        
-        // Llenar el select de estatus
-        const estatus = alumno.estado_academico.toLowerCase();
+        // Asegúrate de que estos IDs existan en tu HTML
+        document.getElementById('form-nombre').value = alumno.nombre_completo || '';
+        document.getElementById('form-grupo').value = alumno.grupo || '';
+        document.getElementById('form-horario').value = alumno.horario || ''; // Asumo que existe un campo horario
+
+        // Llenar el select de estatus (requiere lógica de mapeo de IDs/valores)
+        const estatus = alumno.estatus ? alumno.estatus.toLowerCase() : '';
         Array.from(this.dom.formEstatus.options).forEach(opt => {
-            if (opt.value === estatus) {
+            if (opt.value.toLowerCase() === estatus) { // Comparar con el estatus real de la DB
                 opt.selected = true;
             }
         });
         
         // Checkbox para puertas abiertas
-        document.getElementById('form-puertas-abiertas').checked = alumno.puerta_abierta || false;
+        const puertaAbiertaCheckbox = document.getElementById('form-puertas-abiertas');
+        if (puertaAbiertaCheckbox) {
+            puertaAbiertaCheckbox.checked = alumno.puerta_abierta === 1; // Asumo que la DB usa 1/0
+        }
 
         this.currentBoleta = alumno.boleta;
     }
@@ -148,7 +163,7 @@ class GestionAlumnos {
     }
 
     // =========================================================
-    // LÓGICA DE ENVÍO DE DATOS
+    // LÓGICA DE ENVÍO DE DATOS (Registro/Modificación)
     // =========================================================
 
     async handleFormSubmit(e) {
@@ -157,14 +172,13 @@ class GestionAlumnos {
         const boleta = this.dom.formBoleta.value.trim();
         const mode = this.dom.formBoleta.readOnly ? 'UPDATE' : 'REGISTER';
 
-        // Recolectar todos los datos del formulario (FormData es ideal)
+        // Recolectar datos y preparar para JSON
         const formData = new FormData(this.dom.studentForm);
         const alumnoData = Object.fromEntries(formData.entries());
         
-        // Ajustar el estatus y el checkbox para el backend (true/false, id_estado)
-        alumnoData.puerta_abierta = alumnoData['puertas-abiertas'] === 'on';
-        // Nota: id_estado_academico y id_carrera deben mapearse desde los selectores
-
+        // Ajustar el checkbox a boolean o 1/0 para el backend
+        alumnoData.puerta_abierta = alumnoData['puertas-abiertas'] === 'on' ? 1 : 0;
+        
         let url;
         let method;
 
@@ -185,11 +199,43 @@ class GestionAlumnos {
                 body: JSON.stringify(alumnoData)
             });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `Error ${response.status} en la operación.`);
+            // Manejo de error de sesión/permisos (401/403)
+            if (response.status === 401 || response.status === 403) {
+                 alert('Su sesión expiró o no tiene permisos. Redirigiendo...');
+                 window.location.href = '/login.html'; 
+                 return;
             }
-
+            
+            let responseData;
+            
+            // Si la respuesta es OK (200, 201)
+            if (response.ok) {
+                 // Intentar parsear JSON solo si hay contenido y es JSON
+                 const contentType = response.headers.get("content-type");
+                 
+                 if (contentType && contentType.includes("application/json")) {
+                     responseData = await response.json();
+                 } else {
+                     // Caso raro: 200/201 sin JSON (ej. DELETE/PUT exitoso)
+                     responseData = {};
+                 }
+            } 
+            // Si la respuesta es de ERROR (4xx, 5xx) y no se manejó antes
+            else {
+                 const contentType = response.headers.get("content-type");
+                 
+                 if (contentType && contentType.includes("application/json")) {
+                     responseData = await response.json();
+                 } else {
+                     // El servidor devolvió HTML/Texto. Evita el JSON.parse:
+                     throw new Error(`Error ${response.status}: Respuesta inesperada del servidor (no JSON).`);
+                 }
+                 
+                 // Lanzar el error con el mensaje del backend
+                 throw new Error(responseData.message || `Error ${response.status} en la operación.`);
+            }
+            
+            // --- Operación Exitosa ---
             alert(`Operación exitosa: Alumno ${boleta} ${mode === 'REGISTER' ? 'registrado' : 'modificado'}.`);
             this.clearForm(true);
 
@@ -214,9 +260,23 @@ class GestionAlumnos {
                 method: 'DELETE',
             });
 
+            // Manejo de error de sesión/permisos (401/403)
+            if (response.status === 401 || response.status === 403) {
+                 alert('Su sesión expiró o no tiene permisos. Redirigiendo...');
+                 window.location.href = '/login.html'; 
+                 return;
+            }
+            
+            // La respuesta DELETE puede no tener cuerpo JSON (204 No Content)
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `Error ${response.status} al eliminar.`);
+                 let errorMessage = `Error ${response.status} al eliminar.`;
+                 try {
+                     const errorJson = await response.json();
+                     errorMessage = errorJson.message || errorMessage;
+                 } catch (e) {
+                     // Si falla el JSON.parse (porque es HTML/Texto), usa el mensaje de estado HTTP
+                 }
+                 throw new Error(errorMessage);
             }
 
             alert(`Alumno con boleta ${boleta} eliminado exitosamente.`);
@@ -232,4 +292,4 @@ class GestionAlumnos {
 // Inicialización del sistema al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
     new GestionAlumnos();
-}); 
+});
