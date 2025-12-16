@@ -1,16 +1,21 @@
 import Alumno from '../models/Alumno.js';
 import { cloudinary, getOptimizedImageUrl } from '../database/cloudinary.js';
 
-// Función para obtener alumno (FALTANTE)
 export const obtenerAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
-        const alumno = await Alumno.obtenerBasico(boleta);
-        
-        if (alumno) {
+
+        // CAMBIO IMPORTANTE: Usamos 'obtenerCompleto' en vez de 'obtenerBasico'
+        // para traer también el horario.
+        const datosCompletos = await Alumno.obtenerCompleto(boleta);
+
+        // Verificamos si encontramos al alumno (la info está en datosCompletos.info)
+        if (datosCompletos && datosCompletos.info) {
             res.json({
                 success: true,
-                alumno: alumno
+                // Enviamos los datos desglosados como el frontend los espera:
+                alumno: datosCompletos.info,
+                horario: datosCompletos.horario // <--- ESTO ES LO QUE FALTABA
             });
         } else {
             res.status(404).json({
