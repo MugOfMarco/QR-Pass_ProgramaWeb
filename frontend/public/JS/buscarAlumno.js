@@ -1,6 +1,6 @@
 class SistemaAlumnos {
     constructor() {
-        this.apiBase = 'http://localhost:3000/api';
+        this.apiBase = '/api';
         this.alumnoActual = null;
         this.incidencias = [];
         this.initEventListeners();

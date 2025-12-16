@@ -1,7 +1,7 @@
 // registro.js - VERSIÓN CON IMAGEN Y LIMPIEZA AUTOMÁTICA
 class RegistroSystem {
     constructor() {
-        this.apiBase = 'http://localhost:3000/api';
+        this.apiBase = '/api';
         this.urlPrefix = 'https://coatl.cecyt9.ipn.mx/app/qr_system/accessprocess.php?boleta=';
         this.initEventListeners();
         

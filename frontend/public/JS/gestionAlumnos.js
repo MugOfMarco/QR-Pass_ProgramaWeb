@@ -1,7 +1,7 @@
 // gestionAlumnos.js - CON SUBIDA DE IMÁGENES A CLOUDINARY
 class GestionAlumnos {
     constructor() {
-        this.apiBase = 'http://localhost:3000/api';
+        this.apiBase = '/api';
         this.currentBoleta = null;
         this.selectedImageFile = null;
         this.currentImageUrl = null;
