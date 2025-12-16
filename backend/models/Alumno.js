@@ -112,19 +112,19 @@ class Alumno {
     }
 
     static async obtenerGrupos() {
-        const sql = 'SELECT id_grupo, nombre_grupo FROM Grupo ORDER BY nombre_grupo';
+        const sql = 'SELECT id_grupo, nombre_grupo FROM grupo ORDER BY nombre_grupo';
         const results = await ejecutarSP('', [], sql);
         return results[0] || [];
     }
 
     static async obtenerEstadosAcademicos() {
-        const sql = 'SELECT id_estado, estado FROM Estado_academico ORDER BY estado';
+        const sql = 'SELECT id_estado, estado FROM estado_academico ORDER BY estado';
         const results = await ejecutarSP('', [], sql);
         return results[0] || [];
     }
 
     static async obtenerCarreras() {
-        const sql = 'SELECT id_carrera, nombre FROM Carrera ORDER BY nombre';
+        const sql = 'SELECT id_carrera, nombre FROM carrera ORDER BY nombre';
         const results = await ejecutarSP('', [], sql);
         return results[0] || [];
     }
