@@ -21,7 +21,6 @@
         </div>
     </header>
 
-    <!-- MENÚ CORREGIDO -->
     <nav class="menu-navegacion">
         <ul id="lista-opciones" class="menu-lista">
             <li>
@@ -39,7 +38,6 @@
     <div id="menu-overlay" class="menu-overlay"></div>
     
     <div class="main-container">
-        <!-- Sección de búsqueda -->
         <section class="student-search-section">
             <div class="container">
                 <h2 class="section-title">Buscar Alumno</h2>
@@ -53,12 +51,10 @@
             </div>
         </section>
 
-        <!-- Sección de formulario -->
         <section class="student-form-section">
             <div class="container">
                 <h2 class="section-title" id="form-title">Registrar Nuevo Alumno</h2>
                 
-                <!-- Vista previa de la foto -->
                 <div class="photo-preview-container">
                     <div id="photo-preview" class="photo-preview">
                         <img id="preview-image" src="" alt="Vista previa de la foto" style="display: none;">
@@ -71,7 +67,6 @@
                     <fieldset class="student-data-form">
                         <legend id="fieldset-legend">Datos del Alumno</legend>
                         
-                        <!-- Campo para subir foto -->
                         <div class="field">
                             <label for="form-foto">Foto del Alumno</label>
                             <input type="file" id="form-foto" name="foto" accept="image/*" class="input-foto">
@@ -94,10 +89,14 @@
                         </div>
 
                         <div class="field">
-                            <label for="form-horario">Horario</label>
-                            <input type="text" id="form-horario" name="horario">
+                            <label>Horario Escolar</label>
+                            <div id="contenedor-horario-dinamico" class="horario-container" style="border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-height: 50px;">
+                                </div>
+                            
+                            <button type="button" id="btn-agregar-clase" class="button-secondary" style="margin-top: 10px; font-size: 0.9em; width: auto; padding: 5px 15px;">
+                                + Agregar Materia
+                            </button>
                         </div>
-                        
                         <div class="field">
                             <label for="form-estatus">Estatus</label>
                             <select id="form-estatus" name="estatus">

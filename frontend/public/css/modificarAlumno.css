@@ -1,9 +1,9 @@
 /* ============================================
-   MODIFICARALUMNO.CSS - CORREGIDO
-   SIN DUPLICACIONES
+   MODIFICARALUMNO.CSS - VERSIÓN FINAL
+   INCLUYE ESTILOS PARA HORARIO DINÁMICO
 ============================================ */
 
-/* Reset y estilos base */
+/* 1. RESET Y ESTILOS BASE */
 * {
     margin: 0;
     padding: 0;
@@ -18,7 +18,7 @@ body {
     flex-direction: column;
 }
 
-/* Header */
+/* 2. HEADER Y NAVEGACIÓN SUPERIOR */
 .site-header {
     background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
     padding: 1.5rem 2rem;
@@ -33,7 +33,7 @@ body {
     align-items: center;
 }
 
-/* Botón de navegación */
+/* Botón de menú hamburguesa */
 .Boton-nav button {
     width: 50px;
     height: 50px;
@@ -57,7 +57,6 @@ body {
     transform: scale(1.1);
 }
 
-/* Título del header */
 .title {
     color: white;
     font-size: 2.5rem;
@@ -65,25 +64,24 @@ body {
     text-align: center;
 }
 
-/* Logo */
 .logo img {
     width: 60px;
     height: 60px;
 }
 
-/* Contenedor principal */
+/* 3. CONTENEDOR PRINCIPAL (GRID) */
 .main-container {
     flex: 1;
     max-width: 1400px;
     margin: 2rem auto;
     padding: 2rem;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; /* Divide la pantalla en 2 columnas */
     gap: 3rem;
     width: 100%;
 }
 
-/* Sección de búsqueda */
+/* 4. SECCIÓN DE BÚSQUEDA (IZQUIERDA) */
 .student-search-section {
     display: flex;
     flex-direction: column;
@@ -94,7 +92,6 @@ body {
     width: 100%;
 }
 
-/* Grupo de input destacado */
 .input-group {
     margin-bottom: 2rem;
 }
@@ -123,7 +120,6 @@ body {
     box-shadow: 0 0 0 3px rgba(92, 31, 51, 0.1);
 }
 
-/* Contenedor de botón de búsqueda */
 .action-button-container {
     display: flex;
     justify-content: center;
@@ -151,14 +147,13 @@ body {
     transform: translateY(-1px);
 }
 
-/* Sección de edición */
+/* 5. SECCIÓN DE FORMULARIO (DERECHA) */
 .student-edit-section .container {
     display: flex;
     flex-direction: column;
     gap: 2rem;
 }
 
-/* Fieldset de datos */
 .student-data-form {
     border: 3px solid #333;
     border-radius: 15px;
@@ -173,7 +168,7 @@ body {
     padding: 0 1rem;
 }
 
-/* Campos del formulario */
+/* Estilos de los inputs generales */
 .field {
     display: flex;
     flex-direction: column;
@@ -187,7 +182,7 @@ body {
     margin-bottom: 0.5rem;
 }
 
-.field input,
+.field input:not([type="checkbox"]),
 .field select {
     width: 100%;
     padding: 0.9rem 1.2rem;
@@ -206,19 +201,75 @@ body {
     box-shadow: 0 0 0 3px rgba(92, 31, 51, 0.1);
 }
 
-.field input:disabled,
-.field select:disabled {
-    background-color: #e0e0e0;
-    cursor: not-allowed;
-    opacity: 0.7;
+/* -----------------------------------------------------------------
+   🔴 NUEVO: ESTILOS PARA EL CONSTRUCTOR DE HORARIO DINÁMICO
+   Esto controla cómo se ven las filas de materias agregadas
+   ----------------------------------------------------------------- */
+
+/* Contenedor principal donde se agregan las filas */
+.horario-container {
+    border: 2px dashed #ccc; /* Borde punteado para indicar área dinámica */
+    background-color: #fcfcfc;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    max-height: 350px; /* Evita que crezca infinito */
+    overflow-y: auto;  /* Scroll si hay muchas materias */
 }
 
-.field input:read-only {
-    background-color: #f5f5f5;
-    cursor: default;
+/* Cada fila individual (Día - Hora - Materia - Botón) */
+.fila-horario {
+    display: flex;
+    flex-wrap: wrap; /* Permite que baje de línea en celulares */
+    gap: 8px;
+    align-items: center;
+    background: white;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Campo de checkbox */
+/* Inputs específicos dentro de la fila de horario */
+.fila-horario select, 
+.fila-horario input {
+    padding: 6px;
+    font-size: 0.9rem;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+}
+
+/* Tamaños específicos para que se vea ordenado */
+.input-dia { flex: 1; min-width: 80px; }
+.input-inicio, .input-fin { width: 85px; }
+.input-materia { flex: 2; min-width: 120px; }
+
+/* Botón rojo de eliminar (la X) */
+.btn-eliminar-fila {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    margin-left: auto; /* Empuja el botón a la derecha */
+}
+
+.btn-eliminar-fila:hover {
+    background-color: #d60000;
+}
+
+/* -----------------------------------------------------------------
+   FIN DE LOS NUEVOS ESTILOS DE HORARIO
+   ----------------------------------------------------------------- */
+
 .checkbox-field {
     display: flex;
     align-items: center;
@@ -232,23 +283,12 @@ body {
     cursor: pointer;
 }
 
-.checkbox-field input[type="checkbox"]:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-.checkbox-field label {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #333;
-    cursor: pointer;
-}
-
-/* Botones de acción */
+/* 6. BOTONES DE ACCIÓN (Guardar/Cancelar) */
 .action-buttons {
     display: flex;
     gap: 1.5rem;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .action-buttons button {
@@ -282,226 +322,20 @@ body {
 .button-secondary:hover:not(:disabled) {
     background-color: #d0d0d0;
     transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
 }
 
-.action-buttons button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-.action-buttons button:active:not(:disabled) {
-    transform: translateY(-1px);
-}
-
-/* Footer */
-.site-footer {
-    background-color: #5c1f33;
+.button-danger {
     color: white;
-    padding: 1.5rem;
-    text-align: center;
-    margin-top: auto;
+    background-color: #dc3545;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
 }
 
-.footer-container {
-    max-width: 1400px;
-    margin: 0 auto;
+.button-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-3px);
 }
 
-.footer-container p {
-    font-size: 1rem;
-}
-
-/* ============================================
-   ESTILOS DEL MENÚ (CRÍTICOS)
-============================================ */
-
-.menu-navegacion {
-    position: relative;
-    z-index: 1000;
-}
-
-.menu-lista {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: white;
-    border: 3px solid #5c1f33;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    list-style: none;
-    padding: 1rem 0;
-    margin: 0;
-    min-width: 280px;
-    z-index: 1001;
-    display: none;
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-}
-
-.menu-lista.menu-visible {
-    display: block;
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.menu-lista li {
-    border-bottom: 2px solid #f0f0f0;
-    transition: background-color 0.3s ease;
-}
-
-.menu-lista li:last-child {
-    border-bottom: none;
-}
-
-.menu-lista a {
-    display: block;
-    padding: 1rem 1.5rem;
-    text-decoration: none;
-    color: #333;
-    font-size: 1.1rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.menu-lista a:hover {
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    color: white;
-    padding-left: 2rem;
-}
-
-.menu-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    display: none;
-}
-
-.menu-overlay.menu-visible {
-    display: block;
-}
-
-/* ============================================
-   RESPONSIVE
-============================================ */
-
-@media (max-width: 1024px) {
-    .main-container {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-
-    .title h1 {
-        font-size: 2rem;
-    }
-    
-    .menu-lista {
-        min-width: 250px;
-        left: 1rem;
-    }
-    
-    .menu-lista a {
-        font-size: 1rem;
-        padding: 0.9rem 1.3rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .header-container {
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .title {
-        order: -1;
-        width: 100%;
-        text-align: center;
-    }
-
-    .title h1 {
-        font-size: 1.5rem;
-    }
-
-    .main-container {
-        padding: 1rem;
-    }
-
-    .label-highlight {
-        font-size: 1.2rem;
-    }
-
-    .student-data-form {
-        padding: 1.5rem;
-    }
-
-    .student-data-form legend {
-        font-size: 1.3rem;
-    }
-
-    .action-buttons {
-        flex-direction: column;
-    }
-
-    .action-buttons button {
-        min-width: 100%;
-    }
-
-    .menu-lista {
-        position: fixed;
-        top: 140px;
-        left: 50%;
-        transform: translateX(-50%) translateY(-10px);
-        min-width: 90%;
-        max-width: 400px;
-    }
-    
-    .menu-lista.menu-visible {
-        transform: translateX(-50%) translateY(0);
-    }
-    
-    .Boton-nav {
-        order: -1;
-    }
-}
-
-@media (max-width: 480px) {
-    .student-data-form {
-        padding: 1rem;
-    }
-
-    .field label {
-        font-size: 1rem;
-    }
-
-    .field input,
-    .field select {
-        padding: 0.7rem 1rem;
-        font-size: 0.95rem;
-    }
-
-    #btn-buscar {
-        font-size: 1rem;
-        padding: 1rem 2rem;
-    }
-    
-    .menu-lista {
-        top: 120px;
-        min-width: 95%;
-    }
-    
-    .menu-lista a {
-        font-size: 0.95rem;
-        padding: 0.8rem 1.2rem;
-    }
-}
-
-/* En tu modificarAlumno.css */
+/* 7. ESTILOS DE PREVISUALIZACIÓN DE FOTO */
 .photo-preview-container {
     margin-bottom: 20px;
     text-align: center;
@@ -543,4 +377,149 @@ body {
     margin-top: 5px;
     color: #6c757d;
     font-size: 0.9em;
+}
+
+/* 8. FOOTER */
+.site-footer {
+    background-color: #5c1f33;
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer-container p {
+    font-size: 1rem;
+}
+
+/* 9. MENÚ FLOTANTE */
+.menu-navegacion {
+    position: relative;
+    z-index: 1000;
+}
+
+.menu-lista {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: white;
+    border: 3px solid #5c1f33;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    list-style: none;
+    padding: 1rem 0;
+    margin: 0;
+    min-width: 280px;
+    z-index: 1001;
+    display: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.menu-lista.menu-visible {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.menu-lista li {
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.menu-lista a {
+    display: block;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.menu-lista a:hover {
+    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
+    color: white;
+    padding-left: 2rem;
+}
+
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+.menu-overlay.menu-visible {
+    display: block;
+}
+
+/* 10. RESPONSIVE (CELULARES Y TABLETS) */
+
+@media (max-width: 1024px) {
+    .main-container {
+        grid-template-columns: 1fr; /* Pasa a 1 sola columna */
+        gap: 2rem;
+    }
+
+    .title h1 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-container {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .title {
+        order: -1;
+        width: 100%;
+    }
+
+    /* Ajuste de botones en móvil */
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons button {
+        min-width: 100%;
+    }
+
+    /* Ajuste del menú en móvil */
+    .menu-lista {
+        position: fixed;
+        top: 140px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        min-width: 90%;
+        max-width: 400px;
+    }
+    
+    .menu-lista.menu-visible {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    /* Ajuste para que las filas de horario se vean bien en pantallas pequeñas */
+    .fila-horario {
+        flex-direction: column; /* Elementos uno debajo del otro */
+        align-items: stretch;
+    }
+    
+    .input-dia, .input-inicio, .input-fin, .input-materia {
+        width: 100%;
+    }
+    
+    .btn-eliminar-fila {
+        width: 100%;
+        border-radius: 4px;
+        margin-top: 5px;
+        background-color: #ffcccc;
+        color: #cc0000;
+    }
 }
