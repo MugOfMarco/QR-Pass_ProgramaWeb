@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken'; 
 import Usuario from '../models/Usuario.js';
 
 // Función: Iniciar Sesión (Login)
@@ -11,25 +12,16 @@ export const login = async (req, res) => {
 
         const { username, password } = req.body;
 
-        // Validación más robusta
+        // Validación
         if (!username || !password) {
-            console.log('Campos vacíos recibidos');
             return res.status(400).json({
                 success: false,
                 message: 'Usuario y contraseña son requeridos'
             });
         }
 
-        // Limpiar espacios
         const cleanUsername = username.trim();
         const cleanPassword = password.trim();
-
-        if (!cleanUsername || !cleanPassword) {
-            return res.status(400).json({
-                success: false,
-                message: 'Usuario y contraseña son requeridos'
-            });
-        }
 
         const usuario = await Usuario.obtenerPorUsername(cleanUsername);
         console.log('Usuario encontrado:', usuario ? 'Sí' : 'No');
@@ -51,7 +43,21 @@ export const login = async (req, res) => {
             });
         }
 
-        // Crea Sesión
+        // GENERAR TOKEN JWT
+        const token = jwt.sign(
+            {
+                id: usuario.id_usuario,
+                usuario: usuario.usuario,
+                tipo: usuario.tipo_usuario,
+                nombre: usuario.nombre_completo
+            },
+            process.env.JWT_SECRET || 'secreto_temporal', // Usa una variable de entorno
+            { expiresIn: '8h' }
+        );
+
+        console.log('Login exitoso para:', usuario.usuario, 'Tipo:', usuario.tipo_usuario);
+
+        // También mantén la sesión si quieres
         req.session.user = {
             id: usuario.id_usuario,
             usuario: usuario.usuario,
@@ -59,11 +65,10 @@ export const login = async (req, res) => {
             nombre: usuario.nombre_completo
         };
 
-        console.log('Login exitoso para:', usuario.usuario, 'Tipo:', usuario.tipo_usuario);
-
         res.json({
             success: true,
             tipo: usuario.tipo_usuario,
+            token: token, // ← ENVIAR EL TOKEN
             user: {
                 nombre: usuario.nombre_completo,
                 usuario: usuario.usuario

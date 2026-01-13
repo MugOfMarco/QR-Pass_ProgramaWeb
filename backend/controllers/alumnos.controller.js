@@ -30,51 +30,81 @@ export const obtenerAlumno = async (req, res) => {
 // Función para registrar justificaciones
 export const registrarJustificacion = async (req, res) => {
     try {
-        console.log('Datos recibidos para justificación:', req.body);
-        
         const { id_registro, justificacion, id_tipo_anterior } = req.body;
+        
+        console.log('Controlador - Datos recibidos para justificación:', {
+            id_registro,
+            justificacion,
+            id_tipo_anterior
+        });
 
         if (!id_registro || !justificacion || !id_tipo_anterior) {
-            console.error('Campos faltantes:', { id_registro, justificacion, id_tipo_anterior });
             return res.status(400).json({
                 success: false,
-                message: 'Todos los campos son requeridos'
+                message: 'Faltan campos requeridos: id_registro, justificacion, id_tipo_anterior'
             });
         }
 
-        if (id_tipo_anterior !== 2 && id_tipo_anterior !== 3) {
-            console.error('Tipo anterior inválido:', id_tipo_anterior);
-            return res.status(400).json({
-                success: false,
-                message: 'Tipo de incidencia inválido'
-            });
-        }
-
-        // Aquí necesitas usar tu conexión a la base de datos
-        // Si usas un modelo, llama al método correspondiente
-        const result = await Alumno.registrarJustificacion(id_registro, justificacion, id_tipo_anterior);
-
-        console.log('Justificación creada:', result);
+        // Usa el método de la clase Alumno
+        const resultado = await Alumno.registrarJustificacion(
+            id_registro,
+            justificacion,
+            id_tipo_anterior
+        );
 
         res.json({
             success: true,
-            message: 'Incidencia justificada correctamente',
-            id_justificacion: result.id_justificacion
+            message: 'Justificación registrada exitosamente',
+            data: resultado
         });
-
     } catch (error) {
-        console.error('Error en registrarJustificacion:', error);
+        console.error('Error en controlador registrarJustificacion:', error);
         
-        if (error.code === 'ER_SIGNAL_EXCEPTION') {
-            return res.status(404).json({
-                success: false,
-                message: 'Registro no encontrado'
-            });
+        // Maneja errores específicos
+        let mensajeError = 'Error al registrar justificación';
+        
+        if (error.code === 'ER_SP_DOES_NOT_EXIST') {
+            mensajeError = 'Error en el servidor: Procedimiento no encontrado';
+        } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+            mensajeError = 'El registro no existe en la base de datos';
+        } else if (error.message && error.message.includes('Registro no encontrado')) {
+            mensajeError = error.message;
         }
 
         res.status(500).json({
             success: false,
-            message: 'Error interno del servidor al crear justificación'
+            message: mensajeError,
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+export const obtenerRegistrosParaJustificar = async (req, res) => {
+    try {
+        const { boleta } = req.params;
+        
+        console.log('Obteniendo registros para justificar del alumno:', boleta);
+
+        if (!boleta || isNaN(boleta)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Boleta inválida'
+            });
+        }
+
+        // Usa el método de la clase Alumno
+        const registros = await Alumno.obtenerRegistrosParaJustificar(boleta);
+
+        res.json({
+            success: true,
+            data: registros
+        });
+    } catch (error) {
+        console.error('Error obteniendo registros para justificar:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener registros',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };

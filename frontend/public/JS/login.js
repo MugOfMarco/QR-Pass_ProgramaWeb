@@ -58,8 +58,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 const data = await response.json();
+                console.log('📥 Respuesta login:', data); // Debug
 
                 if (response.ok && data.success) {
+                    //CRÍTICO: GUARDAR EL TOKEN
+                    if (data.token) {
+                        // Guardar en localStorage (recomendado)
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('userType', data.tipo);
+                        localStorage.setItem('userName', data.nombre || username);
+                        
+                        console.log('Token guardado en localStorage:', data.token.substring(0, 20) + '...');
+                    } else {
+                        console.warn('El backend no devolvió un token');
+                    }
+                    
                     // Redirigir según el tipo de usuario
                     switch(data.tipo) {
                         case 'Administrador':

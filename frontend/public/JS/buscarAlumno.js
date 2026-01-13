@@ -3,7 +3,20 @@ class SistemaAlumnos {
         this.apiBase = '/api';
         this.alumnoActual = null;
         this.incidencias = [];
+        this.token = this.obtenerToken();
         this.initEventListeners();
+    }
+
+    obtenerToken() {
+        // Busca el token en varios lugares posibles
+        const token = 
+            localStorage.getItem('authToken') || 
+            localStorage.getItem('token') || 
+            sessionStorage.getItem('authToken') ||
+            sessionStorage.getItem('token');
+        
+        console.log('Token obtenido:', token ? 'Sí' : 'No');
+        return token;
     }
 
     initEventListeners() {
@@ -98,7 +111,7 @@ class SistemaAlumnos {
             
             // Manejar error de imagen
             fotoElement.onerror = () => {
-                fotoElement.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765350850/default_avatar.jpg';
+                fotoElement.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp';
                 fotoElement.style.display = 'block';
             };
         } else {
@@ -435,11 +448,18 @@ class SistemaAlumnos {
 
     async procesarJustificacion(incidencias, justificacion) {
     try {
+        // 1. VERIFICAR QUE TENEMOS TOKEN
+        if (!this.token) {
+            this.mostrarError('No estás autenticado. Por favor, inicia sesión.');
+            return;
+        }
+
         const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
         
-        console.log('📤 Enviando justificaciones:', {
+        console.log('Enviando justificaciones:', {
             cantidad: incidencias.length,
-            justificacion: justificacionTexto
+            justificacion: justificacionTexto,
+            tokenPresente: !!this.token
         });
 
         const resultados = [];
@@ -447,13 +467,13 @@ class SistemaAlumnos {
         for (const incidencia of incidencias) {
             // Solo procesar retardos y sin credencial
             if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'sin_credencial') {
-                console.log(`⏭️ Saltando incidencia ${incidencia.id_registro} - tipo: ${incidencia.tipo}`);
+                console.log(`Saltando incidencia ${incidencia.id_registro} - tipo: ${incidencia.tipo}`);
                 continue;
             }
             
             const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
             
-            console.log('📤 Enviando justificación:', {
+            console.log('Enviando justificación:', {
                 id_registro: incidencia.id_registro,
                 justificacion: justificacionTexto,
                 id_tipo_anterior: idTipoAnterior,
@@ -461,11 +481,13 @@ class SistemaAlumnos {
             });
             
             try {
+                // 2. AGREGAR EL TOKEN EN LOS HEADERS
                 const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${this.token}`  // ← AGREGAR ESTA LÍNEA
                     },
                     body: JSON.stringify({
                         id_registro: incidencia.id_registro,
@@ -474,13 +496,19 @@ class SistemaAlumnos {
                     })
                 });
                 
-                console.log('📥 Estado respuesta:', response.status, response.statusText);
+                console.log('Estado respuesta:', response.status, response.statusText);
                 
                 // Verificar si la respuesta es JSON
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
-                    console.error('❌ Respuesta no JSON recibida:', text.substring(0, 200));
+                    console.error('Respuesta no JSON recibida:', text.substring(0, 200));
+                    
+                    // Si es un error 401, probablemente sea problema de autenticación
+                    if (response.status === 401) {
+                        throw new Error('No autorizado. Token inválido o expirado.');
+                    }
+                    
                     throw new Error(`Servidor respondió con: ${contentType || 'sin tipo'}`);
                 }
                 
@@ -497,7 +525,7 @@ class SistemaAlumnos {
                 });
                 
             } catch (error) {
-                console.error(`❌ Error justificando registro ${incidencia.id_registro}:`, error);
+                console.error(`Error justificando registro ${incidencia.id_registro}:`, error);
                 resultados.push({
                     id_registro: incidencia.id_registro,
                     success: false,
@@ -676,7 +704,39 @@ async desbloquearCredencial() {
             overlay.classList.remove('menu-visible');
         }
     }
+
+    async testJustificacion() {
+        console.log('=== TEST JUSTIFICACIÓN ===');
+        console.log('1. Token:', this.token);
+        console.log('2. Ruta completa:', `${this.apiBase}/alumnos/justificaciones`);
+        
+        // Probar con una solicitud simple
+        try {
+            const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({
+                    id_registro: 1,
+                    justificacion: 'Test de justificación',
+                    id_tipo_anterior: 2
+                })
+            });
+            
+            console.log('3. Status:', response.status);
+            console.log('4. Headers:', Object.fromEntries(response.headers.entries()));
+            
+            const text = await response.text();
+            console.log('5. Response:', text);
+            
+        } catch (error) {
+            console.error('Error en test:', error);
+        }
+    }
 }
+
 
 // Inicializar sistema
 document.addEventListener('DOMContentLoaded', () => {
