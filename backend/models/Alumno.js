@@ -29,6 +29,24 @@ class Alumno {
         };
     }
 
+    static async registrarJustificacion(id_registro, justificacion, id_tipo_anterior) {
+        try {
+            const [result] = await pool.query(
+                'CALL sp_crear_justificacion(?, ?, ?)',
+                [id_registro, justificacion, id_tipo_anterior]
+            );
+            
+            return {
+                success: true,
+                id_justificacion: result[0].id_justificacion
+            };
+        } catch (error) {
+            console.error('Error registrando justificación:', error);
+            throw error;
+        }
+    }
+
+
     static async desbloquear(boleta) {
         const results = await ejecutarSP('sp_desbloquear_alumno', [boleta]);
         return {

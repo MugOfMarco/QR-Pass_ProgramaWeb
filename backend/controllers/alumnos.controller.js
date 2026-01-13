@@ -4,18 +4,13 @@ import { cloudinary, getOptimizedImageUrl } from '../database/cloudinary.js';
 export const obtenerAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
-
-        // CAMBIO IMPORTANTE: Usamos 'obtenerCompleto' en vez de 'obtenerBasico'
-        // para traer también el horario.
         const datosCompletos = await Alumno.obtenerCompleto(boleta);
 
-        // Verificamos si encontramos al alumno (la info está en datosCompletos.info)
         if (datosCompletos && datosCompletos.info) {
             res.json({
                 success: true,
-                // Enviamos los datos desglosados como el frontend los espera:
                 alumno: datosCompletos.info,
-                horario: datosCompletos.horario // <--- ESTO ES LO QUE FALTABA
+                horario: datosCompletos.horario
             });
         } else {
             res.status(404).json({
@@ -32,7 +27,59 @@ export const obtenerAlumno = async (req, res) => {
     }
 };
 
-// Función para buscar alumnos (FALTANTE)
+// Función para registrar justificaciones
+export const registrarJustificacion = async (req, res) => {
+    try {
+        console.log('Datos recibidos para justificación:', req.body);
+        
+        const { id_registro, justificacion, id_tipo_anterior } = req.body;
+
+        if (!id_registro || !justificacion || !id_tipo_anterior) {
+            console.error('Campos faltantes:', { id_registro, justificacion, id_tipo_anterior });
+            return res.status(400).json({
+                success: false,
+                message: 'Todos los campos son requeridos'
+            });
+        }
+
+        if (id_tipo_anterior !== 2 && id_tipo_anterior !== 3) {
+            console.error('Tipo anterior inválido:', id_tipo_anterior);
+            return res.status(400).json({
+                success: false,
+                message: 'Tipo de incidencia inválido'
+            });
+        }
+
+        // Aquí necesitas usar tu conexión a la base de datos
+        // Si usas un modelo, llama al método correspondiente
+        const result = await Alumno.registrarJustificacion(id_registro, justificacion, id_tipo_anterior);
+
+        console.log('Justificación creada:', result);
+
+        res.json({
+            success: true,
+            message: 'Incidencia justificada correctamente',
+            id_justificacion: result.id_justificacion
+        });
+
+    } catch (error) {
+        console.error('Error en registrarJustificacion:', error);
+        
+        if (error.code === 'ER_SIGNAL_EXCEPTION') {
+            return res.status(404).json({
+                success: false,
+                message: 'Registro no encontrado'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor al crear justificación'
+        });
+    }
+};
+
+// Las otras funciones que ya tenías...
 export const buscarAlumnos = async (req, res) => {
     try {
         const { query } = req.query;
@@ -51,7 +98,6 @@ export const buscarAlumnos = async (req, res) => {
     }
 };
 
-// Función para verificar bloqueo (FALTANTE)
 export const verificarBloqueo = async (req, res) => {
     try {
         const { boleta } = req.params;
@@ -70,7 +116,6 @@ export const verificarBloqueo = async (req, res) => {
     }
 };
 
-// Función para bloquear credencial (FALTANTE)
 export const bloquearCredencial = async (req, res) => {
     try {
         const { boleta } = req.params;
@@ -96,7 +141,6 @@ export const bloquearCredencial = async (req, res) => {
     }
 };
 
-// Función para desbloquear credencial (FALTANTE)
 export const desbloquearCredencial = async (req, res) => {
     try {
         const { boleta } = req.params;
@@ -122,7 +166,6 @@ export const desbloquearCredencial = async (req, res) => {
     }
 };
 
-// Función para obtener registros del alumno (FALTANTE)
 export const obtenerRegistrosAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
@@ -141,11 +184,9 @@ export const obtenerRegistrosAlumno = async (req, res) => {
     }
 };
 
-// Funciones que ya tienes (las que me mostraste)
 export const registrarAlumno = async (req, res) => {
     try {
         const alumnoData = req.body;
-        
         const result = await Alumno.registrar(alumnoData);
         
         if (result.success) {
@@ -173,7 +214,6 @@ export const modificarAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
         const alumnoData = req.body;
-        
         const result = await Alumno.modificar(boleta, alumnoData);
         
         if (result.success) {
@@ -200,7 +240,6 @@ export const modificarAlumno = async (req, res) => {
 export const eliminarAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
-        
         const result = await Alumno.eliminar(boleta);
         
         if (result.success) {
@@ -226,7 +265,6 @@ export const eliminarAlumno = async (req, res) => {
 export const obtenerGrupos = async (req, res) => {
     try {
         const grupos = await Alumno.obtenerGrupos();
-        
         res.json({
             success: true,
             grupos: grupos
@@ -243,7 +281,6 @@ export const obtenerGrupos = async (req, res) => {
 export const obtenerEstadosAcademicos = async (req, res) => {
     try {
         const estados = await Alumno.obtenerEstadosAcademicos();
-        
         res.json({
             success: true,
             estados: estados
@@ -260,7 +297,6 @@ export const obtenerEstadosAcademicos = async (req, res) => {
 export const obtenerCarreras = async (req, res) => {
     try {
         const carreras = await Alumno.obtenerCarreras();
-        
         res.json({
             success: true,
             carreras: carreras
@@ -274,11 +310,8 @@ export const obtenerCarreras = async (req, res) => {
     }
 };
 
-// Funciones de upload que están en el mismo archivo
 export const uploadImage = async (req, res) => {
     try {
-        console.log('Subiendo imagen...');
-        
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -286,11 +319,9 @@ export const uploadImage = async (req, res) => {
             });
         }
 
-        // Convertir buffer a base64 para Cloudinary
         const b64 = Buffer.from(req.file.buffer).toString('base64');
         const dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-        // Subir a Cloudinary desde data URI
         const result = await cloudinary.uploader.upload(dataURI, {
             folder: 'qrpass/alumnos',
             resource_type: 'image',
@@ -300,9 +331,6 @@ export const uploadImage = async (req, res) => {
             ]
         });
 
-        console.log('Imagen subida a Cloudinary:', result.secure_url);
-
-        // Obtener URL optimizada
         const optimizedUrl = getOptimizedImageUrl(result.secure_url, {
             width: 300,
             height: 300,

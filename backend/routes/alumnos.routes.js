@@ -60,6 +60,11 @@ router.post('/upload',
     alumnosController.uploadImage
 );
 
+router.post('/justificaciones',
+    requireAuth,
+    requireRole('Administrador'),
+    alumnosController.registrarJustificacion);
+
 router.delete('/image', alumnosController.deleteImage);
 
 export default router;

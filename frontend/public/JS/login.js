@@ -1,11 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
-    const passwordInput = document.getElementById('password');
+    
+    // Encuentra elementos de manera más segura
+    const usernameInput = loginForm ? loginForm.querySelector('[name="username"]') : null;
+    const passwordInput = loginForm ? loginForm.querySelector('[name="password"]') : null;
     const toggleButton = document.getElementById('togglePassword');
 
+    // Función para mostrar/ocultar contraseña
     if (passwordInput && toggleButton) {
         toggleButton.addEventListener('click', function(e) {
+            e.preventDefault();
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
             this.textContent = type === 'password' ? '👁️' : '🔒';
@@ -15,10 +20,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Validar que los inputs existan
+            if (!usernameInput || !passwordInput) {
+                if (errorMessage) {
+                    errorMessage.textContent = 'Error: Campos de formulario no encontrados';
+                }
+                console.error('No se encontraron los campos del formulario');
+                return;
+            }
 
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
-            errorMessage.textContent = '';
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (errorMessage) {
+                errorMessage.textContent = '';
+            }
+
+            // Validaciones básicas en el frontend
+            if (!username || !password) {
+                if (errorMessage) {
+                    errorMessage.textContent = 'Por favor, complete todos los campos';
+                }
+                return;
+            }
 
             try {
                 const response = await fetch('/api/auth/login', {
@@ -27,27 +52,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        username: usernameInput,
-                        password: passwordInput
+                        username: username,
+                        password: password
                     })
                 });
 
                 const data = await response.json();
 
-                if (response.ok) {
-                    if (data.tipo === 'Administrador') {
-                        window.location.href = '/Entrada_Salida.html';
-                    } else if (data.tipo === 'Prefecto') {
-                        window.location.href = '/Entrada_Salida.html';
-                    } else {
-                        window.location.href = '/vista-profesor.html';
+                if (response.ok && data.success) {
+                    // Redirigir según el tipo de usuario
+                    switch(data.tipo) {
+                        case 'Administrador':
+                        case 'Prefecto':
+                            window.location.href = '/Entrada_Salida.html';
+                            break;
+                        default:
+                            window.location.href = '/vista-profesor.html';
                     }
                 } else {
-                    errorMessage.textContent = data.message || 'Error al iniciar sesión';
+                    if (errorMessage) {
+                        errorMessage.textContent = data.message || 'Error al iniciar sesión';
+                    }
                 }
             } catch (error) {
                 console.error('Error de red:', error);
-                errorMessage.textContent = 'No se pudo conectar al servidor.';
+                if (errorMessage) {
+                    errorMessage.textContent = 'No se pudo conectar al servidor.';
+                }
             }
         });
     }

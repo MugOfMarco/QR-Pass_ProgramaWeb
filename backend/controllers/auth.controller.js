@@ -4,9 +4,35 @@ import Usuario from '../models/Usuario.js';
 // Función: Iniciar Sesión (Login)
 export const login = async (req, res) => {
     try {
+        console.log('Datos recibidos en login:', {
+            username: req.body.username ? req.body.username.substring(0, 3) + '...' : 'vacio',
+            hasPassword: !!req.body.password
+        });
+
         const { username, password } = req.body;
 
-        const usuario = await Usuario.obtenerPorUsername(username);
+        // Validación más robusta
+        if (!username || !password) {
+            console.log('Campos vacíos recibidos');
+            return res.status(400).json({
+                success: false,
+                message: 'Usuario y contraseña son requeridos'
+            });
+        }
+
+        // Limpiar espacios
+        const cleanUsername = username.trim();
+        const cleanPassword = password.trim();
+
+        if (!cleanUsername || !cleanPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuario y contraseña son requeridos'
+            });
+        }
+
+        const usuario = await Usuario.obtenerPorUsername(cleanUsername);
+        console.log('Usuario encontrado:', usuario ? 'Sí' : 'No');
 
         if (!usuario) {
             return res.status(401).json({
@@ -15,7 +41,8 @@ export const login = async (req, res) => {
             });
         }
 
-        const passwordValida = await bcrypt.compare(password, usuario.password);
+        const passwordValida = await bcrypt.compare(cleanPassword, usuario.password);
+        console.log('Contraseña válida:', passwordValida);
 
         if (!passwordValida) {
             return res.status(401).json({
@@ -31,6 +58,8 @@ export const login = async (req, res) => {
             tipo: usuario.tipo_usuario,
             nombre: usuario.nombre_completo
         };
+
+        console.log('Login exitoso para:', usuario.usuario, 'Tipo:', usuario.tipo_usuario);
 
         res.json({
             success: true,
