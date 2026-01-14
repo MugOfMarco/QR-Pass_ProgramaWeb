@@ -1,12 +1,30 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken'; 
 import Usuario from '../models/Usuario.js';
 
 // Función: Iniciar Sesión (Login)
 export const login = async (req, res) => {
     try {
+        console.log('Datos recibidos en login:', {
+            username: req.body.username ? req.body.username.substring(0, 3) + '...' : 'vacio',
+            hasPassword: !!req.body.password
+        });
+
         const { username, password } = req.body;
 
-        const usuario = await Usuario.obtenerPorUsername(username);
+        // Validación
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuario y contraseña son requeridos'
+            });
+        }
+
+        const cleanUsername = username.trim();
+        const cleanPassword = password.trim();
+
+        const usuario = await Usuario.obtenerPorUsername(cleanUsername);
+        console.log('Usuario encontrado:', usuario ? 'Sí' : 'No');
 
         if (!usuario) {
             return res.status(401).json({
@@ -15,7 +33,8 @@ export const login = async (req, res) => {
             });
         }
 
-        const passwordValida = await bcrypt.compare(password, usuario.password);
+        const passwordValida = await bcrypt.compare(cleanPassword, usuario.password);
+        console.log('Contraseña válida:', passwordValida);
 
         if (!passwordValida) {
             return res.status(401).json({
@@ -24,7 +43,21 @@ export const login = async (req, res) => {
             });
         }
 
-        // Crea Sesión
+        // GENERAR TOKEN JWT
+        const token = jwt.sign(
+            {
+                id: usuario.id_usuario,
+                usuario: usuario.usuario,
+                tipo: usuario.tipo_usuario,
+                nombre: usuario.nombre_completo
+            },
+            process.env.JWT_SECRET || 'secreto_temporal', // Usa una variable de entorno
+            { expiresIn: '8h' }
+        );
+
+        console.log('Login exitoso para:', usuario.usuario, 'Tipo:', usuario.tipo_usuario);
+
+        // También mantén la sesión si quieres
         req.session.user = {
             id: usuario.id_usuario,
             usuario: usuario.usuario,
@@ -35,6 +68,7 @@ export const login = async (req, res) => {
         res.json({
             success: true,
             tipo: usuario.tipo_usuario,
+            token: token, // ← ENVIAR EL TOKEN
             user: {
                 nombre: usuario.nombre_completo,
                 usuario: usuario.usuario

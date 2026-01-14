@@ -17,6 +17,47 @@ class Alumno {
         return alumnoInfo;
     }
 
+    static async registrarJustificacion(id_registro, justificacion, id_tipo_anterior) {
+        try {
+            console.log('Ejecutando SP sp_crear_justificacion con:', {
+                id_registro,
+                justificacion,
+                id_tipo_anterior
+            });
+
+            // Usa el stored procedure
+            const results = await ejecutarSP('sp_crear_justificacion', [
+                id_registro,
+                justificacion,
+                id_tipo_anterior
+            ]);
+
+            console.log('Resultado del SP sp_crear_justificacion:', results);
+            
+            return {
+                success: true,
+                id_justificacion: results[0]?.id_justificacion || null
+            };
+        } catch (error) {
+            console.error('Error en registrarJustificacion:', error);
+            throw error;
+        }
+    }
+
+    static async obtenerRegistrosParaJustificar(boleta) {
+        try {
+            console.log('Ejecutando SP sp_obtener_registros_alumno con boleta:', boleta);
+            
+            const results = await ejecutarSP('sp_obtener_registros_alumno', [boleta]);
+            
+            console.log('Registros obtenidos:', results[0]?.length || 0);
+            return results[0] || [];
+        } catch (error) {
+            console.error('Error en obtenerRegistrosParaJustificar:', error);
+            throw error;
+        }
+    }
+
     static async buscar(query) {
         const results = await ejecutarSP('sp_buscar_alumnos', [query]);
         return results[0] || [];
@@ -28,6 +69,7 @@ class Alumno {
             filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
         };
     }
+
 
     static async desbloquear(boleta) {
         const results = await ejecutarSP('sp_desbloquear_alumno', [boleta]);
