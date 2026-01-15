@@ -1,10 +1,11 @@
+// back/routes/alumnos.router.js - CORREGIDO
+
 import express from 'express';
 const router = express.Router();
 import * as alumnosController from '../controllers/alumnos.controller.js';
 import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
 import multer from 'multer';
 
-// Usar memoryStorage para evitar guardar archivos en disco
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -49,12 +50,26 @@ router.delete('/eliminar/:boleta',
     alumnosController.eliminarAlumno
 );
 
+// Ruta para justificaciones - SOLO UNA
+router.post('/justificaciones',
+    requireAuth,
+    requireRole('Administrador'),
+    alumnosController.registrarJustificacion
+);
+
+// Ruta para obtener registros pendientes de justificación
+router.get('/:boleta/registros/justificar',
+    requireAuth,
+    requireRole('Administrador'),
+    alumnosController.obtenerRegistrosParaJustificar
+);
+
 // Rutas para listas desplegables
 router.get('/grupos/lista', alumnosController.obtenerGrupos);
 router.get('/estados/lista', alumnosController.obtenerEstadosAcademicos);
 router.get('/carreras/lista', alumnosController.obtenerCarreras);
 
-// Ruta para upload de imágenes desde buffer
+// Ruta para upload de imágenes
 router.post('/upload', 
     upload.single('image'),
     alumnosController.uploadImage
