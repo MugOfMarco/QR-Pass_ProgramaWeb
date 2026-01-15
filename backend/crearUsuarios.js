@@ -1,6 +1,10 @@
-const bcrypt = require('bcrypt');
+import mysql from 'mysql2/promise'; // O la importación de tu BD
+import dotenv from 'dotenv';
+import bcrypt from 'bcrypt'; // <--- ESTA ES LA QUE TE FALTA
 
-const passwordPlana = 'asdfgh123'; // <--- Pon aquí la contraseña que quieras
+dotenv.config();
+
+const passwordPlana = 'Root123'; // <--- Pon aquí la contraseña que quieras
 const saltRounds = 10;
 
 bcrypt.hash(passwordPlana, saltRounds, function(err, hash) {
