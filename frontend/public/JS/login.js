@@ -1,13 +1,12 @@
+// frontend/JS/login.js - CORREGIDO
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
     
-    // Encuentra elementos de manera más segura
     const usernameInput = loginForm ? loginForm.querySelector('[name="username"]') : null;
     const passwordInput = loginForm ? loginForm.querySelector('[name="password"]') : null;
     const toggleButton = document.getElementById('togglePassword');
 
-    // Función para mostrar/ocultar contraseña
     if (passwordInput && toggleButton) {
         toggleButton.addEventListener('click', function(e) {
             e.preventDefault();
@@ -21,7 +20,6 @@ document.addEventListener('DOMContentLoaded', function() {
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Validar que los inputs existan
             if (!usernameInput || !passwordInput) {
                 if (errorMessage) {
                     errorMessage.textContent = 'Error: Campos de formulario no encontrados';
@@ -37,7 +35,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 errorMessage.textContent = '';
             }
 
-            // Validaciones básicas en el frontend
             if (!username || !password) {
                 if (errorMessage) {
                     errorMessage.textContent = 'Por favor, complete todos los campos';
@@ -46,11 +43,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             try {
+                // IMPORTANTE: Agregar credentials para enviar cookies
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include', // ← ESTO ES CLAVE para sesiones
                     body: JSON.stringify({
                         username: username,
                         password: password
@@ -58,20 +57,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 const data = await response.json();
-                console.log('📥 Respuesta login:', data); // Debug
 
                 if (response.ok && data.success) {
-                    //CRÍTICO: GUARDAR EL TOKEN
-                    if (data.token) {
-                        // Guardar en localStorage (recomendado)
-                        localStorage.setItem('token', data.token);
-                        localStorage.setItem('userType', data.tipo);
-                        localStorage.setItem('userName', data.nombre || username);
-                        
-                        console.log('Token guardado en localStorage:', data.token.substring(0, 20) + '...');
-                    } else {
-                        console.warn('El backend no devolvió un token');
-                    }
+                    console.log('✅ Login exitoso. Redirigiendo...');
+                    
+                    // NO guardes el token JWT (no lo necesitas con sesiones)
+                    // if (data.token) {
+                    //     localStorage.setItem('token', data.token);
+                    // }
                     
                     // Redirigir según el tipo de usuario
                     switch(data.tipo) {
@@ -79,8 +72,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         case 'Prefecto':
                             window.location.href = '/Entrada_Salida.html';
                             break;
-                        default:
+                        case 'Profesor':
                             window.location.href = '/vista-profesor.html';
+                            break;
+                        default:
+                            window.location.href = '/menu.html';
                     }
                 } else {
                     if (errorMessage) {

@@ -1,69 +1,565 @@
+// frontend/public/JS/buscarAlumno.js - VERSIÓN MODIFICADA
 class SistemaAlumnos {
     constructor() {
         this.apiBase = '/api';
         this.alumnoActual = null;
         this.incidencias = [];
-        this.token = this.obtenerToken();
-        this.initEventListeners();
-    }
-
-    obtenerToken() {
-        // Busca el token en varios lugares posibles
-        const token = 
-            localStorage.getItem('authToken') || 
-            localStorage.getItem('token') || 
-            sessionStorage.getItem('authToken') ||
-            sessionStorage.getItem('token');
         
-        console.log('Token obtenido:', token ? 'Sí' : 'No');
-        return token;
+        // Inicializar sistema
+        this.initialize();
     }
 
+    async initialize() {
+        // 1. Verificar si está autenticado
+        try {
+            const response = await fetch(`${this.apiBase}/auth/check`, {
+                credentials: 'include'  // Importante para sesiones
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success || !data.isAuthenticated) {
+                alert('Debes iniciar sesión para acceder a esta página');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            // 2. Verificar si es Administrador o Prefecto
+            if (data.tipo !== 'Administrador' && data.tipo !== 'Prefecto') {
+                alert('No tienes permisos para acceder a esta página');
+                window.location.href = '/vista-profesor.html';
+                return;
+            }
+            
+            // 3. Guardar info del usuario
+            this.userInfo = data.user;
+            this.userType = data.tipo;
+            
+            console.log(`✅ Usuario: ${data.user.nombre} (${data.tipo})`);
+            
+            // 4. Inicializar interfaz
+            this.showUserInfo();
+            this.initEventListeners();
+            
+        } catch (error) {
+            console.error('Error verificando autenticación:', error);
+            window.location.href = '/login.html';
+        }
+    }
+   
+    showUserInfo() {
+        // Mostrar nombre y tipo de usuario
+        const userDisplay = document.getElementById('current-user-display');
+        if (userDisplay) {
+            userDisplay.textContent = `${this.userInfo.nombre} (${this.userType})`;
+        }
+        
+        // Agregar botón de logout
+        this.addLogoutButton();
+    }
+
+    addLogoutButton() {
+        if (document.getElementById('logout-button')) return;
+        
+        const logoutBtn = document.createElement('button');
+        logoutBtn.id = 'logout-button';
+        logoutBtn.textContent = 'Cerrar Sesión';
+        logoutBtn.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1000;
+        `;
+        
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await fetch(`${this.apiBase}/auth/logout`, { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } finally {
+                window.location.href = '/login.html';
+            }
+        });
+        document.body.appendChild(logoutBtn);
+    }
+
+    async checkAuth() {
+        try {
+            const response = await fetch(`${this.apiBase}/auth/check`);
+            const data = await response.json();
+            
+            if (data.success && data.isAuthenticated) {
+                this.userInfo = data.user;
+                this.isAuthenticated = true;
+                this.userType = data.tipo;
+                return true;
+            } else {
+                this.userInfo = null;
+                this.isAuthenticated = false;
+                this.userType = null;
+                return false;
+            }
+        } catch (error) {
+            console.error('Error verificando autenticación:', error);
+            return false;
+        }
+    }
+    
+    isAdmin() {
+        return this.userType === 'Administrador';
+    }
+    
+    
+    requireAuth(actionName = 'realizar esta acción') {
+        if (!this.isAuthenticated) {
+            alert(`Debes iniciar sesión para ${actionName}`);
+            window.location.href = '/login.html';
+            return false;
+        }
+        return true;
+    }
+    
+    requireRole(allowedRoles, actionName = 'realizar esta acción') {
+        if (!this.requireAuth(actionName)) return false;
+        
+        if (!allowedRoles.includes(this.userType)) {
+            alert(`No tienes permisos de ${allowedRoles.join(' o ')} para ${actionName}`);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    showUserInfo() {
+        if (!this.userInfo) return;
+        
+        // Mostrar info del usuario en la interfaz
+        const userDisplay = document.getElementById('current-user-display');
+        if (userDisplay) {
+            userDisplay.textContent = `${this.userInfo.nombre} (${this.userType})`;
+        }
+        
+        // Agregar botón de logout si no existe
+        this.addLogoutButton();
+    }
+    
+    addLogoutButton() {
+        // Verificar si ya existe
+        if (document.getElementById('logout-button')) return;
+        
+        const logoutBtn = document.createElement('button');
+        logoutBtn.id = 'logout-button';
+        logoutBtn.textContent = 'Cerrar Sesión';
+        logoutBtn.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 14px;
+        `;
+        
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await fetch(`${this.apiBase}/auth/logout`, { method: 'POST' });
+            } finally {
+                window.location.href = '/login.html';
+            }
+        });
+        
+        document.body.appendChild(logoutBtn);
+    }
+
+    // ============================================
+    // 2. MÉTODOS DE LA INTERFAZ (MODIFICADOS)
+    // ============================================
+    
     initEventListeners() {
-        // Buscar alumno por boleta
+        // Buscar alumno
         const searchInput = document.getElementById('search-boleta-inc');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.buscarAlumno(e.target.value);
             });
         }
-
-        // Botones de justificación
-        const btnJustSelec = document.getElementById('btn-justselec');
-        const btnJustRet = document.getElementById('btn-justret');
-        const btnJustSin = document.getElementById('btn-justsin');
-        const btnJustAll = document.getElementById('btn-justall');
-
-        if (btnJustSelec) btnJustSelec.addEventListener('click', () => this.justificarSeleccionadas());
-        if (btnJustRet) btnJustRet.addEventListener('click', () => this.justificarTodasRetardos());
-        if (btnJustSin) btnJustSin.addEventListener('click', () => this.justificarTodasSinCredencial());
-        if (btnJustAll) btnJustAll.addEventListener('click', () => this.justificarTodas());
-
-        // Botones de credencial
-        const btnBloquear = document.getElementById('btn-bloquear-credencial');
-        const btnDesbloquear = document.getElementById('btn-desbloquear-credencial');
-
-        if (btnBloquear) btnBloquear.addEventListener('click', () => this.bloquearCredencial());
-        if (btnDesbloquear) btnDesbloquear.addEventListener('click', () => this.desbloquearCredencial());
-
-        // Menú navegación
+        
+        // Configurar botones según rol
+        this.configureButtonsByRole();
+        
+        // Menú
         const menuBtn = document.getElementById('menu-toggle-btn');
         const overlay = document.getElementById('menu-overlay');
-
+        
         if (menuBtn) menuBtn.addEventListener('click', () => this.toggleMenu());
         if (overlay) overlay.addEventListener('click', () => this.closeMenu());
     }
 
-    async buscarAlumno(boletaInput) {
-        const boleta = String(boletaInput).trim();
+    configureButtonsByRole() {
+        // Botones de justificación - SOLO ADMIN
+        const btnJustSelec = document.getElementById('btn-justselec');
+        const btnJustRet = document.getElementById('btn-justret');
+        const btnJustSin = document.getElementById('btn-justsin');
+        const btnJustAll = document.getElementById('btn-justall');
+        
+        // Botones de credencial - SOLO ADMIN
+        const btnBloquear = document.getElementById('btn-bloquear-credencial');
+        const btnDesbloquear = document.getElementById('btn-desbloquear-credencial');
+        
+        if (this.userType === 'Administrador') {
+            // Mostrar y habilitar botones de administrador
+            [btnJustSelec, btnJustRet, btnJustSin, btnJustAll, btnBloquear, btnDesbloquear].forEach(btn => {
+                if (btn) {
+                    btn.style.display = 'block';
+                    btn.disabled = false;
+                }
+            });
+            
+            // Asignar eventos
+            if (btnJustSelec) btnJustSelec.addEventListener('click', () => this.justificarSeleccionadas());
+            if (btnJustRet) btnJustRet.addEventListener('click', () => this.justificarTodasRetardos());
+            if (btnJustSin) btnJustSin.addEventListener('click', () => this.justificarTodasSinCredencial());
+            if (btnJustAll) btnJustAll.addEventListener('click', () => this.justificarTodas());
+            if (btnBloquear) btnBloquear.addEventListener('click', () => this.bloquearCredencial());
+            if (btnDesbloquear) btnDesbloquear.addEventListener('click', () => this.desbloquearCredencial());
+            
+        } else {
+            // Si es Prefecto, ocultar botones de administrador
+            [btnJustSelec, btnJustRet, btnJustSin, btnJustAll, btnBloquear, btnDesbloquear].forEach(btn => {
+                if (btn) {
+                    btn.style.display = 'none';
+                    btn.disabled = true;
+                }
+            });
+        }
+    }
+
+    configureAdminButtons(...buttons) {
+        buttons.forEach((btn, index) => {
+            if (btn) {
+                if (this.isAdmin()) {
+                    btn.style.display = 'block';
+                    btn.disabled = false;
+                    
+                    // Asignar eventos según el botón
+                    const actions = [
+                        () => this.justificarSeleccionadas(),
+                        () => this.justificarTodasRetardos(),
+                        () => this.justificarTodasSinCredencial(),
+                        () => this.justificarTodas()
+                    ];
+                    
+                    if (actions[index]) {
+                        btn.addEventListener('click', actions[index]);
+                    }
+                } else {
+                    // Si no es admin, ocultar o deshabilitar
+                    btn.style.display = 'none';
+                    btn.disabled = true;
+                }
+            }
+        });
+    }
     
-        if (boleta.length < 10) {
-            this.limpiarDatos();
+    configureCredentialButtons(btnBloquear, btnDesbloquear) {
+        if (btnBloquear) {
+            if (this.isAdmin()) {
+                btnBloquear.style.display = 'block';
+                btnBloquear.addEventListener('click', () => this.bloquearCredencial());
+            } else {
+                btnBloquear.style.display = 'none';
+                btnBloquear.disabled = true;
+            }
+        }
+        
+        if (btnDesbloquear) {
+            if (this.isAdmin()) {
+                btnDesbloquear.style.display = 'block';
+                btnDesbloquear.addEventListener('click', () => this.desbloquearCredencial());
+            } else {
+                btnDesbloquear.style.display = 'none';
+                btnDesbloquear.disabled = true;
+            }
+        }
+    }
+
+    // ============================================
+    // 3. MÉTODOS CON VERIFICACIÓN DE PERMISOS
+    // ============================================
+    
+    async justificarSeleccionadas() {
+        if (!this.requireRole(['Administrador'], 'justificar incidencias')) return;
+        // ... resto del código existente (sin cambios)
+        const incidenciasSeleccionadas = this.obtenerIncidenciasSeleccionadas();
+        
+        if (incidenciasSeleccionadas.length === 0) {
+            this.mostrarError('Selecciona al menos una incidencia para justificar');
+            return;
+        }
+
+        const justificacion = document.getElementById('item-selector').value;
+        if (!justificacion || justificacion === 'item1') {
+            this.mostrarError('Selecciona una justificación válida');
+            return;
+        }
+
+        await this.procesarJustificacion(incidenciasSeleccionadas, justificacion);
+    }
+
+    async justificarTodasRetardos() {
+        if (!this.requireRole(['Administrador'], 'justificar retardos')) return;
+        const incidenciasRetardo = this.incidencias.filter(inc => 
+            inc.tipo === 'retardo'
+        );
+        
+        if (incidenciasRetardo.length === 0) {
+            this.mostrarError('No hay incidencias de retardo para justificar');
+            return;
+        }
+
+        const justificacion = document.getElementById('item-selector').value;
+        if (!justificacion || justificacion === 'item1') {
+            this.mostrarError('Selecciona una justificación válida');
+            return;
+        }
+
+        await this.procesarJustificacion(incidenciasRetardo, justificacion);
+    }
+
+    async justificarTodasSinCredencial() {
+        if (!this.requireRole(['Administrador'], 'justificar sin credencial')) return;
+        const incidenciasSinCredencial = this.incidencias.filter(inc => 
+            inc.tipo === 'sin_credencial'
+        );
+        
+        if (incidenciasSinCredencial.length === 0) {
+            this.mostrarError('No hay incidencias sin credencial para justificar');
+            return;
+        }
+
+        const justificacion = document.getElementById('item-selector').value;
+        if (!justificacion || justificacion === 'item1') {
+            this.mostrarError('Selecciona una justificación válida');
+            return;
+        }
+
+        await this.procesarJustificacion(incidenciasSinCredencial, justificacion);
+    }
+
+    async justificarTodas() {
+        if (!this.requireRole(['Administrador'], 'justificar todas las incidencias')) return;
+        if (this.incidencias.length === 0) {
+            this.mostrarError('No hay incidencias para justificar');
+            return;
+        }
+
+        const justificacion = document.getElementById('item-selector').value;
+        if (!justificacion || justificacion === 'item1') {
+            this.mostrarError('Selecciona una justificación válida');
+            return;
+        }
+
+        await this.procesarJustificacion(this.incidencias, justificacion);
+    }
+
+    async bloquearCredencial() {
+        if (!this.requireRole(['Administrador'], 'bloquear credenciales')) return;
+        if (!this.alumnoActual) {
+            this.mostrarError('Primero busca un alumno');
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de bloquear la credencial de ${this.alumnoActual.nombre}?`)) {
             return;
         }
 
         try {
-            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
+            const response = await fetch(`${this.apiBase}/alumnos/bloquear/${this.alumnoActual.boleta}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                this.mostrarExito('Credencial bloqueada exitosamente');
+                // Actualizar estado local
+                this.alumnoActual.bloqueado = true;
+                this.actualizarEstadoCredencial();
+                
+                // Recargar datos para ver cambios
+                await this.buscarAlumno(this.alumnoActual.boleta);
+            } else {
+                this.mostrarError(data.message);
+            }
+        } catch (error) {
+            console.error('Error bloqueando credencial:', error);
+            this.mostrarError('Error al bloquear credencial');
+            
+            // Si es error de autenticación, redirigir
+            if (error.message.includes('401') || error.message.includes('403')) {
+                window.location.href = '/login.html';
+            }
+        }
+    }
+
+    async desbloquearCredencial() {
+        if (!this.requireRole(['Administrador'], 'desbloquear credenciales')) return;
+        if (!this.alumnoActual) {
+            this.mostrarError('Primero busca un alumno');
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de desbloquear la credencial de ${this.alumnoActual.nombre}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBase}/alumnos/desbloquear/${this.alumnoActual.boleta}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                this.mostrarExito('Credencial desbloqueada exitosamente');
+                // Actualizar estado local
+                this.alumnoActual.bloqueado = false;
+                this.actualizarEstadoCredencial();
+                
+                // Recargar datos para ver cambios
+                await this.buscarAlumno(this.alumnoActual.boleta);
+            } else {
+                this.mostrarError(data.message);
+            }
+        } catch (error) {
+            console.error('Error desbloqueando credencial:', error);
+            this.mostrarError('Error al desbloquear credencial');
+            
+            // Si es error de autenticación, redirigir
+            if (error.message.includes('401') || error.message.includes('403')) {
+                window.location.href = '/login.html';
+            }
+        }
+    }
+
+    // ============================================
+    // 4. MÉTODO PROCESAR JUSTIFICACIÓN CORREGIDO
+    // ============================================
+    
+    async procesarJustificacion(incidencias, justificacion) {
+        try {
+            // Verificar permisos
+            if (!this.checkPermission('Administrador', 'procesar justificaciones')) return;
+            
+            const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
+            
+            console.log('Enviando justificaciones como:', this.userInfo.usuario);
+            
+            for (const incidencia of incidencias) {
+                if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'sin_credencial') {
+                    continue;
+                }
+                
+                const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
+                
+                try {
+                    const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',  // ← CLAVE para sesiones
+                        body: JSON.stringify({
+                            id_registro: incidencia.id_registro,
+                            justificacion: justificacionTexto,
+                            id_tipo_anterior: idTipoAnterior
+                        })
+                    });
+                    
+                    if (response.status === 401) {
+                        alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    
+                    if (response.status === 403) {
+                        alert('No tienes permisos de Administrador para esta acción');
+                        return;
+                    }
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('✅ Justificación exitosa:', result);
+                    
+                } catch (error) {
+                    console.error(`Error justificando registro ${incidencia.id_registro}:`, error);
+                    this.mostrarError(`Error: ${error.message}`);
+                }
+            }
+            
+            this.mostrarExito('Justificaciones procesadas correctamente');
+            
+            // Recargar datos
+            setTimeout(async () => {
+                if (this.alumnoActual && this.alumnoActual.boleta) {
+                    await this.buscarAlumno(String(this.alumnoActual.boleta));
+                }
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error general en procesarJustificacion:', error);
+            this.mostrarError('Error al justificar incidencias: ' + error.message);
+        }
+    }
+
+    // ============================================
+    // 5. MÉTODOS EXISTENTES (SIN CAMBIOS)
+    // ============================================
+    
+    async buscarAlumno(boletaInput) {
+        const boleta = String(boletaInput).trim();
+        
+        if (boleta.length < 10) {
+            this.limpiarDatos();
+            return;
+        }
+        
+        try {
+            // IMPORTANTE: credentials: 'include' para enviar cookies de sesión
+            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`, {
+                credentials: 'include'
+            });
+            
+            if (response.status === 401) {
+                alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            if (response.status === 403) {
+                alert('No tienes permisos para acceder a esta función');
+                return;
+            }
             
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
@@ -76,7 +572,6 @@ class SistemaAlumnos {
                 this.mostrarDatosAlumno();
                 this.mostrarHorario(data.horario);
                 await this.cargarIncidencias(boleta);
-                // Cargar la foto del alumno
                 this.mostrarFotoAlumno(data.alumno);
             } else {
                 this.mostrarError('Alumno no encontrado');
@@ -87,6 +582,93 @@ class SistemaAlumnos {
             this.mostrarError('Error de conexión: ' + error.message);
             this.limpiarDatos();
         }
+    }
+
+    async cargarIncidencias(boleta) {
+        try {
+            const response = await fetch(`${this.apiBase}/alumnos/${boleta}/registros`, {
+                credentials: 'include'
+            });
+            
+            if (response.status === 401) {
+                alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            if (response.status === 403) {
+                alert('No tienes permisos para acceder a esta función');
+                return;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.incidencias = data.registros || [];
+                this.mostrarIncidencias();
+            } else {
+                this.mostrarError('No se pudieron cargar las incidencias');
+                this.incidencias = [];
+                this.mostrarIncidencias();
+            }
+        } catch (error) {
+            console.error('Error cargando incidencias:', error);
+            this.mostrarError('Error al cargar incidencias');
+            this.incidencias = [];
+            this.mostrarIncidencias();
+        }
+    }
+
+    // ============================================
+    // 6. MÉTODOS AUXILIARES (SIN CAMBIOS)
+    // ============================================
+    
+    obtenerIdTipoAnterior(tipoIncidencia) {
+        const tipos = {
+            'retardo': 2,
+            'sin_credencial': 3
+        };
+        return tipos[tipoIncidencia] || 2;
+    }
+
+    obtenerTextoJustificacion(valor) {
+        const justificaciones = {
+            'item2': 'Se habló con el tutor/a',
+            'item3': 'Se habló con el estudiante',
+            'item4': 'Error en el registro',
+        };
+        return justificaciones[valor] || valor;
+    }
+
+    formatearTipoIncidencia(tipo) {
+        const tipos = {
+            'retardo': 'Retardo',
+            'sin_credencial': 'Sin credencial', 
+            'entrada': 'Entrada normal',
+            'salida': 'Salida'
+        };
+        return tipos[tipo] || tipo;
+    }
+
+    formatearNombrePuerta(puertaValue) {
+        const puertas = {
+            'mexico-tacuba': 'México-Tacuba',
+            'mar': 'Mar Mediterráneo',
+            'entrada_principal': 'Entrada Principal'
+        };
+        return puertas[puertaValue] || puertaValue;
+    }
+
+    obtenerIncidenciasSeleccionadas() {
+        const checkboxes = document.querySelectorAll('.incidencia-checkbox:checked');
+        return Array.from(checkboxes).map(checkbox => {
+            const idRegistro = parseInt(checkbox.dataset.id);
+            return this.incidencias.find(inc => inc.id_registro === idRegistro);
+        }).filter(inc => inc !== undefined);
     }
 
     mostrarFotoAlumno(alumno) {
@@ -100,7 +682,6 @@ class SistemaAlumnos {
             fotoElement.alt = `Foto de ${alumno.nombre}`;
             fotoElement.style.display = 'block';
             
-            // Agregar clase si está bloqueado
             if (alumno.bloqueado) {
                 fotoElement.classList.add('bloqueado');
                 photoBox.style.borderColor = '#dc3545';
@@ -109,7 +690,6 @@ class SistemaAlumnos {
                 photoBox.style.borderColor = '#dee2e6';
             }
             
-            // Manejar error de imagen
             fotoElement.onerror = () => {
                 fotoElement.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp';
                 fotoElement.style.display = 'block';
@@ -127,16 +707,13 @@ class SistemaAlumnos {
     mostrarDatosAlumno() {
         if (!this.alumnoActual) return;
 
-        // Datos básicos
         document.getElementById('display-boleta').value = this.alumnoActual.boleta || '';
         document.getElementById('display-alumno').value = this.alumnoActual.nombre || '';
         document.getElementById('display-grupo').value = this.alumnoActual.nombre_grupo || '';
         
-        // Mostrar contadores
         document.getElementById('total-incidencias').textContent = this.alumnoActual.sin_credencial || '0';
         document.getElementById('total-retardos').textContent = this.alumnoActual.retardos || '0';
         
-        // Estado de credencial
         this.actualizarEstadoCredencial();
     }
 
@@ -156,7 +733,6 @@ class SistemaAlumnos {
 
         tbody.innerHTML = '';
         
-        // Ordenar por día y hora
         const diasOrden = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
         const horarioOrdenado = horario.sort((a, b) => {
             const diaA = diasOrden.indexOf(a.dia);
@@ -169,7 +745,6 @@ class SistemaAlumnos {
             const tr = document.createElement('tr');
             tr.className = `dia-${clase.dia}`;
             
-            // Formatear hora
             const horaInicio = clase.inicio.substring(0, 5);
             const horaFin = clase.fin.substring(0, 5);
             
@@ -187,35 +762,14 @@ class SistemaAlumnos {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
 
-    async cargarFotoAlumno(boleta) {
-        try {
-            const response = await fetch(`${this.apiBase}/alumnos/foto/${boleta}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.foto) {
-                    const img = document.getElementById('student-photo');
-                    if (img) {
-                        img.src = data.foto;
-                        img.style.display = 'block';
-                    }
-                }
-            }
-        } catch (error) {
-            console.log('No se pudo cargar la foto del alumno');
-        }
-    }
-
     limpiarDatos() {
-        // Limpiar campos
         document.getElementById('display-boleta').value = '';
         document.getElementById('display-alumno').value = '';
         document.getElementById('display-grupo').value = '';
         
-        // Limpiar contadores
         document.getElementById('total-incidencias').textContent = '0';
         document.getElementById('total-retardos').textContent = '0';
         
-        // Limpiar tablas
         const horarioTbody = document.getElementById('horario-tbody');
         if (horarioTbody) horarioTbody.innerHTML = `
             <tr>
@@ -234,14 +788,12 @@ class SistemaAlumnos {
             </tr>
         `;
         
-        // Limpiar foto
         const img = document.getElementById('student-photo');
         if (img) {
             img.src = '';
             img.style.display = 'none';
         }
         
-        // Limpiar estado de credencial
         this.limpiarEstadoCredencial();
         
         const fotoElement = document.getElementById('student-photo');
@@ -275,38 +827,6 @@ class SistemaAlumnos {
         }
     }
 
-  async cargarIncidencias(boleta) {
-    try {
-        console.log('🔍 Cargando incidencias para boleta:', boleta);
-        
-        const response = await fetch(`${this.apiBase}/alumnos/${boleta}/registros`);
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        console.log('📊 Registros recibidos del backend:', data.registros);
-        
-        if (data.success) {
-            this.incidencias = data.registros || [];
-            console.log('✅ Incidencias cargadas:', this.incidencias.length);
-            console.log('📋 Tipos de incidencias:', this.incidencias.map(i => `ID: ${i.id_registro}, Tipo: ${i.tipo} (${i.id_tipo_registro})`));
-            this.mostrarIncidencias();
-        } else {
-            this.mostrarError('No se pudieron cargar las incidencias');
-            this.incidencias = [];
-            this.mostrarIncidencias();
-        }
-    } catch (error) {
-        console.error('Error cargando incidencias:', error);
-        this.mostrarError('Error al cargar incidencias');
-        this.incidencias = [];
-        this.mostrarIncidencias();
-    }
-}
-
     mostrarIncidencias() {
         const tbody = document.getElementById('incidents-tbody');
         if (!tbody) return;
@@ -326,7 +846,6 @@ class SistemaAlumnos {
             const tr = document.createElement('tr');
             tr.dataset.idRegistro = incidencia.id_registro;
             
-            // Formatear fecha y hora
             const fecha = new Date(incidencia.fecha);
             const fechaFormateada = fecha.toLocaleDateString('es-MX');
             const horaFormateada = fecha.toLocaleTimeString('es-MX', { 
@@ -347,311 +866,6 @@ class SistemaAlumnos {
             tbody.appendChild(tr);
         });
     }
-
-    formatearNombrePuerta(puertaValue) {
-        const puertas = {
-            'mexico-tacuba': 'México-Tacuba',
-            'mar': 'Mar Mediterráneo',
-            'entrada_principal': 'Entrada Principal'
-        };
-        return puertas[puertaValue] || puertaValue;
-    }
-
-    formatearTipoIncidencia(tipo) {
-    const tipos = {
-        'retardo': 'Retardo',
-        // Cambiar esta línea si usas 'sin_credencial' como clave en el JS
-        'sin_credencial': 'Sin credencial', 
-        'entrada': 'Entrada normal',
-        'salida': 'Salida'
-    };
-    return tipos[tipo] || tipo;
-}
-
-    obtenerIncidenciasSeleccionadas() {
-        const checkboxes = document.querySelectorAll('.incidencia-checkbox:checked');
-        return Array.from(checkboxes).map(checkbox => {
-            const idRegistro = parseInt(checkbox.dataset.id);
-            return this.incidencias.find(inc => inc.id_registro === idRegistro);
-        }).filter(inc => inc !== undefined);
-    }
-
-    async justificarSeleccionadas() {
-        const incidenciasSeleccionadas = this.obtenerIncidenciasSeleccionadas();
-        
-        if (incidenciasSeleccionadas.length === 0) {
-            this.mostrarError('Selecciona al menos una incidencia para justificar');
-            return;
-        }
-
-        const justificacion = document.getElementById('item-selector').value;
-        if (!justificacion || justificacion === 'item1') {
-            this.mostrarError('Selecciona una justificación válida');
-            return;
-        }
-
-        await this.procesarJustificacion(incidenciasSeleccionadas, justificacion);
-    }
-
-    async justificarTodasRetardos() {
-        const incidenciasRetardo = this.incidencias.filter(inc => 
-            inc.tipo === 'retardo'
-        );
-        
-        if (incidenciasRetardo.length === 0) {
-            this.mostrarError('No hay incidencias de retardo para justificar');
-            return;
-        }
-
-        const justificacion = document.getElementById('item-selector').value;
-        if (!justificacion || justificacion === 'item1') {
-            this.mostrarError('Selecciona una justificación válida');
-            return;
-        }
-
-        await this.procesarJustificacion(incidenciasRetardo, justificacion);
-    }
-
-    async justificarTodasSinCredencial() {
-        const incidenciasSinCredencial = this.incidencias.filter(inc => 
-            inc.tipo === 'sin_credencial'
-        );
-        
-        if (incidenciasSinCredencial.length === 0) {
-            this.mostrarError('No hay incidencias sin credencial para justificar');
-            return;
-        }
-
-        const justificacion = document.getElementById('item-selector').value;
-        if (!justificacion || justificacion === 'item1') {
-            this.mostrarError('Selecciona una justificación válida');
-            return;
-        }
-
-        await this.procesarJustificacion(incidenciasSinCredencial, justificacion);
-    }
-
-    async justificarTodas() {
-        if (this.incidencias.length === 0) {
-            this.mostrarError('No hay incidencias para justificar');
-            return;
-        }
-
-        const justificacion = document.getElementById('item-selector').value;
-        if (!justificacion || justificacion === 'item1') {
-            this.mostrarError('Selecciona una justificación válida');
-            return;
-        }
-
-        await this.procesarJustificacion(this.incidencias, justificacion);
-    }
-
-    async procesarJustificacion(incidencias, justificacion) {
-    try {
-        // 1. VERIFICAR QUE TENEMOS TOKEN
-        if (!this.token) {
-            this.mostrarError('No estás autenticado. Por favor, inicia sesión.');
-            return;
-        }
-
-        const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
-        
-        console.log('Enviando justificaciones:', {
-            cantidad: incidencias.length,
-            justificacion: justificacionTexto,
-            tokenPresente: !!this.token
-        });
-
-        const resultados = [];
-        
-        for (const incidencia of incidencias) {
-            // Solo procesar retardos y sin credencial
-            if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'sin_credencial') {
-                console.log(`Saltando incidencia ${incidencia.id_registro} - tipo: ${incidencia.tipo}`);
-                continue;
-            }
-            
-            const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
-            
-            console.log('Enviando justificación:', {
-                id_registro: incidencia.id_registro,
-                justificacion: justificacionTexto,
-                id_tipo_anterior: idTipoAnterior,
-                tipo_incidencia: incidencia.tipo
-            });
-            
-            try {
-                // 2. AGREGAR EL TOKEN EN LOS HEADERS
-                const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${this.token}`  // ← AGREGAR ESTA LÍNEA
-                    },
-                    body: JSON.stringify({
-                        id_registro: incidencia.id_registro,
-                        justificacion: justificacionTexto,
-                        id_tipo_anterior: idTipoAnterior
-                    })
-                });
-                
-                console.log('Estado respuesta:', response.status, response.statusText);
-                
-                // Verificar si la respuesta es JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    console.error('Respuesta no JSON recibida:', text.substring(0, 200));
-                    
-                    // Si es un error 401, probablemente sea problema de autenticación
-                    if (response.status === 401) {
-                        throw new Error('No autorizado. Token inválido o expirado.');
-                    }
-                    
-                    throw new Error(`Servidor respondió con: ${contentType || 'sin tipo'}`);
-                }
-                
-                const result = await response.json();
-                console.log('📥 RESPUESTA BACKEND:', result);
-                
-                if (!response.ok) {
-                    throw new Error(result.message || `Error HTTP: ${response.status}`);
-                }
-                
-                resultados.push({
-                    id_registro: incidencia.id_registro,
-                    success: true
-                });
-                
-            } catch (error) {
-                console.error(`Error justificando registro ${incidencia.id_registro}:`, error);
-                resultados.push({
-                    id_registro: incidencia.id_registro,
-                    success: false,
-                    error: error.message
-                });
-            }
-        }
-
-        // Contar resultados exitosos
-        const exitosos = resultados.filter(r => r.success).length;
-        const fallidos = resultados.filter(r => !r.success).length;
-        
-        if (exitosos > 0) {
-            this.mostrarExito(`Se justificaron ${exitosos} incidencia(s) correctamente`);
-        }
-        
-        if (fallidos > 0) {
-            this.mostrarError(`${fallidos} incidencia(s) no pudieron justificarse`);
-        }
-
-        // Esperar y recargar datos
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (this.alumnoActual && this.alumnoActual.boleta) {
-            await this.buscarAlumno(String(this.alumnoActual.boleta));
-        }
-        
-    } catch (error) {
-        console.error('🔥 Error general en procesarJustificacion:', error);
-        this.mostrarError('Error al justificar incidencias: ' + error.message);
-    }
-}
-
-obtenerIdTipoAnterior(tipoIncidencia) {
-    // Mapear tipos de incidencia a IDs de tipo_registro
-    const tipos = {
-        'retardo': 2,        // ID 2 = retardo
-        'sin_credencial': 3  // ID 3 = sin_credencial
-    };
-    
-    console.log(`Mapeando ${tipoIncidencia} a ID:`, tipos[tipoIncidencia]);
-    return tipos[tipoIncidencia] || 2; // Por defecto retardo si no se encuentra
-}
-
-    obtenerTextoJustificacion(valor) {
-        const justificaciones = {
-            'item2': 'Se habló con el tutor/a',
-            'item3': 'Se habló con el estudiante',
-            'item4': 'Error en el registro',
-        };
-        return justificaciones[valor] || valor;
-    }
-
-    async bloquearCredencial() {
-    if (!this.alumnoActual) {
-        this.mostrarError('Primero busca un alumno');
-        return;
-    }
-
-    if (!confirm(`¿Estás seguro de bloquear la credencial de ${this.alumnoActual.nombre}?`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`${this.apiBase}/alumnos/bloquear/${this.alumnoActual.boleta}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-            this.mostrarExito('Credencial bloqueada exitosamente');
-            // Actualizar estado local
-            this.alumnoActual.bloqueado = true;
-            this.actualizarEstadoCredencial();
-            
-            // Recargar datos para ver cambios
-            await this.buscarAlumno(this.alumnoActual.boleta);
-        } else {
-            this.mostrarError(data.message);
-        }
-    } catch (error) {
-        console.error('Error bloqueando credencial:', error);
-        this.mostrarError('Error al bloquear credencial');
-    }
-}
-
-async desbloquearCredencial() {
-    if (!this.alumnoActual) {
-        this.mostrarError('Primero busca un alumno');
-        return;
-    }
-
-    if (!confirm(`¿Estás seguro de desbloquear la credencial de ${this.alumnoActual.nombre}?`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`${this.apiBase}/alumnos/desbloquear/${this.alumnoActual.boleta}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-            this.mostrarExito('Credencial desbloqueada exitosamente');
-            // Actualizar estado local
-            this.alumnoActual.bloqueado = false;
-            this.actualizarEstadoCredencial();
-            
-            // Recargar datos para ver cambios
-            await this.buscarAlumno(this.alumnoActual.boleta);
-        } else {
-            this.mostrarError(data.message);
-        }
-    } catch (error) {
-        console.error('Error desbloqueando credencial:', error);
-        this.mostrarError('Error al desbloquear credencial');
-    }
-}
 
     mostrarExito(mensaje) {
         this.mostrarNotificacion(mensaje, 'success');
@@ -704,39 +918,7 @@ async desbloquearCredencial() {
             overlay.classList.remove('menu-visible');
         }
     }
-
-    async testJustificacion() {
-        console.log('=== TEST JUSTIFICACIÓN ===');
-        console.log('1. Token:', this.token);
-        console.log('2. Ruta completa:', `${this.apiBase}/alumnos/justificaciones`);
-        
-        // Probar con una solicitud simple
-        try {
-            const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                },
-                body: JSON.stringify({
-                    id_registro: 1,
-                    justificacion: 'Test de justificación',
-                    id_tipo_anterior: 2
-                })
-            });
-            
-            console.log('3. Status:', response.status);
-            console.log('4. Headers:', Object.fromEntries(response.headers.entries()));
-            
-            const text = await response.text();
-            console.log('5. Response:', text);
-            
-        } catch (error) {
-            console.error('Error en test:', error);
-        }
-    }
 }
-
 
 // Inicializar sistema
 document.addEventListener('DOMContentLoaded', () => {

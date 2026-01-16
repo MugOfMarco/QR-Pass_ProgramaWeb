@@ -17,17 +17,21 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.SERVER_PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000', // o tu dominio
+    credentials: true // IMPORTANTE
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'mi_secreto_local',
+    secret: 'tu_secreto',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
-        secure: false,
-        maxAge: 24 * 60 * 60 * 1000
+    cookie: {
+        httpOnly: true,
+        secure: false, // true en producción con HTTPS
+        maxAge: 1000 * 60 * 60 * 8 // 8 horas
     }
 }));
 

@@ -38,6 +38,8 @@
     <div id="menu-overlay" class="menu-overlay"></div>
     
     <div class="main-container">
+        <!-- ¡AQUÍ FALTA TODO EL FORMULARIO! -->
+        <!-- Copia y pega esta sección COMPLETA: -->
         <section class="student-search-section">
             <div class="container">
                 <h2 class="section-title">Buscar Alumno</h2>
@@ -99,10 +101,11 @@
                         </div>
                         <div class="field">
                             <label for="form-estatus">Estatus</label>
-                            <select id="form-estatus" name="estatus">
-                                <option value="activo" selected>Activo</option>
-                                <option value="inactivo">Inactivo</option>
-                                <option value="egresado">Egresado</option>
+                            <select id="form-estatus">
+                            <option value="activo">Activo</option>
+                            <option value="baja temporal">Baja Temporal</option>
+                            <option value="egresado">Egresado</option>
+                            <option value="baja definitiva">Baja Definitiva</option>
                             </select>
                         </div>
 
@@ -135,7 +138,9 @@
         </div>
     </footer>
 
+    <!-- Scripts en orden correcto -->
     <script src="./JS/validaciones.js"></script>
+    <script src="./JS/menu.js"></script> <!-- PRIMERO el menú -->
     <script src="./JS/gestionAlumnos.js"></script>
 </body>
 </html>
