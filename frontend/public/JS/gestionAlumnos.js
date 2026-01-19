@@ -24,7 +24,7 @@ class GestionAlumnos {
         // Solo inicializar si hay elementos necesarios
         if (this.hasRequiredElements()) {
             this.initEventListeners();
-            this.safeClearForm(true);
+            this.safeclearform(true);
             console.log('Gestión de Alumnos lista');
         } else {
             console.warn('Elementos requeridos no encontrados. ¿El formulario está en el HTML?');
@@ -104,7 +104,7 @@ class GestionAlumnos {
         }
 
         if (this.dom.btncancelar) {
-            this.dom.btncancelar.addEventListener('click', () => this.safeClearForm(true));
+            this.dom.btncancelar.addEventListener('click', () => this.safeclearform(true));
         }
         
         if (this.dom.btneliminar) {
@@ -142,7 +142,7 @@ class GestionAlumnos {
         console.log('✅ Event listeners configurados');
     }
 
-    safeClearForm(fullClear = false) {
+    safeclearform(fullClear = false) {
         console.log('🧹 Limpiando formulario...');
         
         // Resetear formulario si existe
@@ -154,8 +154,8 @@ class GestionAlumnos {
         this.safeRemovePhoto();
         
         // Limpiar horario dinámico
-        if (this.dom.contenedorHorario) {
-            this.dom.contenedorHorario.innerHTML = '';
+        if (this.dom.contenedorhorariodinamico) {
+            this.dom.contenedorhorariodinamico.innerHTML = '';
             this.agregarFilaHorario();
         }
         
@@ -337,7 +337,7 @@ class GestionAlumnos {
             div.remove();
         });
 
-        this.dom.contenedorHorario.appendChild(div);
+        this.dom.contenedorhorariodinamico.appendChild(div);
     }
 
     recolectarHorario() {
@@ -374,7 +374,7 @@ class GestionAlumnos {
     // =========================================================
 
     async buscarAlumno() {
-        const boleta = this.dom.searchBoleta.value.trim();
+        const boleta = this.dom.searchboleta.value.trim();
         if (boleta.length < 5) {
             alert('Ingrese una boleta válida (mínimo 5 dígitos)');
             return;
@@ -385,8 +385,8 @@ class GestionAlumnos {
             
             if (response.status === 404) {
                 alert(`Alumno no encontrado. Puede registrar uno nuevo.`);
-                this.clearForm(false);
-                this.dom.formBoleta.value = boleta;
+                this.safeclearform(false);
+                this.dom.formboleta.value = boleta;
                 return;
             }
 
@@ -400,7 +400,7 @@ class GestionAlumnos {
                 this.llenarFormulario(data); 
             } else {
                 alert('Alumno no encontrado');
-                this.clearForm(false);
+                this.safeclearform(false);
             }
         } catch (error) {
             console.error('Error en búsqueda:', error);
@@ -414,20 +414,20 @@ class GestionAlumnos {
         const horario = data.horario || alumno.horario || []; 
 
         // Datos básicos
-        this.dom.formBoleta.value = alumno.boleta || '';
-        this.dom.formNombre.value = alumno.nombre || '';
-        this.dom.formGrupo.value = alumno.nombre_grupo || alumno.grupo || ''; // Soporta ambos nombres
+        this.dom.formboleta.value = alumno.boleta || '';
+        this.dom.formnombre.value = alumno.nombre || '';
+        this.dom.formgrupo.value = alumno.nombre_grupo || alumno.grupo || ''; // Soporta ambos nombres
 
         // Estatus
         if (alumno.estado_academico) {
             const estatusLower = alumno.estado_academico.toLowerCase();
-            Array.from(this.dom.formEstatus.options).forEach(opt => {
+            Array.from(this.dom.formestatus.options).forEach(opt => {
                 if (opt.value === estatusLower) opt.selected = true;
             });
         }
 
         // Puertas abiertas
-        this.dom.formPuertasAbiertas.checked = (alumno.puerta_abierta === 1 || alumno.puerta_abierta === true);
+        this.dom.formpuertasabiertas.checked = (alumno.puerta_abierta === 1 || alumno.puerta_abierta === true);
 
         // Foto (Cloudinary Logic)
         if (alumno.url && alumno.url !== '') {
@@ -442,7 +442,7 @@ class GestionAlumnos {
         }
 
         // Horario (Dynamic Logic)
-        this.dom.contenedorHorario.innerHTML = ''; // Limpiar
+        this.dom.contenedorhorariodinamico.innerHTML = ''; // Limpiar
         if (horario.length > 0) {
             // Si el horario viene como string (formato antiguo), ignorarlo o intentar parsear
             if (Array.isArray(horario)) {
@@ -455,16 +455,16 @@ class GestionAlumnos {
         }
 
         // Modo Edición
-        this.dom.formBoleta.readOnly = true;
-        this.dom.formTitle.textContent = 'Modificar Alumno Existente';
-        this.dom.btnGuardar.textContent = 'Guardar Cambios';
-        this.dom.btnEliminar.style.display = 'block';
+        this.dom.formboleta.readOnly = true;
+        this.dom.formtitle.textContent = 'Modificar Alumno Existente';
+        this.dom.btnguardar.textContent = 'Guardar Cambios';
+        this.dom.btneliminar.style.display = 'block';
         if (this.dom.fieldsetLegend) this.dom.fieldsetLegend.textContent = 'Modificar Datos del Alumno';
         
         this.currentBoleta = alumno.boleta;
     }
 
-    safeClearForm(fullClear = false) {
+    safeclearform(fullClear = false) {
         console.log('🧹 Limpiando formulario...');
         
         // 1. Reset seguro del formulario
@@ -485,27 +485,27 @@ class GestionAlumnos {
         this.currentBoleta = null;
         
         // 4. Limpiar horario
-        if (this.dom.contenedorHorario) {
-            this.dom.contenedorHorario.innerHTML = '';
+        if (this.dom.contenedorhorariodinamico) {
+            this.dom.contenedorhorariodinamico.innerHTML = '';
             this.agregarFilaHorario(); // Fila vacía por defecto
         }
         
         // 5. Restaurar estado UI
-        if (this.dom.formBoleta) {
-            this.dom.formBoleta.readOnly = false;
+        if (this.dom.formboleta) {
+            this.dom.formboleta.readOnly = false;
         }
         
-        if (this.dom.formTitle) {
-            this.dom.formTitle.textContent = 'Registrar Nuevo Alumno';
+        if (this.dom.formtitle) {
+            this.dom.formtitle.textContent = 'Registrar Nuevo Alumno';
         }
         
-        if (this.dom.btnGuardar) {
-            this.dom.btnGuardar.textContent = 'Registrar Alumno';
-            this.dom.btnGuardar.disabled = false;
+        if (this.dom.btnguardar) {
+            this.dom.btnguardar.textContent = 'Registrar Alumno';
+            this.dom.btnguardar.disabled = false;
         }
         
-        if (this.dom.btnEliminar) {
-            this.dom.btnEliminar.style.display = 'none';
+        if (this.dom.btneliminar) {
+            this.dom.btneliminar.style.display = 'none';
         }
         
         if (this.dom.fieldsetLegend) {
@@ -513,8 +513,8 @@ class GestionAlumnos {
         }
         
         // 6. Limpiar búsqueda si es necesario
-        if (fullClear && this.dom.searchBoleta) {
-            this.dom.searchBoleta.value = '';
+        if (fullClear && this.dom.searchboleta) {
+            this.dom.searchboleta.value = '';
         }
         
         console.log('Formulario limpiado');
@@ -528,8 +528,8 @@ class GestionAlumnos {
     async handleFormSubmit(e) {
         e.preventDefault();
         
-        this.dom.btnGuardar.disabled = true;
-        this.dom.btnGuardar.textContent = 'Procesando...';
+        this.dom.btnguardar.disabled = true;
+        this.dom.btnguardar.textContent = 'Procesando...';
 
         try {
             let imageUrl = this.currentImageUrl;
@@ -542,17 +542,17 @@ class GestionAlumnos {
 
             // 2. Construir objeto de datos
             const alumnoData = {
-                boleta: this.dom.formBoleta.value.trim(),
-                nombre: this.dom.formNombre.value.trim(),
-                nombre_grupo: this.dom.formGrupo.value.trim(),
-                estado_academico: this.dom.formEstatus.value,  // Asegúrate que esto sea correcto
-                puerta_abierta: this.dom.formPuertasAbiertas.checked,
+                boleta: this.dom.formboleta.value.trim(),
+                nombre: this.dom.formnombre.value.trim(),
+                nombre_grupo: this.dom.formgrupo.value.trim(),
+                estado_academico: this.dom.formestatus.value,  // Asegúrate que esto sea correcto
+                puerta_abierta: this.dom.formpuertasabiertas.checked,
                 url: imageUrl || '',
                 horario: this.recolectarHorario()  // Esto debe devolver un array
             };
 
             console.log('Datos a enviar:', alumnoData);
-            console.log('Estado académico seleccionado:', this.dom.formEstatus.value);
+            console.log('Estado académico seleccionado:', this.dom.formestatus.value);
             console.log('Horario recolectado:', alumnoData.horario);
 
             // Validaciones
@@ -580,14 +580,14 @@ class GestionAlumnos {
             }
 
             alert(isUpdate ? 'Alumno actualizado correctamente' : 'Alumno registrado correctamente');
-            this.clearForm(true);
+            this.safeclearform(true);
 
         } catch (error) {
             console.error('Error:', error);
             alert('Error: ' + error.message);
         } finally {
-            this.dom.btnGuardar.disabled = false;
-            this.dom.btnGuardar.textContent = this.currentBoleta ? 'Guardar Cambios' : 'Registrar Alumno';
+            this.dom.btnguardar.disabled = false;
+            this.dom.btnguardar.textContent = this.currentBoleta ? 'Guardar Cambios' : 'Registrar Alumno';
         }
     }
 
@@ -606,7 +606,7 @@ class GestionAlumnos {
             
             if (result.success) {
                 alert('Alumno eliminado');
-                this.clearForm(true);
+                this.safeclearform(true);
             } else {
                 throw new Error(result.message);
             }
