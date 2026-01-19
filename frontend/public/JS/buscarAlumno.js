@@ -118,13 +118,11 @@ class SistemaAlumnos {
     
     
     requireAuth(actionName = 'realizar esta acción') {
-        if (!this.isAuthenticated) {
-            alert(`Debes iniciar sesión para ${actionName}`);
-            window.location.href = '/login.html';
-            return false;
-        }
-        return true;
-    }
+    // Ya no comprobamos this.isAuthenticated aquí.
+    // Dejamos que el fetch intente la acción.
+    // Si no hay sesión, el servidor responderá 401 y lo manejaremos en el catch.
+    return true; 
+}
     
     requireRole(allowedRoles, actionName = 'realizar esta acción') {
         if (!this.requireAuth(actionName)) return false;
@@ -189,6 +187,26 @@ class SistemaAlumnos {
     initEventListeners() {
         // Buscar alumno
         const searchInput = document.getElementById('search-boleta-inc');
+
+        if (searchInput) {
+        // Bloquear letras mientras el usuario escribe
+        searchInput.addEventListener('input', (e) => {
+            // Reemplaza cualquier cosa que NO sea un número (\D) por un vacío
+            e.target.value = e.target.value.replace(/\D/g, '');
+            
+            // Una vez limpio, procedes a buscar el alumno
+            this.buscarAlumno(e.target.value);
+        });
+
+        // Opcional: Bloquear teclas no numéricas desde el evento keydown
+        searchInput.addEventListener('keydown', (e) => {
+            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'];
+            if (!allowedKeys.includes(e.key) && isNaN(Number(e.key))) {
+                e.preventDefault();
+            }
+        });
+    }
+
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.buscarAlumno(e.target.value);
@@ -231,8 +249,8 @@ class SistemaAlumnos {
             if (btnJustRet) btnJustRet.addEventListener('click', () => this.justificarTodasRetardos());
             if (btnJustSin) btnJustSin.addEventListener('click', () => this.justificarTodasSinCredencial());
             if (btnJustAll) btnJustAll.addEventListener('click', () => this.justificarTodas());
-            if (btnBloquear) btnBloquear.addEventListener('click', () => this.bloquearCredencial());
-            if (btnDesbloquear) btnDesbloquear.addEventListener('click', () => this.desbloquearCredencial());
+            if (btnBloquear) btnBloquear.addEventListener('click', () => this.bloquearcredencial());
+            if (btnDesbloquear) btnDesbloquear.addEventListener('click', () => this.desbloquearcredencial());
             
         } else {
             // Si es Prefecto, ocultar botones de administrador
@@ -276,7 +294,7 @@ class SistemaAlumnos {
         if (btnBloquear) {
             if (this.isAdmin()) {
                 btnBloquear.style.display = 'block';
-                btnBloquear.addEventListener('click', () => this.bloquearCredencial());
+                btnBloquear.addEventListener('click', () => this.bloquearcredencial());
             } else {
                 btnBloquear.style.display = 'none';
                 btnBloquear.disabled = true;
@@ -286,7 +304,7 @@ class SistemaAlumnos {
         if (btnDesbloquear) {
             if (this.isAdmin()) {
                 btnDesbloquear.style.display = 'block';
-                btnDesbloquear.addEventListener('click', () => this.desbloquearCredencial());
+                btnDesbloquear.addEventListener('click', () => this.desbloquearcredencial());
             } else {
                 btnDesbloquear.style.display = 'none';
                 btnDesbloquear.disabled = true;
@@ -373,50 +391,58 @@ class SistemaAlumnos {
         await this.procesarJustificacion(this.incidencias, justificacion);
     }
 
-    async bloquearCredencial() {
-        if (!this.requireRole(['Administrador'], 'bloquear credenciales')) return;
-        if (!this.alumnoActual) {
-            this.mostrarError('Primero busca un alumno');
-            return;
-        }
-
-        if (!confirm(`¿Estás seguro de bloquear la credencial de ${this.alumnoActual.nombre}?`)) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`${this.apiBase}/alumnos/bloquear/${this.alumnoActual.boleta}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
+    async verificarEstadoInicial() {
+    try {
+        const response = await fetch(`${this.apiBase}/auth/check`, { credentials: 'include' });
+        if (response.ok) {
             const data = await response.json();
-            
-            if (data.success) {
-                this.mostrarExito('Credencial bloqueada exitosamente');
-                // Actualizar estado local
-                this.alumnoActual.bloqueado = true;
-                this.actualizarEstadoCredencial();
-                
-                // Recargar datos para ver cambios
-                await this.buscarAlumno(this.alumnoActual.boleta);
-            } else {
-                this.mostrarError(data.message);
-            }
-        } catch (error) {
-            console.error('Error bloqueando credencial:', error);
-            this.mostrarError('Error al bloquear credencial');
-            
-            // Si es error de autenticación, redirigir
-            if (error.message.includes('401') || error.message.includes('403')) {
-                window.location.href = '/login.html';
-            }
+            this.isAuthenticated = true;
+            this.usuarioActual = data.user;
+        } else {
+            this.isAuthenticated = false;
         }
+    } catch (error) {
+        this.isAuthenticated = false;
+    }
+}   
+
+    async bloquearcredencial() {
+    //if (!this.requireRole(['Administrador'], 'bloquear credenciales')) return;
+    if (!this.alumnoActual) {
+        this.mostrarError('Primero busca un alumno');
+        return;
     }
 
-    async desbloquearCredencial() {
+    if (!confirm(`¿Estás seguro de bloquear la credencial de ${this.alumnoActual.nombre}?`)) return;
+
+    try {
+        const response = await fetch(`${this.apiBase}/alumnos/bloquear/${this.alumnoActual.boleta}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include' // <--- ESENCIAL PARA LA SESIÓN
+        });
+
+        if (response.status === 401) {
+            alert('Sesión expirada. Inicia sesión de nuevo.');
+            window.location.href = '/login.html';
+            return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            this.mostrarExito('Credencial bloqueada');
+            this.alumnoActual.bloqueado = true;
+            this.actualizarEstadoCredencial();
+        } else {
+            this.mostrarError(data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        this.mostrarError('Error al procesar la solicitud');
+    }
+}
+
+    async desbloquearcredencial() {
         if (!this.requireRole(['Administrador'], 'desbloquear credenciales')) return;
         if (!this.alumnoActual) {
             this.mostrarError('Primero busca un alumno');
@@ -464,125 +490,99 @@ class SistemaAlumnos {
     // ============================================
     
     async procesarJustificacion(incidencias, justificacion) {
-        try {
-            // Verificar permisos
-            if (!this.checkPermission('Administrador', 'procesar justificaciones')) return;
+    try {
+        const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
+        
+        for (const incidencia of incidencias) {
+            if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'sin_credencial') continue;
             
-            const justificacionTexto = this.obtenerTextoJustificacion(justificacion);
-            
-            console.log('Enviando justificaciones como:', this.userInfo.usuario);
-            
-            for (const incidencia of incidencias) {
-                if (incidencia.tipo !== 'retardo' && incidencia.tipo !== 'sin_credencial') {
-                    continue;
-                }
-                
-                const idTipoAnterior = this.obtenerIdTipoAnterior(incidencia.tipo);
-                
-                try {
-                    const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json'
-                        },
-                        credentials: 'include',  // ← CLAVE para sesiones
-                        body: JSON.stringify({
-                            id_registro: incidencia.id_registro,
-                            justificacion: justificacionTexto,
-                            id_tipo_anterior: idTipoAnterior
-                        })
-                    });
-                    
-                    if (response.status === 401) {
-                        alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-                        window.location.href = '/login.html';
-                        return;
-                    }
-                    
-                    if (response.status === 403) {
-                        alert('No tienes permisos de Administrador para esta acción');
-                        return;
-                    }
-                    
-                    if (!response.ok) {
-                        throw new Error(`Error HTTP: ${response.status}`);
-                    }
-                    
-                    const result = await response.json();
-                    console.log('✅ Justificación exitosa:', result);
-                    
-                } catch (error) {
-                    console.error(`Error justificando registro ${incidencia.id_registro}:`, error);
-                    this.mostrarError(`Error: ${error.message}`);
-                }
+            const response = await fetch(`${this.apiBase}/alumnos/justificaciones`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // <--- MANTIENE LA SESIÓN DENTRO DEL BUCLE
+                body: JSON.stringify({
+                    id_registro: incidencia.id_registro,
+                    justificacion: justificacionTexto,
+                    id_tipo_anterior: this.obtenerIdTipoAnterior(incidencia.tipo)
+                })
+            });
+
+            if (response.status === 401) {
+                alert('Tu sesión ha expirado.');
+                window.location.href = '/login.html';
+                return;
             }
             
-            this.mostrarExito('Justificaciones procesadas correctamente');
-            
-            // Recargar datos
-            setTimeout(async () => {
-                if (this.alumnoActual && this.alumnoActual.boleta) {
-                    await this.buscarAlumno(String(this.alumnoActual.boleta));
-                }
-            }, 1000);
-            
-        } catch (error) {
-            console.error('Error general en procesarJustificacion:', error);
-            this.mostrarError('Error al justificar incidencias: ' + error.message);
+            if (!response.ok) throw new Error(`Error en registro ${incidencia.id_registro}`);
         }
+        
+        this.mostrarExito('Justificaciones procesadas correctamente');
+        await this.buscarAlumno(this.alumnoActual.boleta); // Recargar datos
+        
+    } catch (error) {
+        console.error('Error:', error);
+        this.mostrarError('Error al justificar: ' + error.message);
     }
+}
 
     // ============================================
     // 5. MÉTODOS EXISTENTES (SIN CAMBIOS)
     // ============================================
     
     async buscarAlumno(boletaInput) {
-        const boleta = String(boletaInput).trim();
+    const boleta = String(boletaInput).replace(/\D/g, '').trim();
+    
+    if (boleta.length !== 10) {
+        this.limpiarDatos();
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${this.apiBase}/alumnos/${boleta}`, {
+            credentials: 'include'
+        });
         
-        if (boleta.length < 10) {
-            this.limpiarDatos();
+        // 1. Si es 401, el servidor REALMENTE dice que no hay sesión
+        if (response.status === 401) {
+            alert('Sesión expirada');
+            window.location.href = '/login.html';
             return;
         }
+
+        // 2. Si es 404, simplemente no existe el alumno
+        if (response.status === 404) {
+            this.limpiarDatos();
+            console.warn("Alumno no encontrado");
+            // Aquí puedes poner un mensaje en pantalla "Boleta no registrada"
+            return;
+        }
+
+        // 3. Si es 500, hay un error en tu consulta SQL o Base de Datos
+        if (response.status === 500) {
+            console.error("Error 500 en el servidor");
+            return;
+        }
+
+        const data = await response.json();
         
-        try {
-            // IMPORTANTE: credentials: 'include' para enviar cookies de sesión
-            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`, {
-                credentials: 'include'
-            });
+        // IMPORTANTE: Verifica qué devuelve tu API. 
+        // Si tu API no manda "success: true", cambia esta línea:
+        if (data.alumno || data.success) {
+            this.alumnoActual = data.alumno;
+            this.mostrarDatosAlumno();
+            this.mostrarHorario(data.horario || []);
+            this.mostrarFotoAlumno(data.alumno);
             
-            if (response.status === 401) {
-                alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-                window.location.href = '/login.html';
-                return;
-            }
-            
-            if (response.status === 403) {
-                alert('No tienes permisos para acceder a esta función');
-                return;
-            }
-            
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                this.alumnoActual = data.alumno;
-                this.mostrarDatosAlumno();
-                this.mostrarHorario(data.horario);
-                await this.cargarIncidencias(boleta);
-                this.mostrarFotoAlumno(data.alumno);
-            } else {
-                this.mostrarError('Alumno no encontrado');
-                this.limpiarDatos();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            this.mostrarError('Error de conexión: ' + error.message);
+            // Cargar incidencias (usa también credentials include)
+            await this.cargarIncidencias(boleta);
+        } else {
             this.limpiarDatos();
         }
+
+    } catch (error) {
+        console.error('Error de red o parseo:', error);
     }
+}
 
     async cargarIncidencias(boleta) {
         try {

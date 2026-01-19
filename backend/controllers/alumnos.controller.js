@@ -146,10 +146,10 @@ export const verificarBloqueo = async (req, res) => {
     }
 };
 
-export const bloquearCredencial = async (req, res) => {
+export const bloquearcredencial = async (req, res) => {
     try {
         const { boleta } = req.params;
-        const result = await Alumno.bloquearCredencial(boleta);
+        const result = await Alumno.bloquearcredencial(boleta);
         
         if (result.success) {
             res.json({
@@ -171,10 +171,10 @@ export const bloquearCredencial = async (req, res) => {
     }
 };
 
-export const desbloquearCredencial = async (req, res) => {
+export const desbloquearcredencial = async (req, res) => {
     try {
         const { boleta } = req.params;
-        const result = await Alumno.desbloquearCredencial(boleta);
+        const result = await Alumno.desbloquearcredencial(boleta);
         
         if (result.success) {
             res.json({

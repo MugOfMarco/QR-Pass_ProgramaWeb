@@ -63,7 +63,7 @@ class Alumno {
         return results[0] || [];
     }
 
-    static async bloquear(boleta) {
+    static async bloquearcredencial(boleta) {
         const results = await ejecutarSP('sp_bloquear_alumno', [boleta]);
         return {
             filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
@@ -71,7 +71,7 @@ class Alumno {
     }
 
 
-    static async desbloquear(boleta) {
+    static async desbloquearcredencial(boleta) {
         const results = await ejecutarSP('sp_desbloquear_alumno', [boleta]);
         return {
             filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
