@@ -92,7 +92,7 @@ class GestionAlumnos {
         }
         
         if (this.dom.btnremovephoto) {
-            this.dom.btnremovephoto.addEventListener('click', () => this.removePhoto());
+            this.dom.btnremovephoto.addEventListener('click', () => this.RemovePhoto());
         }
 
         if (this.dom.btnagregarclase) {
@@ -110,6 +110,34 @@ class GestionAlumnos {
         if (this.dom.btneliminar) {
             this.dom.btneliminar.addEventListener('click', () => this.eliminarAlumno());
         }
+
+        const inputsNumeros = [this.dom.searchboleta, this.dom.formboleta];
+    inputsNumeros.forEach(input => {
+        if (input) {
+            input.addEventListener('input', (e) => {
+                // Elimina cualquier cosa que no sea número
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                // Forzar máximo 5 caracteres por si falla el atributo maxlength
+                if (e.target.value.length > 10) {
+                    e.target.value = e.target.value.slice(0, 10);
+                }
+            });
+        }
+    });
+
+    // 2. Restricción para Grupo (Letras y Números, máx 5)
+    if (this.dom.formgrupo) {
+        this.dom.formgrupo.addEventListener('input', (e) => {
+            // Elimina caracteres especiales, permite solo A-Z, a-z y 0-9
+            e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+            // Convertir a mayúsculas automáticamente (opcional, muy común en grupos)
+            e.target.value = e.target.value.toUpperCase();
+            
+            if (e.target.value.length > 5) {
+                e.target.value = e.target.value.slice(0, 5);
+            }
+        });
+    }
         
         console.log('✅ Event listeners configurados');
     }
@@ -126,8 +154,8 @@ class GestionAlumnos {
         this.safeRemovePhoto();
         
         // Limpiar horario dinámico
-        if (this.dom.contenedorhorariodinamico) {
-            this.dom.contenedorhorariodinamico.innerHTML = '';
+        if (this.dom.contenedorHorario) {
+            this.dom.contenedorHorario.innerHTML = '';
             this.agregarFilaHorario();
         }
         
@@ -237,13 +265,13 @@ class GestionAlumnos {
         reader.readAsDataURL(file);
     }
 
-    removePhoto() {
+    RemovePhoto() {
         this.selectedImageFile = null;
-        this.dom.formFoto.value = '';
-        this.dom.previewImage.src = '';
-        this.dom.previewImage.style.display = 'none';
-        this.dom.noPhotoMessage.style.display = 'block';
-        this.dom.btnRemovePhoto.style.display = 'none';
+        this.dom.formfoto.value = '';
+        this.dom.previewimage.src = '';
+        this.dom.previewimage.style.display = 'none';
+        this.dom.nophotomessage.style.display = 'block';
+        this.dom.btnremovephoto.style.display = 'none';
         if(this.dom.photoPreview) this.dom.photoPreview.style.height = '150px';
     }
 
@@ -404,13 +432,13 @@ class GestionAlumnos {
         // Foto (Cloudinary Logic)
         if (alumno.url && alumno.url !== '') {
             this.currentImageUrl = alumno.url;
-            this.dom.previewImage.src = alumno.url;
-            this.dom.previewImage.style.display = 'block';
-            this.dom.noPhotoMessage.style.display = 'none';
-            this.dom.btnRemovePhoto.style.display = 'inline-block';
+            this.dom.previewimage.src = alumno.url;
+            this.dom.previewimage.style.display = 'block';
+            this.dom.nophotomessage.style.display = 'none';
+            this.dom.btnremovephoto.style.display = 'inline-block';
             if(this.dom.photoPreview) this.dom.photoPreview.style.height = '200px';
         } else {
-            this.removePhoto();
+            this.RemovePhoto();
         }
 
         // Horario (Dynamic Logic)
@@ -449,7 +477,7 @@ class GestionAlumnos {
         }
         
         // 2. Limpiar foto
-        this.removePhoto();
+        this.RemovePhoto();
         
         // 3. Resetear variables
         this.selectedImageFile = null;

@@ -394,7 +394,7 @@ body {
 
 /* 9. MENÚ FLOTANTE */
 .menu-navegacion {
-    position: relative;
+    position: fixed;
     z-index: 1000;
 }
 
@@ -530,7 +530,7 @@ body {
 .menu-navegacion {
     position: fixed;
     top: 140px; /* Ajusta según la altura de tu header */
-    left: 0;
+    left: 0px;
     width: 300px;
     height: calc(100% - 140px);
     background: white;

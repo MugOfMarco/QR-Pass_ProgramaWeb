@@ -45,7 +45,7 @@
                 <h2 class="section-title">Buscar Alumno</h2>
                 <div class="input-group">
                     <label for="search-boleta" class="label-highlight">Ingresar boleta</label>
-                    <input type="text" id="search-boleta" name="search-boleta" class="input-solo-numeros" placeholder="Buscar por boleta...">
+                    <input type="text" id="search-boleta" name="search-boleta" class="input-solo-numeros" placeholder="Buscar por boleta..." maxlength="10">
                 </div>
                 <div class="action-button-container">
                     <button type="button" id="btn-buscar">Buscar Alumno</button>
@@ -82,12 +82,12 @@
 
                         <div class="field">
                             <label for="form-nombre">Nombre del Alumno</label>
-                            <input type="text" id="form-nombre" name="nombre" required class="input-solo-letras">
+                            <input type="text" maxlength="40" id="form-nombre" name="nombre" required class="input-solo-letras">
                         </div>
 
                         <div class="field">
                             <label for="form-grupo">Grupo</label>
-                            <input type="text" id="form-grupo" name="grupo">
+                            <input type="text" id="form-grupo" name="grupo" maxlength="5">
                         </div>
 
                         <div class="field">
@@ -140,7 +140,7 @@
 
     <!-- Scripts en orden correcto -->
     <script src="./JS/validaciones.js"></script>
-    <script src="./JS/menu.js"></script> <!-- PRIMERO el menú -->
+    <script src="./JS/navigation.js"></script> <!-- PRIMERO el menú -->
     <script src="./JS/gestionAlumnos.js"></script>
 </body>
 </html>
