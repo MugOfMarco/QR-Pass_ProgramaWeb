@@ -459,7 +459,7 @@ class GestionAlumnos {
         this.dom.formtitle.textContent = 'Modificar Alumno Existente';
         this.dom.btnguardar.textContent = 'Guardar Cambios';
         this.dom.btneliminar.style.display = 'block';
-        if (this.dom.fieldsetLegend) this.dom.fieldsetLegend.textContent = 'Modificar Datos del Alumno';
+        if (this.dom.fieldsetlegend) this.dom.fieldsetlegend.textContent = 'Modificar Datos del Alumno';
         
         this.currentBoleta = alumno.boleta;
     }
@@ -468,8 +468,8 @@ class GestionAlumnos {
         console.log('🧹 Limpiando formulario...');
         
         // 1. Reset seguro del formulario
-        if (this.dom.studentForm) {
-            this.dom.studentForm.reset();
+        if (this.dom.studentform) {
+            this.dom.studentform.reset();
         } else {
             // Fallback: buscar directamente
             const form = document.getElementById('student-form');
@@ -508,8 +508,8 @@ class GestionAlumnos {
             this.dom.btneliminar.style.display = 'none';
         }
         
-        if (this.dom.fieldsetLegend) {
-            this.dom.fieldsetLegend.textContent = 'Datos del Alumno';
+        if (this.dom.fieldsetlegend) {
+            this.dom.fieldsetlegend.textContent = 'Datos del Alumno';
         }
         
         // 6. Limpiar búsqueda si es necesario
