@@ -1,5 +1,8 @@
-// registro.js - VERSIÓN FINAL CORREGIDA
-// Incluye correcciones de hora (3:33 AM), limpieza de datos y lógica de salida.
+// registro.js - VERSIÓN FINAL DEFINITIVA
+// Correcciones: 
+// 1. Rango de horario ampliado a 8 horas (480 min) para detectar retardos largos.
+// 2. Limpieza automática de datos al fallar.
+// 3. Lógica de salida sin incidencia.
 
 class RegistroSystem {
     constructor() {
@@ -61,7 +64,6 @@ class RegistroSystem {
             const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
 
             if (!response.ok) {
-                // CORRECCIÓN: Limpiar inmediatamente si hay error HTTP
                 this.limpiarDatos();
 
                 if (response.status === 404) {
@@ -85,14 +87,12 @@ class RegistroSystem {
                 
                 await this.procesarRegistro(data, tipoEntrada);
             } else {
-                // CORRECCIÓN: Limpiar si success es false
                 this.limpiarDatos();
                 this.mostrarError('Alumno no encontrado');
                 this.limpiarFotoAlumno();
             }
         } catch (error) {
             console.error('Error:', error);
-            // CORRECCIÓN: Limpiar en caso de excepción
             this.limpiarDatos();
             this.mostrarError(error.message);
             this.limpiarFotoAlumno();
@@ -139,7 +139,6 @@ class RegistroSystem {
     }
 
     limpiarDatos() {
-        // CORRECCIÓN: Esta función asegura que no se queden datos pegados del alumno anterior
         this.limpiarFotoAlumno();
         
         document.getElementById('nombre-output').value = '';
@@ -198,23 +197,21 @@ class RegistroSystem {
                     if (contadorActual >= 3) {
                         alert('DEMASIADAS ENTRADAS SIN CREDENCIAL - EL ALUMNO NO PASA');
                         this.mostrarError('DEMASIADAS ENTRADAS SIN CREDENCIAL - EL ALUMNO NO PASA');
-                        this.limpiarDatos(); // Limpiamos para que no se quede la foto
+                        this.limpiarDatos(); 
                         return;
                     }
                 }
                 
-                // CORRECCIÓN: Usamos la nueva lógica inteligente de horario
+                // Verificamos estado del horario con el nuevo rango
                 const estadoHorario = this.verificarEstadoHorario(alumnoData.horario);
                 
-                // Si devuelve null, es que está fuera de rango (ej. 3 AM)
                 if (estadoHorario === null) {
                     console.log("Alumno fuera de horario (ej. madrugada o sin clase hoy)");
-                    tieneRetardo = false; // No penalizamos si viene a una hora que nada que ver
+                    tieneRetardo = false; 
                 } else {
                     tieneRetardo = estadoHorario.esRetardo;
                 }
                 
-                // Asignación de tipo de registro
                 if (sinCredencial) {
                     idTipoRegistro = this.tiposRegistro.entrada_sin_credencial;
                 } else if (tieneRetardo) {
@@ -239,7 +236,7 @@ class RegistroSystem {
                     alumnoData.alumno.boleta,
                     puerta,
                     idTipoRegistro,
-                    false, // Salida nunca tiene retardo
+                    false, 
                     sinCredencial
                 );
             }
@@ -253,24 +250,21 @@ class RegistroSystem {
         }
     }
 
-    // CORRECCIÓN: Nueva lógica para evitar el bug de las 3:33 AM
+    // LÓGICA CORREGIDA: Rango de 8 horas (480 min)
     verificarEstadoHorario(horario) {
         const hoy = new Date();
         const diaSemanaStr = this.diasSemana[hoy.getDay()];
         
-        // Normalizar día (quitar acentos)
         const diaActual = diaSemanaStr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        // Filtrar clases de hoy
         const clasesHoy = horario.filter(h => h.dia === diaActual);
 
         if (clasesHoy.length === 0) {
-            return null; // No tiene clases hoy -> No aplica retardo
+            return null; 
         }
 
         const minutosActuales = hoy.getHours() * 60 + hoy.getMinutes();
 
-        // Buscar la clase más cercana
         let claseObjetivo = null;
         let diferenciaMinima = Infinity;
 
@@ -284,12 +278,13 @@ class RegistroSystem {
             }
         }
 
-        // Si la diferencia es mayor a 2 horas (120 min), es horario absurdo (ej. 3 AM vs clase 3 PM)
-        if (diferenciaMinima > 120) {
-            return null; // Se considera fuera de horario, no retardo
+        // === CAMBIO CLAVE ===
+        // Subido a 480 minutos (8 horas). 
+        // Permite retardos largos (ej. 3PM a 8PM), pero ignora madrugadas (3AM).
+        if (diferenciaMinima > 480) {
+            return null; 
         }
 
-        // Calcular retardo real con tolerancia de 20 min
         const inicioObjetivo = this.convertirHoraAMinutos(claseObjetivo.inicio);
         const tolerancia = 20;
         const retraso = minutosActuales - inicioObjetivo;
@@ -334,7 +329,6 @@ class RegistroSystem {
 
         this.mostrarEstado(mensaje, tipoColor);
 
-        // Limpiar después de 2.5 segundos
         setTimeout(() => {
             this.limpiarDatos();
         }, 2500);

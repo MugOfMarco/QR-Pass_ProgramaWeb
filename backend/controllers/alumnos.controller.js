@@ -283,12 +283,22 @@ export const registrarAlumno = async (req, res) => {
 export const modificarAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
-        const alumnoData = sanitizeObject(req.body);
+        
+        // 1. Sanitizamos el cuerpo general, PERO separamos el horario primero
+        const { horario, ...restoDatos } = req.body;
+        
+        // 2. Sanitizamos los datos de texto (nombre, grupo, etc.)
+        const datosLimpios = sanitizeObject(restoDatos);
+        
+        // 3. Reintegramos el horario ORIGINAL sin pasarlo por el sanitizador de texto
+        // (El horario es un Array de objetos, el sanitizador solo sirve para Strings simples)
+        const alumnoData = {
+            ...datosLimpios,
+            horario: horario // Mantenemos la estructura original del Array
+        };
         
         console.log('Modificando alumno:', boleta);
-        console.log('Datos recibidos:', alumnoData);
-        console.log('Horario recibido:', alumnoData.horario);
-        console.log('Estado académico:', alumnoData.estado_academico);
+        // console.log('Datos a guardar:', alumnoData); // Descomentar si necesitas depurar
         
         const result = await Alumno.modificar(boleta, alumnoData);
         
@@ -312,7 +322,6 @@ export const modificarAlumno = async (req, res) => {
         });
     }
 };
-
 export const eliminarAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
