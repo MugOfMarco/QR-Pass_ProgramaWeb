@@ -2,6 +2,42 @@
 import bcrypt from 'bcryptjs';
 import Usuario from '../models/Usuario.js';
 
+// Función de sanitización manual (sin dependencias externas)
+const sanitize = (data) => {
+    if (typeof data === 'string') {
+        return data
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;')
+            .trim();
+    }
+    return data;
+};
+
+export const createAlumno = async (req, res) => {
+    try {
+        // Sanitizamos el nombre antes de guardar
+        const nombreLimpio = sanitize(req.body.nombre);
+        
+        // Ahora guardas 'nombreLimpio' en tu base de datos
+        const nuevoAlumno = await Alumno.create({ nombre: nombreLimpio });
+        
+        res.json({
+            success: true,
+            message: 'Alumno creado exitosamente',
+            alumno: nuevoAlumno
+        });
+    } catch (error) {
+        console.error('Error creando alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creando alumno: ' + error.message
+        });
+    }
+};
+
 export const login = async (req, res) => {
     try {
         console.log('Datos recibidos en login:', {
@@ -18,8 +54,9 @@ export const login = async (req, res) => {
             });
         }
 
-        const cleanUsername = username.trim();
-        const cleanPassword = password.trim();
+        // Sanitizar y limpiar inputs
+        const cleanUsername = sanitize(username.trim());
+        const cleanPassword = password.trim(); // No sanitizar password, solo trim
 
         const usuario = await Usuario.obtenerPorUsername(cleanUsername);
         console.log('Usuario encontrado:', usuario ? 'Sí' : 'No');
@@ -54,13 +91,11 @@ export const login = async (req, res) => {
         res.json({
             success: true,
             tipo: usuario.tipo_usuario,
-            // NO enviar token JWT
             user: {
                 nombre: usuario.nombre_completo,
                 usuario: usuario.usuario
             }
         });
-
     } catch (error) {
         console.error('Error en login:', error);
         res.status(500).json({
@@ -69,8 +104,6 @@ export const login = async (req, res) => {
         });
     }
 };
-
-// ... resto de funciones igual
 
 // Función: Cerrar Sesión (Logout)
 export const logout = (req, res) => {
@@ -95,7 +128,7 @@ export const checkAuth = (req, res) => {
             success: true,
             isAuthenticated: true,
             user: req.session.user,
-            tipo: req.session.user.tipo, // Agregar tipo
+            tipo: req.session.user.tipo,
             nombre: req.session.user.nombre
         });
     } else {
