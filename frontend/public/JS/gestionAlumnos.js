@@ -2,65 +2,84 @@
 
 class GestionAlumnos {
     constructor() {
-        this.apiBase = '/api'; // Asegúrate que tu backend responda aquí
+        this.apiBase = '/api';
         this.currentBoleta = null;
         this.selectedImageFile = null;
         this.currentImageUrl = null;
+        
+        console.log('🚀 Inicializando Gestión de Alumnos...');
+        
+        // Esperar a que el DOM esté completamente cargado
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initialize());
+        } else {
+            this.initialize();
+        }
+    }
 
+    initialize() {
         // Inicializar elementos del DOM
-        this.dom = {
-            // Buscador
-            searchBoleta: document.getElementById('search-boleta'),
-            btnBuscar: document.getElementById('btn-buscar'),
-            
-            // Botones de Acción Global
-            btnGuardar: document.getElementById('btn-guardar'),
-            btnEliminar: document.getElementById('btn-eliminar'),
-            btnCancelar: document.getElementById('btn-cancelar'),
-            
-            // Formulario Datos Básicos
-            studentForm: document.getElementById('student-form'),
-            formBoleta: document.getElementById('form-boleta'),
-            formNombre: document.getElementById('form-nombre'),
-            formGrupo: document.getElementById('form-grupo'),
-            formEstatus: document.getElementById('form-estatus'),
-            formPuertasAbiertas: document.getElementById('form-puertas-abiertas'),
-            formTitle: document.getElementById('form-title'),
-            fieldsetLegend: document.getElementById('fieldset-legend'),
+        this.initDomElements();
+        
+        // Solo inicializar si hay elementos necesarios
+        if (this.hasRequiredElements()) {
+            this.initEventListeners();
+            this.safeclearform(true);
+            console.log('Gestión de Alumnos lista');
+        } else {
+            console.warn('Elementos requeridos no encontrados. ¿El formulario está en el HTML?');
+        }
+    }
 
-            // --- ELEMENTOS DE FOTO (Cloudinary) ---
-            formFoto: document.getElementById('form-foto'),
-            previewImage: document.getElementById('preview-image'),
-            photoPreview: document.getElementById('photo-preview'),
-            noPhotoMessage: document.getElementById('no-photo-message'),
-            btnRemovePhoto: document.getElementById('btn-remove-photo'),
+    hasRequiredElements() {
+        // Verificar que al menos algunos elementos clave existan
+        const requiredIds = ['student-form', 'form-boleta', 'form-nombre'];
+        const missing = requiredIds.filter(id => !document.getElementById(id));
+        
+        if (missing.length > 0) {
+            console.error('❌ Elementos faltantes:', missing);
+            return false;
+        }
+        return true;
+    }
 
-            // --- ELEMENTOS DE HORARIO DINÁMICO ---
-            // Nota: Ya no usamos 'form-horario', usamos el contenedor y el botón
-            contenedorHorario: document.getElementById('contenedor-horario-dinamico'),
-            btnAgregarClase: document.getElementById('btn-agregar-clase'),
-
-            // Menú
-            menuToggle: document.getElementById('menu-toggle-btn'),
-            menuLista: document.getElementById('lista-opciones'),
-            menuOverlay: document.getElementById('menu-overlay')
-        };
-
-        this.initEventListeners();
-        this.clearForm(true);
+    initDomElements() {
+        console.log('🔍 Buscando elementos DOM...');
+        
+        const elementIds = [
+            'search-boleta', 'btn-buscar', 'btn-guardar', 'btn-eliminar', 'btn-cancelar',
+            'student-form', 'form-boleta', 'form-nombre', 'form-grupo', 'form-estatus',
+            'form-puertas-abiertas', 'form-title', 'fieldset-legend', 'form-foto',
+            'preview-image', 'photo-preview', 'no-photo-message', 'btn-remove-photo',
+            'contenedor-horario-dinamico', 'btn-agregar-clase'
+        ];
+        
+        this.dom = {};
+        let foundCount = 0;
+        
+        elementIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                this.dom[id.replace(/-/g, '')] = element; // search-boleta -> searchboleta
+                foundCount++;
+            } else {
+                console.warn(`⚠️ Elemento no encontrado: ${id}`);
+            }
+        });
+        
+        console.log(`📋 Encontrados ${foundCount}/${elementIds.length} elementos`);
     }
 
     initEventListeners() {
-        // --- Menú ---
-        if (this.dom.menuToggle) {
-            this.dom.menuToggle.addEventListener('click', () => this.toggleMenu());
-            this.dom.menuOverlay.addEventListener('click', () => this.toggleMenu());
+        console.log('🔗 Inicializando event listeners...');
+        
+        // Solo agregar listeners a elementos que existen
+        if (this.dom.btnbuscar) {
+            this.dom.btnbuscar.addEventListener('click', () => this.buscarAlumno());
         }
-
-        // --- Búsqueda ---
-        if (this.dom.btnBuscar) {
-            this.dom.btnBuscar.addEventListener('click', () => this.buscarAlumno());
-            this.dom.searchBoleta.addEventListener('keydown', (e) => {
+        
+        if (this.dom.searchboleta) {
+            this.dom.searchboleta.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     this.buscarAlumno();
@@ -68,36 +87,139 @@ class GestionAlumnos {
             });
         }
 
-        // --- Foto ---
-        if (this.dom.formFoto) {
-            this.dom.formFoto.addEventListener('change', (e) => this.handleImageSelect(e));
+        if (this.dom.formfoto) {
+            this.dom.formfoto.addEventListener('change', (e) => this.handleImageSelect(e));
         }
-        if (this.dom.btnRemovePhoto) {
-            this.dom.btnRemovePhoto.addEventListener('click', () => this.removePhoto());
-        }
-
-        // --- Horario Dinámico ---
-        if (this.dom.btnAgregarClase) {
-            this.dom.btnAgregarClase.addEventListener('click', () => this.agregarFilaHorario());
+        
+        if (this.dom.btnremovephoto) {
+            this.dom.btnremovephoto.addEventListener('click', () => this.RemovePhoto());
         }
 
-        // --- Formulario Submit ---
-        if (this.dom.studentForm) {
-            this.dom.studentForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        if (this.dom.btnagregarclase) {
+            this.dom.btnagregarclase.addEventListener('click', () => this.agregarFilaHorario());
         }
 
-        // --- Botones Cancelar/Eliminar ---
-        if (this.dom.btnCancelar) this.dom.btnCancelar.addEventListener('click', () => this.clearForm(true));
-        if (this.dom.btnEliminar) this.dom.btnEliminar.addEventListener('click', () => this.eliminarAlumno());
+        if (this.dom.studentform) {
+            this.dom.studentform.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        }
+
+        if (this.dom.btncancelar) {
+            this.dom.btncancelar.addEventListener('click', () => this.safeclearform(true));
+        }
+        
+        if (this.dom.btneliminar) {
+            this.dom.btneliminar.addEventListener('click', () => this.eliminarAlumno());
+        }
+
+        const inputsNumeros = [this.dom.searchboleta, this.dom.formboleta];
+    inputsNumeros.forEach(input => {
+        if (input) {
+            input.addEventListener('input', (e) => {
+                // Elimina cualquier cosa que no sea número
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                // Forzar máximo 5 caracteres por si falla el atributo maxlength
+                if (e.target.value.length > 10) {
+                    e.target.value = e.target.value.slice(0, 10);
+                }
+            });
+        }
+    });
+
+    // 2. Restricción para Grupo (Letras y Números, máx 5)
+    if (this.dom.formgrupo) {
+        this.dom.formgrupo.addEventListener('input', (e) => {
+            // Elimina caracteres especiales, permite solo A-Z, a-z y 0-9
+            e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+            // Convertir a mayúsculas automáticamente (opcional, muy común en grupos)
+            e.target.value = e.target.value.toUpperCase();
+            
+            if (e.target.value.length > 5) {
+                e.target.value = e.target.value.slice(0, 5);
+            }
+        });
+    }
+        
+        console.log('✅ Event listeners configurados');
     }
 
-    toggleMenu() {
-        if (this.dom.menuLista && this.dom.menuOverlay) {
-            this.dom.menuLista.classList.toggle('menu-visible');
-            this.dom.menuOverlay.classList.toggle('menu-visible');
+    safeclearform(fullClear = false) {
+        console.log('🧹 Limpiando formulario...');
+        
+        // Resetear formulario si existe
+        if (this.dom.studentform) {
+            this.dom.studentform.reset();
         }
+        
+        // Limpiar foto de forma segura
+        this.safeRemovePhoto();
+        
+        // Limpiar horario dinámico
+        if (this.dom.contenedorhorariodinamico) {
+            this.dom.contenedorhorariodinamico.innerHTML = '';
+            this.agregarFilaHorario();
+        }
+        
+        // Restaurar estado UI
+        if (this.dom.formboleta) {
+            this.dom.formboleta.readOnly = false;
+        }
+        
+        if (this.dom.formtitle) {
+            this.dom.formtitle.textContent = 'Registrar Nuevo Alumno';
+        }
+        
+        if (this.dom.btnguardar) {
+            this.dom.btnguardar.textContent = 'Registrar Alumno';
+            this.dom.btnguardar.disabled = false;
+        }
+        
+        if (this.dom.btneliminar) {
+            this.dom.btneliminar.style.display = 'none';
+        }
+        
+        if (this.dom.fieldsetlegend) {
+            this.dom.fieldsetlegend.textContent = 'Datos del Alumno';
+        }
+        
+        // Limpiar búsqueda
+        if (fullClear && this.dom.searchboleta) {
+            this.dom.searchboleta.value = '';
+        }
+        
+        // Resetear variables
+        this.currentBoleta = null;
+        this.selectedImageFile = null;
+        this.currentImageUrl = null;
+        
+        console.log('✅ Formulario limpiado');
     }
 
+    safeRemovePhoto() {
+        // Método seguro que no falla si los elementos no existen
+        if (this.dom.previewimage) {
+            this.dom.previewimage.src = '';
+            this.dom.previewimage.style.display = 'none';
+        }
+        
+        if (this.dom.nophotomessage) {
+            this.dom.nophotomessage.style.display = 'block';
+        }
+        
+        if (this.dom.btnremovephoto) {
+            this.dom.btnremovephoto.style.display = 'none';
+        }
+        
+        if (this.dom.formfoto) {
+            this.dom.formfoto.value = '';
+        }
+        
+        if (this.dom.photopreview) {
+            this.dom.photopreview.style.height = '150px';
+        }
+        
+        this.selectedImageFile = null;
+        this.currentImageUrl = null;
+    }
     // =========================================================
     // 1. MANEJO DE FOTOS (Cloudinary Logic)
     // =========================================================
@@ -105,40 +227,51 @@ class GestionAlumnos {
     handleImageSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
-
+        
         if (file.size > 5 * 1024 * 1024) {
             alert('La imagen es demasiado grande. Máximo 5MB.');
             event.target.value = '';
             return;
         }
-
+        
         const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!validTypes.includes(file.type)) {
             alert('Formato no válido. Use JPG, PNG, GIF o WebP.');
             event.target.value = '';
             return;
         }
-
+        
         this.selectedImageFile = file;
-
+        
         const reader = new FileReader();
         reader.onload = (e) => {
-            this.dom.previewImage.src = e.target.result;
-            this.dom.previewImage.style.display = 'block';
-            this.dom.noPhotoMessage.style.display = 'none';
-            this.dom.btnRemovePhoto.style.display = 'inline-block';
-            if(this.dom.photoPreview) this.dom.photoPreview.style.height = '200px';
+            if (this.dom.previewimage) {
+                this.dom.previewimage.src = e.target.result;
+                this.dom.previewimage.style.display = 'block';
+            }
+            
+            if (this.dom.nophotomessage) {
+                this.dom.nophotomessage.style.display = 'none';
+            }
+            
+            if (this.dom.btnremovephoto) {
+                this.dom.btnremovephoto.style.display = 'inline-block';
+            }
+            
+            if (this.dom.photopreview) {
+                this.dom.photopreview.style.height = '200px';
+            }
         };
         reader.readAsDataURL(file);
     }
 
-    removePhoto() {
+    RemovePhoto() {
         this.selectedImageFile = null;
-        this.dom.formFoto.value = '';
-        this.dom.previewImage.src = '';
-        this.dom.previewImage.style.display = 'none';
-        this.dom.noPhotoMessage.style.display = 'block';
-        this.dom.btnRemovePhoto.style.display = 'none';
+        this.dom.formfoto.value = '';
+        this.dom.previewimage.src = '';
+        this.dom.previewimage.style.display = 'none';
+        this.dom.nophotomessage.style.display = 'block';
+        this.dom.btnremovephoto.style.display = 'none';
         if(this.dom.photoPreview) this.dom.photoPreview.style.height = '150px';
     }
 
@@ -204,32 +337,44 @@ class GestionAlumnos {
             div.remove();
         });
 
-        this.dom.contenedorHorario.appendChild(div);
+        this.dom.contenedorhorariodinamico.appendChild(div);
     }
 
     recolectarHorario() {
-        const filas = document.querySelectorAll('.fila-horario');
-        const horarioArray = [];
-        filas.forEach(fila => {
-            const materia = fila.querySelector('.input-materia').value;
-            if (materia) {
-                horarioArray.push({
-                    dia: fila.querySelector('.input-dia').value,
-                    inicio: fila.querySelector('.input-inicio').value,
-                    fin: fila.querySelector('.input-fin').value,
-                    materia: materia
-                });
-            }
-        });
-        return horarioArray;
-    }
+    const filas = document.querySelectorAll('.fila-horario');
+    const horarioArray = [];
+    filas.forEach(fila => {
+        const materia = fila.querySelector('.input-materia').value;
+        if (materia) {
+            // Asegurar formato correcto de horas
+            let inicio = fila.querySelector('.input-inicio').value;
+            let fin = fila.querySelector('.input-fin').value;
+            
+            // Asegurar que tenga segundos
+            if (!inicio.includes(':')) inicio = '00:00';
+            if (!fin.includes(':')) fin = '00:00';
+            
+            // Formatear como HH:MM:SS
+            inicio = inicio.length === 5 ? inicio + ':00' : inicio;
+            fin = fin.length === 5 ? fin + ':00' : fin;
+            
+            horarioArray.push({
+                dia: fila.querySelector('.input-dia').value,
+                inicio: inicio,
+                fin: fin,
+                materia: materia
+            });
+        }
+    });
+    return horarioArray;
+}
 
     // =========================================================
     // 3. BÚSQUEDA Y LLENADO
     // =========================================================
 
     async buscarAlumno() {
-        const boleta = this.dom.searchBoleta.value.trim();
+        const boleta = this.dom.searchboleta.value.trim();
         if (boleta.length < 5) {
             alert('Ingrese una boleta válida (mínimo 5 dígitos)');
             return;
@@ -240,8 +385,8 @@ class GestionAlumnos {
             
             if (response.status === 404) {
                 alert(`Alumno no encontrado. Puede registrar uno nuevo.`);
-                this.clearForm(false);
-                this.dom.formBoleta.value = boleta;
+                this.safeclearform(false);
+                this.dom.formboleta.value = boleta;
                 return;
             }
 
@@ -255,7 +400,7 @@ class GestionAlumnos {
                 this.llenarFormulario(data); 
             } else {
                 alert('Alumno no encontrado');
-                this.clearForm(false);
+                this.safeclearform(false);
             }
         } catch (error) {
             console.error('Error en búsqueda:', error);
@@ -269,35 +414,35 @@ class GestionAlumnos {
         const horario = data.horario || alumno.horario || []; 
 
         // Datos básicos
-        this.dom.formBoleta.value = alumno.boleta || '';
-        this.dom.formNombre.value = alumno.nombre || '';
-        this.dom.formGrupo.value = alumno.nombre_grupo || alumno.grupo || ''; // Soporta ambos nombres
+        this.dom.formboleta.value = alumno.boleta || '';
+        this.dom.formnombre.value = alumno.nombre || '';
+        this.dom.formgrupo.value = alumno.nombre_grupo || alumno.grupo || ''; // Soporta ambos nombres
 
         // Estatus
         if (alumno.estado_academico) {
             const estatusLower = alumno.estado_academico.toLowerCase();
-            Array.from(this.dom.formEstatus.options).forEach(opt => {
+            Array.from(this.dom.formestatus.options).forEach(opt => {
                 if (opt.value === estatusLower) opt.selected = true;
             });
         }
 
         // Puertas abiertas
-        this.dom.formPuertasAbiertas.checked = (alumno.puerta_abierta === 1 || alumno.puerta_abierta === true);
+        this.dom.formpuertasabiertas.checked = (alumno.puerta_abierta === 1 || alumno.puerta_abierta === true);
 
         // Foto (Cloudinary Logic)
         if (alumno.url && alumno.url !== '') {
             this.currentImageUrl = alumno.url;
-            this.dom.previewImage.src = alumno.url;
-            this.dom.previewImage.style.display = 'block';
-            this.dom.noPhotoMessage.style.display = 'none';
-            this.dom.btnRemovePhoto.style.display = 'inline-block';
+            this.dom.previewimage.src = alumno.url;
+            this.dom.previewimage.style.display = 'block';
+            this.dom.nophotomessage.style.display = 'none';
+            this.dom.btnremovephoto.style.display = 'inline-block';
             if(this.dom.photoPreview) this.dom.photoPreview.style.height = '200px';
         } else {
-            this.removePhoto();
+            this.RemovePhoto();
         }
 
         // Horario (Dynamic Logic)
-        this.dom.contenedorHorario.innerHTML = ''; // Limpiar
+        this.dom.contenedorhorariodinamico.innerHTML = ''; // Limpiar
         if (horario.length > 0) {
             // Si el horario viene como string (formato antiguo), ignorarlo o intentar parsear
             if (Array.isArray(horario)) {
@@ -310,35 +455,71 @@ class GestionAlumnos {
         }
 
         // Modo Edición
-        this.dom.formBoleta.readOnly = true;
-        this.dom.formTitle.textContent = 'Modificar Alumno Existente';
-        this.dom.btnGuardar.textContent = 'Guardar Cambios';
-        this.dom.btnEliminar.style.display = 'block';
-        if (this.dom.fieldsetLegend) this.dom.fieldsetLegend.textContent = 'Modificar Datos del Alumno';
+        this.dom.formboleta.readOnly = true;
+        this.dom.formtitle.textContent = 'Modificar Alumno Existente';
+        this.dom.btnguardar.textContent = 'Guardar Cambios';
+        this.dom.btneliminar.style.display = 'block';
+        if (this.dom.fieldsetlegend) this.dom.fieldsetlegend.textContent = 'Modificar Datos del Alumno';
         
         this.currentBoleta = alumno.boleta;
     }
 
-    clearForm(fullClear = false) {
-        this.dom.studentForm.reset();
-        this.removePhoto();
-        this.currentImageUrl = null;
+    safeclearform(fullClear = false) {
+        console.log('🧹 Limpiando formulario...');
         
-        // Limpiar Horario Dinámico
-        if(this.dom.contenedorHorario) {
-            this.dom.contenedorHorario.innerHTML = '';
-            this.agregarFilaHorario(); // Agregar una fila vacía por defecto
+        // 1. Reset seguro del formulario
+        if (this.dom.studentform) {
+            this.dom.studentform.reset();
+        } else {
+            // Fallback: buscar directamente
+            const form = document.getElementById('student-form');
+            if (form) form.reset();
         }
-
-        this.dom.formBoleta.readOnly = false;
-        this.dom.formTitle.textContent = 'Registrar Nuevo Alumno';
-        this.dom.btnGuardar.textContent = 'Registrar Alumno';
-        this.dom.btnEliminar.style.display = 'none';
-        if (this.dom.fieldsetLegend) this.dom.fieldsetLegend.textContent = 'Datos del Alumno';
         
+        // 2. Limpiar foto
+        this.RemovePhoto();
+        
+        // 3. Resetear variables
+        this.selectedImageFile = null;
+        this.currentImageUrl = null;
         this.currentBoleta = null;
-        if (fullClear) this.dom.searchBoleta.value = '';
+        
+        // 4. Limpiar horario
+        if (this.dom.contenedorhorariodinamico) {
+            this.dom.contenedorhorariodinamico.innerHTML = '';
+            this.agregarFilaHorario(); // Fila vacía por defecto
+        }
+        
+        // 5. Restaurar estado UI
+        if (this.dom.formboleta) {
+            this.dom.formboleta.readOnly = false;
+        }
+        
+        if (this.dom.formtitle) {
+            this.dom.formtitle.textContent = 'Registrar Nuevo Alumno';
+        }
+        
+        if (this.dom.btnguardar) {
+            this.dom.btnguardar.textContent = 'Registrar Alumno';
+            this.dom.btnguardar.disabled = false;
+        }
+        
+        if (this.dom.btneliminar) {
+            this.dom.btneliminar.style.display = 'none';
+        }
+        
+        if (this.dom.fieldsetlegend) {
+            this.dom.fieldsetlegend.textContent = 'Datos del Alumno';
+        }
+        
+        // 6. Limpiar búsqueda si es necesario
+        if (fullClear && this.dom.searchboleta) {
+            this.dom.searchboleta.value = '';
+        }
+        
+        console.log('Formulario limpiado');
     }
+
 
     // =========================================================
     // 4. SUBMIT (FUSIÓN DE LÓGICAS)
@@ -347,8 +528,8 @@ class GestionAlumnos {
     async handleFormSubmit(e) {
         e.preventDefault();
         
-        this.dom.btnGuardar.disabled = true;
-        this.dom.btnGuardar.textContent = 'Procesando...';
+        this.dom.btnguardar.disabled = true;
+        this.dom.btnguardar.textContent = 'Procesando...';
 
         try {
             let imageUrl = this.currentImageUrl;
@@ -361,15 +542,18 @@ class GestionAlumnos {
 
             // 2. Construir objeto de datos
             const alumnoData = {
-                boleta: this.dom.formBoleta.value.trim(),
-                nombre: this.dom.formNombre.value.trim(),
-                nombre_grupo: this.dom.formGrupo.value.trim(),
-                estado_academico: this.dom.formEstatus.value,
-                puerta_abierta: this.dom.formPuertasAbiertas.checked,
+                boleta: this.dom.formboleta.value.trim(),
+                nombre: this.dom.formnombre.value.trim(),
+                nombre_grupo: this.dom.formgrupo.value.trim(),
+                estado_academico: this.dom.formestatus.value,  // Asegúrate que esto sea correcto
+                puerta_abierta: this.dom.formpuertasabiertas.checked,
                 url: imageUrl || '',
-                // AQUÍ ESTÁ EL CAMBIO IMPORTANTE: Recolectar Array, no String
-                horario: this.recolectarHorario() 
+                horario: this.recolectarHorario()  // Esto debe devolver un array
             };
+
+            console.log('Datos a enviar:', alumnoData);
+            console.log('Estado académico seleccionado:', this.dom.formestatus.value);
+            console.log('Horario recolectado:', alumnoData.horario);
 
             // Validaciones
             if (alumnoData.boleta.length < 5) throw new Error('Boleta inválida');
@@ -396,14 +580,14 @@ class GestionAlumnos {
             }
 
             alert(isUpdate ? 'Alumno actualizado correctamente' : 'Alumno registrado correctamente');
-            this.clearForm(true);
+            this.safeclearform(true);
 
         } catch (error) {
             console.error('Error:', error);
             alert('Error: ' + error.message);
         } finally {
-            this.dom.btnGuardar.disabled = false;
-            this.dom.btnGuardar.textContent = this.currentBoleta ? 'Guardar Cambios' : 'Registrar Alumno';
+            this.dom.btnguardar.disabled = false;
+            this.dom.btnguardar.textContent = this.currentBoleta ? 'Guardar Cambios' : 'Registrar Alumno';
         }
     }
 
@@ -422,7 +606,7 @@ class GestionAlumnos {
             
             if (result.success) {
                 alert('Alumno eliminado');
-                this.clearForm(true);
+                this.safeclearform(true);
             } else {
                 throw new Error(result.message);
             }
@@ -434,5 +618,10 @@ class GestionAlumnos {
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    new GestionAlumnos();
+    try {
+        new GestionAlumnos();
+    } catch (error) {
+        console.error('Error inicializando GestionAlumnos:', error);
+        alert('Error al cargar la página. Recarga o contacta al administrador.');
+    }
 });

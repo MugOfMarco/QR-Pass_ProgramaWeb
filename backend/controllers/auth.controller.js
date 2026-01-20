@@ -1,8 +1,7 @@
+// back/controllers/auth.controller.js - VERSIÓN SOLO SESIONES
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken'; 
 import Usuario from '../models/Usuario.js';
 
-// Función: Iniciar Sesión (Login)
 export const login = async (req, res) => {
     try {
         console.log('Datos recibidos en login:', {
@@ -12,7 +11,6 @@ export const login = async (req, res) => {
 
         const { username, password } = req.body;
 
-        // Validación
         if (!username || !password) {
             return res.status(400).json({
                 success: false,
@@ -43,21 +41,7 @@ export const login = async (req, res) => {
             });
         }
 
-        // GENERAR TOKEN JWT
-        const token = jwt.sign(
-            {
-                id: usuario.id_usuario,
-                usuario: usuario.usuario,
-                tipo: usuario.tipo_usuario,
-                nombre: usuario.nombre_completo
-            },
-            process.env.JWT_SECRET || 'secreto_temporal', // Usa una variable de entorno
-            { expiresIn: '8h' }
-        );
-
-        console.log('Login exitoso para:', usuario.usuario, 'Tipo:', usuario.tipo_usuario);
-
-        // También mantén la sesión si quieres
+        // Crear sesión (sin token JWT)
         req.session.user = {
             id: usuario.id_usuario,
             usuario: usuario.usuario,
@@ -65,10 +49,12 @@ export const login = async (req, res) => {
             nombre: usuario.nombre_completo
         };
 
+        console.log('✅ Login exitoso para:', usuario.usuario, 'Tipo:', usuario.tipo_usuario);
+
         res.json({
             success: true,
             tipo: usuario.tipo_usuario,
-            token: token, // ← ENVIAR EL TOKEN
+            // NO enviar token JWT
             user: {
                 nombre: usuario.nombre_completo,
                 usuario: usuario.usuario
@@ -83,6 +69,8 @@ export const login = async (req, res) => {
         });
     }
 };
+
+// ... resto de funciones igual
 
 // Función: Cerrar Sesión (Logout)
 export const logout = (req, res) => {
@@ -104,11 +92,15 @@ export const logout = (req, res) => {
 export const checkAuth = (req, res) => {
     if (req.session.user) {
         res.json({
+            success: true,
             isAuthenticated: true,
-            user: req.session.user
+            user: req.session.user,
+            tipo: req.session.user.tipo, // Agregar tipo
+            nombre: req.session.user.nombre
         });
     } else {
         res.json({
+            success: true,
             isAuthenticated: false
         });
     }

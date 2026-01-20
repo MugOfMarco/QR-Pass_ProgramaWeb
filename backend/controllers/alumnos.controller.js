@@ -146,10 +146,10 @@ export const verificarBloqueo = async (req, res) => {
     }
 };
 
-export const bloquearCredencial = async (req, res) => {
+export const bloquearcredencial = async (req, res) => {
     try {
         const { boleta } = req.params;
-        const result = await Alumno.bloquearCredencial(boleta);
+        const result = await Alumno.bloquearcredencial(boleta);
         
         if (result.success) {
             res.json({
@@ -171,10 +171,10 @@ export const bloquearCredencial = async (req, res) => {
     }
 };
 
-export const desbloquearCredencial = async (req, res) => {
+export const desbloquearcredencial = async (req, res) => {
     try {
         const { boleta } = req.params;
-        const result = await Alumno.desbloquearCredencial(boleta);
+        const result = await Alumno.desbloquearcredencial(boleta);
         
         if (result.success) {
             res.json({
@@ -244,6 +244,12 @@ export const modificarAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
         const alumnoData = req.body;
+        
+        console.log('Modificando alumno:', boleta);
+        console.log('Datos recibidos:', alumnoData);
+        console.log('Horario recibido:', alumnoData.horario);
+        console.log('Estado académico:', alumnoData.estado_academico);
+        
         const result = await Alumno.modificar(boleta, alumnoData);
         
         if (result.success) {

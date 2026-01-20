@@ -63,7 +63,7 @@ class Alumno {
         return results[0] || [];
     }
 
-    static async bloquear(boleta) {
+    static async bloquearcredencial(boleta) {
         const results = await ejecutarSP('sp_bloquear_alumno', [boleta]);
         return {
             filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
@@ -71,7 +71,7 @@ class Alumno {
     }
 
 
-    static async desbloquear(boleta) {
+    static async desbloquearcredencial(boleta) {
         const results = await ejecutarSP('sp_desbloquear_alumno', [boleta]);
         return {
             filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
@@ -126,23 +126,32 @@ class Alumno {
         };
     }
 
-    static async modificar(boleta, alumnoData) {
-        const { nombre, nombre_grupo, estado_academico, puerta_abierta, url } = alumnoData;
-        
-        const results = await ejecutarSP('sp_modificar_alumno', [
-            parseInt(boleta),
-            nombre,
-            nombre_grupo,
-            estado_academico,
-            puerta_abierta || false,
-            url
-        ]);
-        
-        return {
-            success: results[0] && results[0][0] ? results[0][0].success : false,
-            message: results[0] && results[0][0] ? results[0][0].message : 'Error desconocido'
-        };
+static async modificar(boleta, alumnoData) {
+    const { nombre, nombre_grupo, estado_academico, puerta_abierta, url, horario } = alumnoData;
+    
+    console.log('Modificando alumno con horario:', horario);
+    
+    // Convertir horario a JSON si es un array
+    let horarioJson = null;
+    if (horario && Array.isArray(horario) && horario.length > 0) {
+        horarioJson = JSON.stringify(horario);
     }
+    
+    const results = await ejecutarSP('sp_modificar_alumno_completo', [
+        parseInt(boleta),
+        nombre,
+        nombre_grupo,
+        estado_academico,
+        puerta_abierta || false,
+        url,
+        horarioJson
+    ]);
+    
+    return {
+        success: results[0] && results[0][0] ? results[0][0].success : false,
+        message: results[0] && results[0][0] ? results[0][0].message : 'Error desconocido'
+    };
+}
 
     static async eliminar(boleta) {
         const results = await ejecutarSP('sp_eliminar_alumno', [parseInt(boleta)]);
