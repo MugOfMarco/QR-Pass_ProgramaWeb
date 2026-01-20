@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         case 'Prefecto':
                             window.location.href = '/Entrada_Salida.html';
                             break;
-                        case 'Profesor':
-                            window.location.href = '/vista-profesor.html';
+                        case 'Policia':
+                            window.location.href = '/Entrada_Salida.html';
                             break;
                         default:
                             window.location.href = '/menu.html';
