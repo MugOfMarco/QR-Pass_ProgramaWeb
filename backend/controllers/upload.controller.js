@@ -1,4 +1,41 @@
 import { cloudinary, getOptimizedImageUrl } from '../database/cloudinary.js';
+import Alumno from '../models/Alumno.js';
+
+// Función de sanitización manual (sin dependencias externas)
+const sanitize = (data) => {
+    if (typeof data === 'string') {
+        return data
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;')
+            .trim();
+    }
+    return data;
+};
+
+export const createAlumno = async (req, res) => {
+    try {
+        // Sanitizamos el nombre antes de guardar
+        const nombreLimpio = sanitize(req.body.nombre);
+        
+        // Ahora guardas 'nombreLimpio' en tu base de datos
+        const nuevoAlumno = await Alumno.create({ nombre: nombreLimpio });
+        
+        res.json({
+            success: true,
+            message: 'Alumno creado exitosamente',
+            alumno: nuevoAlumno
+        });
+    } catch (error) {
+        console.error('Error creando alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creando alumno: ' + error.message
+        });
+    }
+};
 
 export const uploadImage = async (req, res) => {
     try {
@@ -36,7 +73,6 @@ export const uploadImage = async (req, res) => {
             public_id: result.public_id,
             message: 'Imagen subida exitosamente'
         });
-
     } catch (error) {
         console.error('Error subiendo imagen:', error);
         res.status(500).json({
@@ -63,7 +99,6 @@ export const deleteImage = async (req, res) => {
             success: true,
             message: 'Imagen eliminada de Cloudinary'
         });
-
     } catch (error) {
         console.error('Error eliminando imagen:', error);
         res.status(500).json({

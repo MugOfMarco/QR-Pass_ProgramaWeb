@@ -1,5 +1,48 @@
 import Alumno from '../models/Alumno.js';
 import { cloudinary, getOptimizedImageUrl } from '../database/cloudinary.js';
+import sanitizeHtml from 'sanitize-html';
+
+// Función helper para sanitizar datos
+const sanitize = (data) => {
+    if (typeof data === 'string') {
+        return sanitizeHtml(data, {
+            allowedTags: [],
+            allowedAttributes: {},
+            disallowedTagsMode: 'recursiveEscape'
+        });
+    }
+    return data;
+};
+
+// Función helper para sanitizar objetos completos
+const sanitizeObject = (obj) => {
+    const sanitized = {};
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            sanitized[key] = sanitize(obj[key]);
+        }
+    }
+    return sanitized;
+};
+
+export const createAlumno = async (req, res) => {
+    try {
+        const nombreLimpio = sanitize(req.body.nombre);
+        const nuevoAlumno = await Alumno.create({ nombre: nombreLimpio });
+        
+        res.json({
+            success: true,
+            message: 'Alumno creado exitosamente',
+            alumno: nuevoAlumno
+        });
+    } catch (error) {
+        console.error('Error creando alumno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creando alumno: ' + error.message
+        });
+    }
+};
 
 export const obtenerAlumno = async (req, res) => {
     try {
@@ -27,10 +70,11 @@ export const obtenerAlumno = async (req, res) => {
     }
 };
 
-// Función para registrar justificaciones
 export const registrarJustificacion = async (req, res) => {
     try {
-        const { id_registro, justificacion, id_tipo_anterior } = req.body;
+        const id_registro = parseInt(req.body.id_registro);
+        const justificacion = sanitize(req.body.justificacion);
+        const id_tipo_anterior = parseInt(req.body.id_tipo_anterior);
         
         console.log('Controlador - Datos recibidos para justificación:', {
             id_registro,
@@ -45,7 +89,6 @@ export const registrarJustificacion = async (req, res) => {
             });
         }
 
-        // Usa el método de la clase Alumno
         const resultado = await Alumno.registrarJustificacion(
             id_registro,
             justificacion,
@@ -60,7 +103,6 @@ export const registrarJustificacion = async (req, res) => {
     } catch (error) {
         console.error('Error en controlador registrarJustificacion:', error);
         
-        // Maneja errores específicos
         let mensajeError = 'Error al registrar justificación';
         
         if (error.code === 'ER_SP_DOES_NOT_EXIST') {
@@ -92,7 +134,6 @@ export const obtenerRegistrosParaJustificar = async (req, res) => {
             });
         }
 
-        // Usa el método de la clase Alumno
         const registros = await Alumno.obtenerRegistrosParaJustificar(boleta);
 
         res.json({
@@ -109,10 +150,9 @@ export const obtenerRegistrosParaJustificar = async (req, res) => {
     }
 };
 
-// Las otras funciones que ya tenías...
 export const buscarAlumnos = async (req, res) => {
     try {
-        const { query } = req.query;
+        const query = sanitize(req.query.query);
         const alumnos = await Alumno.buscar(query);
         
         res.json({
@@ -216,7 +256,7 @@ export const obtenerRegistrosAlumno = async (req, res) => {
 
 export const registrarAlumno = async (req, res) => {
     try {
-        const alumnoData = req.body;
+        const alumnoData = sanitizeObject(req.body);
         const result = await Alumno.registrar(alumnoData);
         
         if (result.success) {
@@ -243,7 +283,7 @@ export const registrarAlumno = async (req, res) => {
 export const modificarAlumno = async (req, res) => {
     try {
         const { boleta } = req.params;
-        const alumnoData = req.body;
+        const alumnoData = sanitizeObject(req.body);
         
         console.log('Modificando alumno:', boleta);
         console.log('Datos recibidos:', alumnoData);

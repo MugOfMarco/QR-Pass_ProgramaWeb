@@ -392,44 +392,48 @@ body {
     font-size: 1rem;
 }
 
-/* 9. MENÚ FLOTANTE */
+/* =========================================================
+   9. MENÚ LATERAL DESLIZANTE
+   ========================================================= */
+
 .menu-navegacion {
     position: fixed;
-    z-index: 1000;
-}
-
-.menu-lista {
-    position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 0;
+    left: -320px; /* Oculto fuera de pantalla a la izquierda */
+    width: 300px;
+    height: 100vh;
     background: white;
-    border: 3px solid #5c1f33;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    list-style: none;
-    padding: 1rem 0;
-    margin: 0;
-    min-width: 280px;
+    border-right: 3px solid #5c1f33;
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
     z-index: 1001;
-    display: none;
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
+    transition: left 0.3s ease-in-out; /* Animación suave */
+    overflow-y: auto; /* Scroll si hay muchos items */
 }
 
-.menu-lista.menu-visible {
-    display: block;
-    opacity: 1;
-    transform: translateY(0);
+/* Cuando el menú está visible */
+.menu-navegacion.menu-visible {
+    left: 0; /* Se desliza hacia la derecha */
+}
+
+/* Lista del menú */
+.menu-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    padding-top: 140px; /* Espacio para no tapar el header */
 }
 
 .menu-lista li {
     border-bottom: 2px solid #f0f0f0;
 }
 
+.menu-lista li:last-child {
+    border-bottom: none;
+}
+
 .menu-lista a {
     display: block;
-    padding: 1rem 1.5rem;
+    padding: 1.2rem 1.5rem;
     text-decoration: none;
     color: #333;
     font-size: 1.1rem;
@@ -443,6 +447,7 @@ body {
     padding-left: 2rem;
 }
 
+/* Overlay oscuro de fondo */
 .menu-overlay {
     position: fixed;
     top: 0;
@@ -450,23 +455,29 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    display: none;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    cursor: pointer;
 }
 
 .menu-overlay.menu-visible {
-    display: block;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* 10. RESPONSIVE (CELULARES Y TABLETS) */
+/* =========================================================
+   10. RESPONSIVE
+   ========================================================= */
 
 @media (max-width: 1024px) {
     .main-container {
-        grid-template-columns: 1fr; /* Pasa a 1 sola columna */
+        grid-template-columns: 1fr;
         gap: 2rem;
     }
 
-    .title h1 {
+    .title {
         font-size: 2rem;
     }
 }
@@ -480,9 +491,25 @@ body {
     .title {
         order: -1;
         width: 100%;
+        font-size: 1.8rem;
     }
 
-    /* Ajuste de botones en móvil */
+    /* Menú más ancho en dispositivos móviles */
+    .menu-navegacion {
+        left: -90vw; /* Oculto más lejos */
+        width: 85vw; /* 85% del ancho de pantalla */
+        max-width: 350px;
+    }
+    
+    .menu-navegacion.menu-visible {
+        left: 0;
+    }
+    
+    .menu-lista {
+        padding-top: 100px; /* Menos espacio en móvil */
+    }
+
+    /* Botones de acción en columna */
     .action-buttons {
         flex-direction: column;
     }
@@ -491,23 +518,9 @@ body {
         min-width: 100%;
     }
 
-    /* Ajuste del menú en móvil */
-    .menu-lista {
-        position: fixed;
-        top: 140px;
-        left: 50%;
-        transform: translateX(-50%) translateY(-10px);
-        min-width: 90%;
-        max-width: 400px;
-    }
-    
-    .menu-lista.menu-visible {
-        transform: translateX(-50%) translateY(0);
-    }
-
-    /* Ajuste para que las filas de horario se vean bien en pantallas pequeñas */
+    /* Filas de horario adaptadas a móvil */
     .fila-horario {
-        flex-direction: column; /* Elementos uno debajo del otro */
+        flex-direction: column;
         align-items: stretch;
     }
     
@@ -522,70 +535,4 @@ body {
         background-color: #ffcccc;
         color: #cc0000;
     }
-}
-
-/* Agrega esto a tu modificarAlumno.css */
-
-/* MENÚ RESPONSIVE */
-.menu-navegacion {
-    position: fixed;
-    top: 140px; /* Ajusta según la altura de tu header */
-    left: 0px;
-    width: 300px;
-    height: calc(100% - 140px);
-    background: white;
-    border: 3px solid #5c1f33;
-    border-left: none;
-    border-radius: 0 15px 15px 0;
-    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2);
-    z-index: 1001;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-}
-
-.menu-navegacion.menu-visible {
-    transform: translateX(0);
-}
-
-.menu-lista {
-    list-style: none;
-    padding: 1rem 0;
-    margin: 0;
-    width: 100%;
-}
-
-.menu-lista li {
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.menu-lista a {
-    display: block;
-    padding: 1rem 1.5rem;
-    text-decoration: none;
-    color: #333;
-    font-size: 1.1rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.menu-lista a:hover {
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    color: white;
-    padding-left: 2rem;
-}
-
-.menu-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    display: none;
-    cursor: pointer;
-}
-
-.menu-overlay.menu-visible {
-    display: block;
 }

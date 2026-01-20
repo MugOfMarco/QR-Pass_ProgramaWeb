@@ -5,7 +5,7 @@ import Alumno from '../models/Alumno.js';
 export const crearRegistro = async (req, res) => {
     try {
         const { boleta, puerta, id_tipo_registro, tieneRetardo, sinCredencial } = req.body;
-
+        
         const alumno = await Alumno.obtenerCompleto(boleta);
         if (!alumno) {
             return res.status(404).json({
@@ -38,7 +38,6 @@ export const crearRegistro = async (req, res) => {
             message: 'Registro creado correctamente',
             id_registro: registro.id_registro
         });
-
     } catch (error) {
         console.error('Error creando registro:', error);
         res.status(500).json({
@@ -55,21 +54,26 @@ export const obtenerRegistrosPorAlumno = async (req, res) => {
         
         const alumno = await Alumno.obtenerCompleto(boleta);
         if (!alumno) {
-            return res.status(404).json({ success: false, message: 'Alumno no encontrado' });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Alumno no encontrado' 
+            });
         }
 
         const registros = await Registro.obtenerPorAlumno(boleta);
-
+        
         res.json({
             success: true,
             boleta,
             registros,
             total: registros.length
         });
-
     } catch (error) {
         console.error('Error obteniendo registros por alumno:', error);
-        res.status(500).json({ success: false, message: 'Error obteniendo registros' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error obteniendo registros' 
+        });
     }
 };
 
@@ -85,10 +89,12 @@ export const obtenerRegistrosPorFecha = async (req, res) => {
             fecha,
             registros: [] 
         });
-
     } catch (error) {
         console.error('Error obteniendo registros por fecha:', error);
-        res.status(500).json({ success: false, message: 'Error obteniendo registros por fecha' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error obteniendo registros por fecha' 
+        });
     }
 };
 
@@ -105,9 +111,11 @@ export const obtenerEstadisticas = async (req, res) => {
                 sinCredencial: 0
             }
         });
-
     } catch (error) {
         console.error('Error obteniendo estadísticas:', error);
-        res.status(500).json({ success: false, message: 'Error obteniendo estadísticas' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error obteniendo estadísticas' 
+        });
     }
 };
