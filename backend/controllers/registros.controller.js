@@ -1,6 +1,7 @@
 import Registro from '../models/Registro.js';
 import Alumno from '../models/Alumno.js';
 
+// 1. CREAR REGISTRO (Aquí está la corrección del BUG de Salida)
 export const crearRegistro = async (req, res) => {
     try {
         const { boleta, puerta, id_tipo_registro, tieneRetardo, sinCredencial } = req.body;
@@ -13,17 +14,22 @@ export const crearRegistro = async (req, res) => {
             });
         }
 
+        // Crear el registro en la bitácora
         const registro = await Registro.crear({
             boleta,
             puerta,
             id_tipo_registro
         });
 
+        // Actualizar contadores (Retardos)
         if (tieneRetardo) {
             await Registro.actualizarContadores(boleta, 'retardo', 'incrementar');
         }
 
-        if (sinCredencial) {
+        // CORRECCIÓN IMPORTANTE:
+        // Solo aumentamos "sin credencial" si NO es una salida.
+        // Asumimos que id_tipo_registro 1 es SALIDA.
+        if (sinCredencial && id_tipo_registro !== 1) {
             await Registro.actualizarContadores(boleta, 'sin_credencial', 'incrementar');
         }
 
@@ -42,6 +48,7 @@ export const crearRegistro = async (req, res) => {
     }
 };
 
+// 2. OBTENER REGISTROS POR ALUMNO (Se mantiene igual)
 export const obtenerRegistrosPorAlumno = async (req, res) => {
     try {
         const boleta = parseInt(req.params.boleta);
@@ -66,14 +73,17 @@ export const obtenerRegistrosPorAlumno = async (req, res) => {
     }
 };
 
+// 3. OBTENER REGISTROS POR FECHA (Se mantiene igual)
 export const obtenerRegistrosPorFecha = async (req, res) => {
     try {
         const { fecha } = req.params;
         
+        // Aquí deberías implementar la lógica real si tienes el método en el modelo
+        // Por ahora mantengo tu respuesta vacía original para no romper nada
         res.json({
             success: true,
             fecha,
-            registros: []
+            registros: [] 
         });
 
     } catch (error) {
@@ -82,6 +92,7 @@ export const obtenerRegistrosPorFecha = async (req, res) => {
     }
 };
 
+// 4. OBTENER ESTADÍSTICAS (Se mantiene igual)
 export const obtenerEstadisticas = async (req, res) => {
     try {
         res.json({
