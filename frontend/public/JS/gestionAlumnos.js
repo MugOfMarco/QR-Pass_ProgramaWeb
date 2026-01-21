@@ -229,10 +229,15 @@ class GestionAlumnos {
             
             const response = await fetch(`${this.apiBase}/upload/image`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'include' // Incluir cookies si es necesario
             });
             
-            if (!response.ok) throw new Error('Error al subir imagen al servidor');
+            if (!response.ok) {
+            // Esto nos dirá si es error 401, 403, 500, etc.
+            const errorText = await response.text();
+            throw new Error(`Error ${response.status}: ${errorText}`);
+        }
             
             const result = await response.json();
             if (!result.success || !result.url) throw new Error(result.message || 'URL no recibida');
@@ -368,53 +373,57 @@ class GestionAlumnos {
     }
 
     llenarFormulario(data) {
-        const alumno = data.alumno || {};
-        const horario = data.horario || alumno.horario || []; 
+    const alumno = data.alumno || {};
+    const horario = data.horario || alumno.horario || []; 
 
-        this.dom.formboleta.value = alumno.boleta || '';
-        this.dom.formnombre.value = alumno.nombre || '';
-        this.dom.formgrupo.value = alumno.nombre_grupo || alumno.grupo || '';
+    this.dom.formboleta.value = alumno.boleta || '';
+    this.dom.formnombre.value = alumno.nombre || '';
+    this.dom.formgrupo.value = alumno.nombre_grupo || alumno.grupo || '';
 
-        if (alumno.estado_academico) {
-            const estatusLower = alumno.estado_academico.toLowerCase();
-            Array.from(this.dom.formestatus.options).forEach(opt => {
-                if (opt.value === estatusLower) opt.selected = true;
-            });
+    if (alumno.url && alumno.url !== '') {
+        const cleanUrl = alumno.url.trim().replace(/ /g, '');
+        this.currentImageUrl = cleanUrl;
+        
+        // --- ESTA ES LA CORRECCIÓN CLAVE ---
+        this.dom.previewimage.crossOrigin = "anonymous"; // Evita el bloqueo de seguridad
+        this.dom.previewimage.src = cleanUrl;
+        // ------------------------------------
+
+        this.dom.previewimage.style.display = 'block';
+        this.dom.nophotomessage.style.display = 'none';
+        this.dom.btnremovephoto.style.display = 'inline-block';
+        
+        if(this.dom.photopreview) { // Corregido: photopreview (según tu initDomElements)
+            this.dom.photopreview.style.height = '200px';
         }
+    } else {
+        this.RemovePhoto();
+    }
 
-        this.dom.formpuertasabiertas.checked = (alumno.puerta_abierta === 1 || alumno.puerta_abierta === true);
+    // --- LÍNEAS NUEVAS PARA QUE NO SE QUEDE A MEDIAS EL FORMULARIO ---
+    if (alumno.estado_academico) this.dom.formestatus.value = alumno.estado_academico.toLowerCase();
+    this.dom.formpuertasabiertas.checked = (alumno.puerta_abierta === 1 || alumno.puerta_abierta === true);
+    // ----------------------------------------------------------------
 
-        if (alumno.url && alumno.url !== '') {
-            this.currentImageUrl = alumno.url;
-            this.dom.previewimage.src = alumno.url;
-            this.dom.previewimage.style.display = 'block';
-            this.dom.nophotomessage.style.display = 'none';
-            this.dom.btnremovephoto.style.display = 'inline-block';
-            if(this.dom.photoPreview) this.dom.photoPreview.style.height = '200px';
-        } else {
-            this.RemovePhoto();
-        }
-
-        this.dom.contenedorhorariodinamico.innerHTML = '';
-        if (horario.length > 0) {
-            if (Array.isArray(horario)) {
-                horario.forEach(clase => this.agregarFilaHorario(clase));
-            } else {
-                this.agregarFilaHorario(); 
-            }
+    this.dom.contenedorhorariodinamico.innerHTML = '';
+    if (horario.length > 0) {
+        if (Array.isArray(horario)) {
+            horario.forEach(clase => this.agregarFilaHorario(clase));
         } else {
             this.agregarFilaHorario(); 
         }
-
-        this.dom.formboleta.readOnly = true;
-        this.dom.formtitle.textContent = 'Modificar Alumno Existente';
-        this.dom.btnguardar.textContent = 'Guardar Cambios';
-        this.dom.btneliminar.style.display = 'block';
-        if (this.dom.fieldsetlegend) this.dom.fieldsetlegend.textContent = 'Modificar Datos del Alumno';
-        
-        this.currentBoleta = alumno.boleta;
+    } else {
+        this.agregarFilaHorario(); 
     }
 
+    this.dom.formboleta.readOnly = true;
+    this.dom.formtitle.textContent = 'Modificar Alumno Existente';
+    this.dom.btnguardar.textContent = 'Guardar Cambios';
+    this.dom.btneliminar.style.display = 'block';
+    if (this.dom.fieldsetlegend) this.dom.fieldsetlegend.textContent = 'Modificar Datos del Alumno';
+    
+    this.currentBoleta = alumno.boleta;
+}
     async handleFormSubmit(e) {
         e.preventDefault();
         
