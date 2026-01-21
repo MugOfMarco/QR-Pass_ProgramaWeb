@@ -16,23 +16,27 @@ export function getOptimizedImageUrl(imageUrl, options = {}) {
         return imageUrl;
     }
     
-    const baseUrl = imageUrl.split('/upload/')[0];
-    const imagePath = imageUrl.split('/upload/')[1];
-    
-    const defaultTransformations = {
+    // 1. Extraer el Public ID de la URL
+    // Las URLs de Cloudinary tienen este formato: .../upload/v12345/folder/image.jpg
+    const parts = imageUrl.split('/');
+    const uploadIndex = parts.indexOf('upload');
+    if (uploadIndex === -1) return imageUrl;
+
+    // El public ID es todo lo que sigue después de la versión (vXXXXX)
+    // O después de /upload/ si no hay versión
+    const publicIdWithExtension = parts.slice(uploadIndex + 2).join('/');
+    const publicId = publicIdWithExtension.split('.')[0];
+
+    // 2. Usar el SDK oficial para generar la URL limpia
+    return cloudinary.url(publicId, {
         width: options.width || 300,
         height: options.height || 300,
         crop: options.crop || 'fill',
         gravity: options.gravity || 'auto',
         quality: 'auto',
-        fetch_format: 'auto'
-    };
-    
-    const transformations = Object.entries(defaultTransformations)
-        .map(([key, value]) => `${key}_${value}`)
-        .join(',');
-    
-    return `${baseUrl}/upload/${transformations}/${imagePath}`;
+        fetch_format: 'auto',
+        secure: true
+    });
 }
 
 // Función para subir imagen
