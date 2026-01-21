@@ -295,35 +295,47 @@ class GestionAlumnos {
     }
 
     recolectarHorario() {
-        const filas = document.querySelectorAll('.fila-horario');
-        const horarioArray = [];
-        filas.forEach(fila => {
-            const materiaSelect = fila.querySelector('.input-materia');
-            const materia = materiaSelect ? materiaSelect.value : '';
+    // Seleccionamos todas las filas actuales en el DOM
+    const filas = document.querySelectorAll('.fila-horario');
+    const horarioArray = [];
+
+    filas.forEach(fila => {
+        const materiaSelect = fila.querySelector('.input-materia');
+        const materia = materiaSelect ? materiaSelect.value.trim() : '';
+        
+        // Solo procesamos si hay una materia seleccionada
+        if (materia !== '') {
+            let inicio = fila.querySelector('.input-inicio').value;
+            let fin = fila.querySelector('.input-fin').value;
+            const dia = fila.querySelector('.input-dia').value;
             
-            if (materia) {
-                let inicio = fila.querySelector('.input-inicio').value;
-                let fin = fila.querySelector('.input-fin').value;
-                const dia = fila.querySelector('.input-dia').value;
-                
-                // Asegurar formato de tiempo
-                if (!inicio.includes(':')) inicio = '00:00';
-                if (!fin.includes(':')) fin = '00:00';
-                
-                // Agregar segundos si falta
-                inicio = inicio.length === 5 ? inicio + ':00' : inicio;
-                fin = fin.length === 5 ? fin + ':00' : fin;
-                
-                horarioArray.push({
-                    dia: dia,
-                    inicio: inicio,
-                    fin: fin,
-                    materia: materia
-                });
-            }
-        });
-        return horarioArray;
-    }
+            // 1. Validar que las horas no estén vacías
+            if (!inicio || !fin) return; 
+
+            // 2. Asegurar formato HH:mm:ss para la base de datos
+            // Si el input solo trae HH:mm, le concatenamos :00
+            const formatTime = (time) => {
+                if (!time.includes(':')) return '00:00:00';
+                return time.length === 5 ? `${time}:00` : time;
+            };
+
+            const horaInicioClean = formatTime(inicio);
+            const horaFinClean = formatTime(fin);
+
+            // 3. Insertar objeto limpio en el array
+            horarioArray.push({
+                dia: dia,
+                inicio: horaInicioClean,
+                fin: horaFinClean,
+                materia: materia
+            });
+        }
+    });
+
+    // Log para depurar en consola qué estás enviando exactamente
+    console.log('Horario recolectado para enviar:', horarioArray);
+    return horarioArray;
+}
 
     // =========================================================
     // 3. BÚSQUEDA Y LLENADO
