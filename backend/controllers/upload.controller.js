@@ -1,6 +1,7 @@
 import { cloudinary, getOptimizedImageUrl } from '../database/cloudinary.js';
 import Alumno from '../models/Alumno.js';
 
+
 // Función de sanitización manual (sin dependencias externas)
 const sanitize = (data) => {
     if (typeof data === 'string') {
@@ -48,25 +49,26 @@ export const uploadImage = async (req, res) => {
             });
         }
 
-        // Subir a Cloudinary
+        // 1. Subir a Cloudinary
         const result = await cloudinary.uploader.upload(req.file.path, {
             folder: 'qrpass/alumnos',
-            resource_type: 'image',
-            transformation: [
-                { width: 300, height: 300, crop: 'fill', gravity: 'auto' },
-                { quality: 'auto', fetch_format: 'auto' }
-            ]
+            resource_type: 'image'
         });
 
         console.log('Imagen subida a Cloudinary:', result.secure_url);
 
-        // Obtener URL optimizada
-        const optimizedUrl = getOptimizedImageUrl(result.secure_url, {
+        // 2. Obtener URL optimizada usando el método OFICIAL (esto evita espacios)
+        const optimizedUrl = cloudinary.url(result.public_id, {
             width: 300,
             height: 300,
-            crop: 'fill'
+            crop: 'fill',
+            gravity: 'auto',
+            quality: 'auto',
+            fetch_format: 'auto',
+            secure: true
         });
 
+        // 3. Respuesta al frontend
         res.json({
             success: true,
             url: optimizedUrl,

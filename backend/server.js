@@ -62,7 +62,7 @@ app.use('/api/auth', authRoutes);
 // Estas rutas requieren que el usuario esté logueado
 app.use('/api/alumnos', protegerAPI, alumnosRoutes);
 app.use('/api/registros', protegerAPI, registrosRoutes);
-app.use('/api/upload', protegerAPI, uploadRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // --- 5. ARCHIVOS ESTÁTICOS ---
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
