@@ -1,195 +1,213 @@
-import { ejecutarSP } from '../database/db.js';
+import { supabase, supabaseAdmin } from '../database/supabase.js';
 
 class Alumno {
-    static async obtenerCompleto(boleta) {
-        const results = await ejecutarSP('sp_obtener_alumno_completo', [boleta]);
 
-        if (!results[0] || results[0].length === 0) {
-            return null;
-        }
+    static async obtenerBasico(boleta) {
+        const { data, error } = await supabaseAdmin
+            .from('alumnos')
+            .select(`
+                boleta,
+                nombre_completo,
+                puertas_abiertas,
+                id_grupo_base,
+                grupos ( nombre_grupo, carreras ( nombre_carrera ) ),
+                estado_academico ( estado ),
+                info_alumno (
+                    url_foto,
+                    contador_retardos,
+                    contador_sin_credencial,
+                    bloqueado_manual,
+                    bloqueado_sistema
+                )
+            `)
+            .eq('boleta', parseInt(boleta))
+            .single();
 
-        const alumnoInfo = {
-            info: results[0][0],
-            horario: results[1],
-            materiasAcreditadas: results[2]
+        if (error || !data) return null;
+
+        const info = data.info_alumno || {};
+        return {
+            boleta:           data.boleta,
+            nombre:           data.nombre_completo,
+            nombre_grupo:     data.grupos?.nombre_grupo,
+            carrera:          data.grupos?.carreras?.nombre_carrera,
+            estado_academico: data.estado_academico?.estado,
+            puerta_abierta:   data.puertas_abiertas,
+            bloqueado:        info.bloqueado_manual || info.bloqueado_sistema,
+            retardos:         info.contador_retardos,
+            sin_credencial:   info.contador_sin_credencial,
+            url:              info.url_foto
         };
-
-        return alumnoInfo;
-    }
-
-    static async registrarJustificacion(id_registro, justificacion, id_tipo_anterior) {
-        try {
-            console.log('Ejecutando SP sp_crear_justificacion con:', {
-                id_registro,
-                justificacion,
-                id_tipo_anterior
-            });
-
-            // Usa el stored procedure
-            const results = await ejecutarSP('sp_crear_justificacion', [
-                id_registro,
-                justificacion,
-                id_tipo_anterior
-            ]);
-
-            console.log('Resultado del SP sp_crear_justificacion:', results);
-            
-            return {
-                success: true,
-                id_justificacion: results[0]?.id_justificacion || null
-            };
-        } catch (error) {
-            console.error('Error en registrarJustificacion:', error);
-            throw error;
-        }
-    }
-
-    static async obtenerRegistrosParaJustificar(boleta) {
-        try {
-            console.log('Ejecutando SP sp_obtener_registros_alumno con boleta:', boleta);
-            
-            const results = await ejecutarSP('sp_obtener_registros_alumno', [boleta]);
-            
-            console.log('Registros obtenidos:', results[0]?.length || 0);
-            return results[0] || [];
-        } catch (error) {
-            console.error('Error en obtenerRegistrosParaJustificar:', error);
-            throw error;
-        }
     }
 
     static async buscar(query) {
-        const results = await ejecutarSP('sp_buscar_alumnos', [query]);
-        return results[0] || [];
-    }
+        const { data, error } = await supabaseAdmin
+            .from('alumnos')
+            .select(`
+                boleta,
+                nombre_completo,
+                grupos ( nombre_grupo ),
+                estado_academico ( estado )
+            `)
+            .or(`nombre_completo.ilike.%${query}%,boleta.eq.${parseInt(query) || 0}`)
+            .limit(20);
 
-    static async bloquearcredencial(boleta) {
-        const results = await ejecutarSP('sp_bloquear_alumno', [boleta]);
-        return {
-            filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
-        };
-    }
-
-
-    static async desbloquearcredencial(boleta) {
-        const results = await ejecutarSP('sp_desbloquear_alumno', [boleta]);
-        return {
-            filas_afectadas: results[0] && results[0][0] ? results[0][0].filas_afectadas : 0
-        };
+        if (error) throw error;
+        return (data || []).map(a => ({
+            boleta:       a.boleta,
+            nombre:       a.nombre_completo,
+            nombre_grupo: a.grupos?.nombre_grupo,
+            estado:       a.estado_academico?.estado
+        }));
     }
 
     static async verificarBloqueo(boleta) {
-        const results = await ejecutarSP('sp_verificar_bloqueo_alumno', [boleta]);
-        return results[0] && results[0][0] ? results[0][0] : null;
+        const { data, error } = await supabaseAdmin
+            .from('info_alumno')
+            .select('bloqueado_manual, bloqueado_sistema')
+            .eq('boleta', parseInt(boleta))
+            .single();
+
+        if (error || !data) return false;
+        return data.bloqueado_manual || data.bloqueado_sistema;
+    }
+
+    static async bloquearCredencial(boleta) {
+        const { error } = await supabaseAdmin
+            .from('info_alumno')
+            .update({ bloqueado_manual: true })
+            .eq('boleta', parseInt(boleta));
+
+        if (error) return { success: false, message: error.message };
+        return { success: true, message: 'Alumno bloqueado correctamente.' };
+    }
+
+    static async desbloquearCredencial(boleta) {
+        const { error } = await supabaseAdmin
+            .from('info_alumno')
+            .update({ bloqueado_manual: false, bloqueado_sistema: false })
+            .eq('boleta', parseInt(boleta));
+
+        if (error) return { success: false, message: error.message };
+        return { success: true, message: 'Alumno desbloqueado correctamente.' };
     }
 
     static async obtenerRegistros(boleta) {
-        const results = await ejecutarSP('sp_obtener_registros_alumno', [boleta]);
-        return results[0] || [];
+        const { data, error } = await supabaseAdmin
+            .from('registros_acceso')
+            .select(`
+                id_registro,
+                fecha_hora,
+                tipos_registro ( descripcion ),
+                puntos_acceso ( nombre_punto ),
+                justificaciones ( motivo )
+            `)
+            .eq('boleta', parseInt(boleta))
+            .order('fecha_hora', { ascending: false });
+
+        if (error) throw error;
+        return (data || []).map(r => ({
+            id_registro:   r.id_registro,
+            fecha_hora:    r.fecha_hora,
+            tipo:          r.tipos_registro?.descripcion,
+            punto_acceso:  r.puntos_acceso?.nombre_punto,
+            justificacion: r.justificaciones?.motivo || null
+        }));
     }
 
-    static async obtenerBasico(boleta) {
-        const results = await ejecutarSP('sp_obtener_alumno_completo', [boleta]);
-        
-        if (!results[0] || results[0].length === 0) {
-            return null;
-        }
+    static async registrarJustificacion(id_registro, justificacion, id_usuario_autoriza) {
+        const { data, error } = await supabaseAdmin
+            .from('justificaciones')
+            .insert({
+                id_registro,
+                motivo: justificacion,
+                id_usuario_autoriza
+            })
+            .select()
+            .single();
 
-        return {
-            boleta: results[0][0].boleta,
-            nombre: results[0][0].nombre,
-            nombre_grupo: results[0][0].nombre_grupo,
-            carrera: results[0][0].carrera,
-            estado_academico: results[0][0].estado_academico,
-            sin_credencial: results[0][0].sin_credencial,
-            retardos: results[0][0].retardos,
-            puerta_abierta: results[0][0].puerta_abierta,
-            bloqueado: results[0][0].bloqueado,
-            url: results[0][0].url
-        };
+        if (error) throw error;
+        return { success: true, id_justificacion: data.id_justificacion };
     }
 
     static async registrar(alumnoData) {
-        const { boleta, nombre, nombre_grupo, estado_academico, url } = alumnoData;
-        
-        const results = await ejecutarSP('sp_registrar_alumno', [
-            parseInt(boleta),
-            nombre,
-            nombre_grupo,
-            estado_academico,
-            url || 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp'
-        ]);
-        
-        return {
-            success: results[0] && results[0][0] ? results[0][0].success : false,
-            message: results[0] && results[0][0] ? results[0][0].message : 'Error desconocido'
-        };
+        const { boleta, nombre, id_grupo_base, id_estado_academico, url } = alumnoData;
+
+        const { error: errorAlumno } = await supabaseAdmin
+            .from('alumnos')
+            .insert({
+                boleta:              parseInt(boleta),
+                nombre_completo:     nombre,
+                id_grupo_base:       parseInt(id_grupo_base),
+                id_estado_academico: parseInt(id_estado_academico)
+            });
+
+        if (errorAlumno) return { success: false, message: errorAlumno.message };
+
+        const { error: errorInfo } = await supabaseAdmin
+            .from('info_alumno')
+            .insert({
+                boleta:    parseInt(boleta),
+                url_foto:  url || 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp'
+            });
+
+        if (errorInfo) return { success: false, message: errorInfo.message };
+        return { success: true, message: 'Alumno registrado correctamente.' };
     }
 
-static async modificar(boleta, alumnoData) {
-    const { nombre, nombre_grupo, estado_academico, puerta_abierta, url, horario } = alumnoData;
-    
-    console.log('Modificando alumno con horario:', horario);
-    
-    // Convertir horario a JSON si es un array
-    let horarioJson = null;
-    if (horario && Array.isArray(horario) && horario.length > 0) {
-        horarioJson = JSON.stringify(horario);
-    }
-    
-    const results = await ejecutarSP('sp_modificar_alumno_completo', [
-        parseInt(boleta),
-        nombre,
-        nombre_grupo,
-        estado_academico,
-        puerta_abierta || false,
-        url,
-        horarioJson
-    ]);
-    
-    return {
-        success: results[0] && results[0][0] ? results[0][0].success : false,
-        message: results[0] && results[0][0] ? results[0][0].message : 'Error desconocido'
-    };
-}
+    static async modificar(boleta, alumnoData) {
+        const { nombre, id_grupo_base, id_estado_academico, puertas_abiertas, url } = alumnoData;
 
-    static async eliminar(boleta) {
-        const results = await ejecutarSP('sp_eliminar_alumno', [parseInt(boleta)]);
-        
-        return {
-            success: results[0] && results[0][0] ? results[0][0].success : false,
-            message: results[0] && results[0][0] ? results[0][0].message : 'Error desconocido'
-        };
+        const { error: errorAlumno } = await supabaseAdmin
+            .from('alumnos')
+            .update({
+                nombre_completo:     nombre,
+                id_grupo_base:       parseInt(id_grupo_base),
+                id_estado_academico: parseInt(id_estado_academico),
+                puertas_abiertas:    puertas_abiertas || false
+            })
+            .eq('boleta', parseInt(boleta));
+
+        if (errorAlumno) return { success: false, message: errorAlumno.message };
+
+        if (url) {
+            await supabaseAdmin
+                .from('info_alumno')
+                .update({ url_foto: url })
+                .eq('boleta', parseInt(boleta));
+        }
+
+        return { success: true, message: 'Alumno modificado correctamente.' };
     }
 
     static async obtenerGrupos() {
-        const sql = 'SELECT id_grupo, nombre_grupo FROM grupo ORDER BY nombre_grupo';
-        const results = await ejecutarSP('', [], sql);
-        return results[0] || [];
+        const { data, error } = await supabaseAdmin
+            .from('grupos')
+            .select('id_grupo, nombre_grupo')
+            .order('nombre_grupo');
+
+        if (error) throw error;
+        return data || [];
     }
 
     static async obtenerEstadosAcademicos() {
-        const sql = 'SELECT id_estado, estado FROM estado_academico ORDER BY estado';
-        const results = await ejecutarSP('', [], sql);
-        return results[0] || [];
+        const { data, error } = await supabaseAdmin
+            .from('estado_academico')
+            .select('id_estado, estado')
+            .order('estado');
+
+        if (error) throw error;
+        return data || [];
     }
 
     static async obtenerCarreras() {
-        const sql = 'SELECT id_carrera, nombre FROM carrera ORDER BY nombre';
-        const results = await ejecutarSP('', [], sql);
-        return results[0] || [];
-    }
+        const { data, error } = await supabaseAdmin
+            .from('carreras')
+            .select('id_carrera, nombre_carrera')
+            .order('nombre_carrera');
 
-    static async asignarHorario(boleta, idGrupo) {
-        const results = await ejecutarSP('sp_asignar_horario_grupo', [
-            parseInt(boleta),
-            parseInt(idGrupo)
-        ]);
-        
-        return {
-            success: results[0] && results[0][0] ? results[0][0].success : false,
-            message: results[0] && results[0][0] ? results[0][0].message : 'Error desconocido'
-        };
+        if (error) throw error;
+        return data || [];
     }
 }
 

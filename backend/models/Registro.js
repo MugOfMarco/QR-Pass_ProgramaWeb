@@ -1,35 +1,68 @@
-// backend/models/Registro.js
-
-// ANTES: const { ejecutarSP } = require('../database/db');
-import { ejecutarSP } from '../database/db.js'; // Importación ESM y añadimos la extensión .js
+import { supabaseAdmin } from '../database/supabase.js';
 
 class Registro {
+
     static async crear(data) {
-        // Llama al SP para crear un nuevo registro de asistencia
-        const results = await ejecutarSP('sp_crear_registro', [
-            data.boleta,
-            data.puerta,
-            data.id_tipo_registro
-        ]);
-        return results[0] && results[0][0] ? results[0][0] : null; // Devuelve el ID del registro creado
+        const { boleta, id_punto_acceso, id_tipo_registro, id_usuario_vigilante } = data;
+
+        const { data: result, error } = await supabaseAdmin
+            .from('registros_acceso')
+            .insert({
+                boleta:              parseInt(boleta),
+                id_punto_acceso,
+                id_tipo_registro,
+                id_usuario_vigilante: id_usuario_vigilante || null
+            })
+            .select('id_registro, fecha_hora')
+            .single();
+
+        if (error) return { success: false, message: error.message };
+        return { success: true, id_registro: result.id_registro, fecha_hora: result.fecha_hora };
     }
 
-    static async actualizarContadores(boleta, tipo, accion) {
-        // Llama al SP para incrementar/decrementar contadores de retardo/sin_credencial
-        const results = await ejecutarSP('sp_actualizar_contadores_alumno', [
-            boleta,
-            tipo, // 'retardo' o 'sin_credencial'
-            accion // 'incrementar' o 'decrementar'
-        ]);
-        return results[0] && results[0][0] ? results[0][0] : null;
+    static async obtenerDelDia(fecha) {
+        const inicio = fecha
+            ? new Date(`${fecha}T00:00:00`)
+            : new Date(new Date().setHours(0, 0, 0, 0));
+
+        const fin = fecha
+            ? new Date(`${fecha}T23:59:59`)
+            : new Date(new Date().setHours(23, 59, 59, 999));
+
+        const { data, error } = await supabaseAdmin
+            .from('registros_acceso')
+            .select(`
+                id_registro,
+                boleta,
+                fecha_hora,
+                id_tipo_registro,
+                tipos_registro ( descripcion ),
+                puntos_acceso ( nombre_punto )
+            `)
+            .gte('fecha_hora', inicio.toISOString())
+            .lte('fecha_hora', fin.toISOString())
+            .order('fecha_hora', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
     }
 
     static async obtenerPorAlumno(boleta) {
-        // Llama al SP para obtener el historial de registros de un alumno
-        const results = await ejecutarSP('sp_obtener_registros_alumno', [boleta]);
-        return results[0] || [];
+        const { data, error } = await supabaseAdmin
+            .from('registros_acceso')
+            .select(`
+                id_registro,
+                fecha_hora,
+                id_tipo_registro,
+                tipos_registro ( descripcion ),
+                puntos_acceso ( nombre_punto )
+            `)
+            .eq('boleta', parseInt(boleta))
+            .order('fecha_hora', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
     }
 }
 
-// ANTES: module.exports = Registro;
 export default Registro;

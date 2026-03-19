@@ -1,4 +1,3 @@
-
 // ============================================================
 // ARCHIVO 6: backend/app.js  (MIGRADO — quita db.js, entra supabase)
 // ============================================================
@@ -9,12 +8,9 @@ import path from 'path';
 import session from 'express-session';
 import { fileURLToPath } from 'url';
  
-import authRoutes     from './routes/auth.routes.js';
-import alumnosRoutes  from './routes/alumnos.routes.js';
-import registrosRoutes from './routes/registros.routes.js';
-import uploadRoutes   from './routes/upload.routes.js';
- 
-// Verificamos que Supabase responde al arrancar
+import authRoutes from './routes/auth.routes.js';
+
+ // Verificamos que Supabase responde al arrancar
 import { supabaseAdmin } from './database/supabase.js';
  
 const __filename = fileURLToPath(import.meta.url);
@@ -37,9 +33,9 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        secure:   false,   // true solo con HTTPS en producción
+        secure:   false,
         sameSite: 'lax',
-        maxAge:   1000 * 60 * 60 * 8  // 8 horas
+        maxAge:   1000 * 60 * 60 * 8
     }
 }));
  
@@ -55,11 +51,8 @@ const protegerAPI = (req, res, next) => {
 };
  
 // Rutas
-app.use('/api/auth',      authRoutes);
-app.use('/api/alumnos',   protegerAPI, alumnosRoutes);
-app.use('/api/registros', protegerAPI, registrosRoutes);
-app.use('/api/upload',    uploadRoutes);
- 
+app.use('/api/auth', authRoutes);
+
 // Archivos estáticos del frontend
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
     extensions: ['html', 'css', 'js'],
@@ -119,7 +112,6 @@ app.use((err, req, res, next) => {
 // Arranque con verificación de Supabase
 async function iniciarServidor() {
     try {
-        // Verificar conexión a Supabase consultando un catálogo simple
         const { error } = await supabaseAdmin
             .from('configuracion_sistema')
             .select('id_config')
