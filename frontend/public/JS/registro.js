@@ -1,418 +1,372 @@
-// frontend/public/JS/registro.js — MIGRADO A SUPABASE
-// ============================================================================================================================
-// CAMBIOS VS VERSIÓN ANTERIOR:
-//   · tiposRegistro: 0,1,2,3 → 1,2,3,4  (nueva BD empieza en 1)
-//   · SALIDA es id 2 (antes era 1)
-//   · Contadores NO se tocan aquí — triggers de Supabase los manejan solos
-//   · Respuesta del backend: data.alumno y data.horario (misma estructura)
-//   · HTML sin cambios — mismos IDs de siempre
-// ============================================================================================================================
- 
+// frontend/public/JS/registro.js
+// ============================================================
+// FLUJO:
+//   1. Alumno escanea QR o escribe boleta + Enter
+//   2. Frontend obtiene datos del alumno (foto, horario, etc.)
+//   3. Frontend calcula el SUBTIPO de entrada si aplica:
+//        · ¿Sin QR?  → sinCredencial = true
+//        · ¿Retardo? → id_tipo_registro = 3
+//        · Normal    → id_tipo_registro = 1
+//   4. Manda todo al servidor
+//   5. El SERVIDOR consulta la BD y decide si es ENTRADA o SALIDA
+//      (el frontend no lo decide — nunca)
+//   6. El servidor responde con tipo_detectado: 'entrada' | 'salida'
+//   7. El frontend muestra el resultado según lo que respondió el servidor
+// ============================================================
+
 class RegistroSystem {
     constructor() {
-        this.apiBase   = '/api';
-        this.urlPrefix = 'https://coatl.cecyt9.ipn.mx/app/qr_system/accessprocess.php?boleta=';
-        this.diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
- 
-        // =====================================================
-        // IDs ACTUALIZADOS — ahora empiezan en 1 (nueva BD)
-        // =====================================================
-        this.tiposRegistro = {
-            entrada_normal:         1,  // antes 0
-            salida:                 2,  // antes 1
-            retardo:                3,  // antes 2
-            entrada_sin_credencial: 4   // antes 3
-            // "justificado" ya NO es un tipo de registro
-            // se detecta consultando la tabla justificaciones
+        this.apiBase    = '/api';
+        this.urlPrefix  = 'https://coatl.cecyt9.ipn.mx/app/qr_system/accessprocess.php?boleta=';
+        this.diasSemana = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+        this.TIPO = {
+            ENTRADA_NORMAL: 1,
+            SALIDA:         2,
+            RETARDO:        3,
+            SIN_CREDENCIAL: 4,
         };
- 
+
         this.initEventListeners();
     }
- 
+
     initEventListeners() {
-        const boletaInput = document.getElementById('boleta-input');
- 
-        if (!boletaInput) {
-            console.error('Error: No se encontró el campo id="boleta-input"');
-            return;
-        }
- 
-        boletaInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.keyCode === 13) {
-                e.preventDefault();
- 
-                let valor = boletaInput.value;
-                let tipoEntrada;
-                let boletaLimpia;
- 
-                if (valor.startsWith(this.urlPrefix)) {
-                    boletaLimpia = valor.substring(this.urlPrefix.length).replace(/[^0-9]/g, '');
-                    tipoEntrada  = 'qr';
-                } else {
-                    boletaLimpia = valor.replace(/[^0-9]/g, '');
-                    tipoEntrada  = 'manual';
-                }
- 
-                requestAnimationFrame(() => { boletaInput.value = boletaLimpia; });
- 
-                this.handleBoletaInput(boletaLimpia, tipoEntrada);
+        const input = document.getElementById('boleta-input');
+        if (!input) { console.error('No se encontró #boleta-input'); return; }
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.keyCode !== 13) return;
+            e.preventDefault();
+
+            const valor = input.value.trim();
+            let boleta, esQR;
+
+            if (valor.startsWith(this.urlPrefix)) {
+                boleta = valor.substring(this.urlPrefix.length).replace(/\D/g, '');
+                esQR   = true;
+            } else {
+                boleta = valor.replace(/\D/g, '');
+                esQR   = false;
             }
+
+            requestAnimationFrame(() => { input.value = boleta; });
+            if (boleta.length >= 5) this.procesar(boleta, esQR);
         });
     }
- 
-    async handleBoletaInput(boletaInput, tipoEntrada) {
-        const boleta = boletaInput.trim();
-        if (boleta.length < 5) return;
- 
+
+    async procesar(boleta, esQR) {
         try {
-            const response = await fetch(`${this.apiBase}/alumnos/${boleta}`);
- 
-            if (!response.ok) {
-                this.limpiarDatos();
-                if (response.status === 404) throw new Error('Alumno no encontrado');
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
- 
-            const data = await response.json();
- 
-            if (!data.success) {
-                this.limpiarDatos();
-                this.mostrarError(data.message || 'Alumno no encontrado');
-                this.limpiarFotoAlumno();
+            // ── 1. Obtener alumno + horario ───────────────────
+            const respAlumno = await fetch(`${this.apiBase}/alumnos/${boleta}`);
+
+            if (respAlumno.status === 404) {
+                this.mostrarEstado('Alumno no encontrado', 'error');
                 return;
             }
- 
+            if (!respAlumno.ok) {
+                this.mostrarEstado(`Error del servidor (${respAlumno.status})`, 'error');
+                return;
+            }
+
+            const dataAlumno = await respAlumno.json();
+            if (!dataAlumno.success) {
+                this.mostrarEstado(dataAlumno.message || 'Alumno no encontrado', 'error');
+                return;
+            }
+
+            const alumno  = dataAlumno.alumno;
+            const horario = dataAlumno.horario || [];
+
             // Mostrar foto inmediatamente
-            this.mostrarFotoAlumno(data.alumno);
- 
-            // Verificar bloqueo (el backend ya lo revisa, pero mostramos UI aquí)
-            if (data.bloqueado) {
-                this.mostrarError('ALUMNO BLOQUEADO — Contacte con administración');
-                setTimeout(() => { this.limpiarDatos(); }, 3000);
+            this.mostrarFoto(alumno);
+
+            // Alumno bloqueado — no registrar
+            if (alumno.bloqueado || dataAlumno.bloqueado) {
+                this.mostrarEstado('⛔ ALUMNO BLOQUEADO — Contacte administración', 'error');
+                setTimeout(() => this.limpiar(), 3000);
                 return;
             }
- 
-            await this.procesarRegistro(data, tipoEntrada);
- 
-        } catch (error) {
-            console.error('Error:', error);
-            this.limpiarDatos();
-            this.mostrarError(error.message);
-            this.limpiarFotoAlumno();
-        }
-    }
- 
-    async procesarRegistro(data, tipoEntrada) {
-        try {
-            const puertaSeleccionada = document.querySelector('input[name="puerta"]:checked');
-            const puerta = puertaSeleccionada ? puertaSeleccionada.value : 'mexico-tacuba';
- 
-            const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked');
-            const tipo = tipoSeleccionado ? tipoSeleccionado.value : 'entrada';
- 
-            const hoy        = new Date();
-            const diaSemana  = hoy.getDay();
- 
-            // Fin de semana — registrar igual pero avisar
-            if (diaSemana === 0 || diaSemana === 6) {
-                this.mostrarResultadoFinSemana(data.alumno, puerta, tipo);
+
+            // ── 2. Calcular subtipo de ENTRADA (si aplica) ────
+            // El servidor decide si es entrada o salida.
+            // Nosotros solo calculamos el subtipo en caso de que sea entrada.
+            const sinCredencial = !esQR;
+
+            // Aviso preventivo antes de mandar la petición
+            if (sinCredencial && (alumno.sin_credencial || 0) >= 3) {
+                this.mostrarEstado('⛔ DEMASIADAS ENTRADAS SIN CREDENCIAL', 'error');
+                this.limpiar();
                 return;
             }
- 
-            let idTipoRegistro;
-            let tieneRetardo   = false;
-            let sinCredencial  = false;
- 
-            if (tipo === 'entrada') {
-                sinCredencial = (tipoEntrada === 'manual');
- 
-                // Verificar límite de sin credencial ANTES de registrar
-                // (los triggers bloquean automáticamente, pero avisamos en UI)
-                if (sinCredencial) {
-                    const contadorActual = data.alumno.sin_credencial || 0;
-                    if (contadorActual >= 3) {
-                        this.mostrarError('DEMASIADAS ENTRADAS SIN CREDENCIAL — EL ALUMNO NO PASA');
-                        this.limpiarDatos();
-                        return;
-                    }
-                }
- 
-                const estadoHorario = this.verificarEstadoHorario(data.horario);
-                tieneRetardo = estadoHorario ? estadoHorario.esRetardo : false;
- 
-                if (sinCredencial) {
-                    idTipoRegistro = this.tiposRegistro.entrada_sin_credencial; // 4
-                } else if (tieneRetardo) {
-                    idTipoRegistro = this.tiposRegistro.retardo;                // 3
-                } else {
-                    idTipoRegistro = this.tiposRegistro.entrada_normal;         // 1
-                }
- 
+
+            // Calcular si hay retardo (solo relevante para entradas)
+            const estadoHorario  = this.verificarRetardo(horario);
+            const esRetardo      = estadoHorario?.esRetardo ?? false;
+
+            let tipoSugerido;
+            if (sinCredencial) {
+                tipoSugerido = this.TIPO.SIN_CREDENCIAL;
+            } else if (esRetardo) {
+                tipoSugerido = this.TIPO.RETARDO;
             } else {
-                // SALIDA
-                sinCredencial  = (tipoEntrada === 'manual');
-                idTipoRegistro = this.tiposRegistro.salida;                     // 2
+                tipoSugerido = this.TIPO.ENTRADA_NORMAL;
             }
- 
-            await this.crearRegistroBD(data.alumno.boleta, puerta, idTipoRegistro, sinCredencial);
- 
-            const contadorActual = data.alumno.sin_credencial || 0;
-            this.mostrarResultado(data, tieneRetardo, sinCredencial, puerta, idTipoRegistro, contadorActual);
- 
-        } catch (error) {
-            console.error('Error en procesarRegistro:', error);
-            this.mostrarError('Error al procesar registro: ' + error.message);
+
+            // Fin de semana — igual registramos pero lo indicamos
+            const diaSemana = new Date().getDay();
+            const esFinSemana = diaSemana === 0 || diaSemana === 6;
+
+            // ── 3. Enviar al servidor ─────────────────────────
+            const puerta = document.querySelector('input[name="puerta"]:checked')?.value
+                        || 'mexico-tacuba';
+
+            const respRegistro = await fetch(`${this.apiBase}/registros`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    boleta:           parseInt(boleta),
+                    puerta,
+                    sinCredencial,
+                    id_tipo_registro: tipoSugerido,
+                }),
+            });
+
+            const resultado = await respRegistro.json();
+
+            if (!respRegistro.ok || !resultado.success) {
+                this.mostrarEstado(resultado.message || 'Error al registrar', 'error');
+                return;
+            }
+
+            // ── 4. Mostrar resultado ──────────────────────────
+            // tipo_detectado viene del servidor: 'entrada' | 'salida'
+            // id_tipo_registro también viene del servidor (definitivo)
+            this.mostrarDatos(alumno, horario);
+            this.mostrarMensajeFinal(
+                resultado.tipo_detectado,
+                resultado.id_tipo_registro,
+                alumno,
+                puerta,
+                sinCredencial,
+                esFinSemana,
+            );
+
+            setTimeout(() => this.limpiar(), 3000);
+
+        } catch (err) {
+            console.error('Error en procesar():', err);
+            this.mostrarEstado('Error de conexión con el servidor', 'error');
+            this.limpiarFoto();
         }
     }
- 
-    async crearRegistroBD(boleta, puerta, id_tipo_registro, sinCredencial) {
-        const response = await fetch(`${this.apiBase}/registros`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                boleta:           parseInt(boleta),
-                puerta:           puerta,
-                id_tipo_registro: id_tipo_registro,
-                sinCredencial:    sinCredencial
-                // tieneRetardo YA NO se manda — el trigger lo detecta por el id_tipo
-            })
-        });
- 
-        const result = await response.json();
- 
-        if (!result.success) throw new Error(result.message);
-        return result;
-    }
- 
-    // Lógica de retardo — sin cambios, funciona igual
-    verificarEstadoHorario(horario) {
-        if (!horario || horario.length === 0) return null;
- 
-        const hoy          = new Date();
-        const diaSemanaStr = this.diasSemana[hoy.getDay()];
-        const diaActual    = diaSemanaStr.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
- 
+
+    // ── Verificar retardo contra horario ─────────────────────
+    verificarRetardo(horario) {
+        if (!horario?.length) return null;
+
+        const ahora     = new Date();
+        const diaStr    = this.diasSemana[ahora.getDay()]
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
         const clasesHoy = horario.filter(h =>
-            h.dia.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === diaActual
+            h.dia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === diaStr
         );
- 
-        if (clasesHoy.length === 0) return null;
- 
-        const minutosActuales = hoy.getHours() * 60 + hoy.getMinutes();
-        let claseObjetivo     = null;
-        let diferenciaMinima  = Infinity;
- 
+        if (!clasesHoy.length) return null;
+
+        const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
+        let mejor = null, menorDiff = Infinity;
+
         for (const clase of clasesHoy) {
-            const inicioMin = this.convertirHoraAMinutos(clase.inicio);
-            const diff      = Math.abs(minutosActuales - inicioMin);
-            if (diff < diferenciaMinima) {
-                diferenciaMinima = diff;
-                claseObjetivo    = clase;
+            const inicioMin = this.hhmm(clase.inicio);
+            const diff      = Math.abs(minutosAhora - inicioMin);
+            if (diff < menorDiff) { menorDiff = diff; mejor = clase; }
+        }
+
+        if (menorDiff > 480) return null;  // más de 8 horas de diferencia → irrelevante
+
+        const retraso = minutosAhora - this.hhmm(mejor.inicio);
+        return { esRetardo: retraso > 20, clase: mejor, retraso };
+    }
+
+    // ── Mostrar datos del alumno en los campos ────────────────
+    mostrarDatos(alumno, horario) {
+        this.set('nombre-output',          alumno.nombre         || '');
+        this.set('boleta-output',          alumno.boleta         || '');
+        this.set('grupo-output',           alumno.nombre_grupo   || '');
+        this.set('horario-output',         this.rangoHorario(horario));
+        this.set('retardos-output',        alumno.retardos       ?? 0);
+        this.set('sin-credencial-output',  alumno.sin_credencial ?? 0);
+    }
+
+    // ── Construir mensaje final según lo que respondió el servidor
+    mostrarMensajeFinal(tipoDetectado, idTipo, alumno, puerta, sinCredencial, esFinSemana) {
+        const hora       = this.formatHora(new Date());
+        const puertaFmt  = this.nombrePuerta(puerta);
+        const contador   = alumno.sin_credencial ?? 0;
+        let mensaje, color;
+
+        if (tipoDetectado === 'salida') {
+            // SALIDA
+            mensaje = `✅ SALIDA — ${puertaFmt} — ${hora}`;
+            color   = 'success';
+            if (sinCredencial) mensaje += ' (sin credencial)';
+
+        } else {
+            // ENTRADA — el subtipo ya viene del servidor
+            switch (idTipo) {
+                case this.TIPO.RETARDO:
+                    mensaje = `⚠ RETARDO — ${puertaFmt} — ${hora}`;
+                    color   = 'warning';
+                    break;
+                case this.TIPO.SIN_CREDENCIAL:
+                    mensaje = `⚠ Sin credencial — ${puertaFmt} — ${hora}`;
+                    color   = 'warning';
+                    if      (contador === 0) mensaje += ' — 1ª vez';
+                    else if (contador === 1) mensaje += ' — 2ª vez';
+                    else                     mensaje += ' — ⛔ ÚLTIMA PERMITIDA';
+                    break;
+                default:
+                    mensaje = `✅ ENTRADA — ${puertaFmt} — ${hora}`;
+                    color   = 'success';
             }
         }
- 
-        if (diferenciaMinima > 480) return null;
- 
-        const inicioObjetivo = this.convertirHoraAMinutos(claseObjetivo.inicio);
-        const tolerancia     = 20;
-        const retraso        = minutosActuales - inicioObjetivo;
- 
-        return { esRetardo: retraso > tolerancia, clase: claseObjetivo };
+
+        if (esFinSemana) {
+            mensaje += ` (${this.diasSemana[new Date().getDay()].toUpperCase()} — sin clases)`;
+            color = 'warning';
+        }
+
+        this.mostrarEstado(mensaje, color);
+        this.actualizarBadge(tipoDetectado, idTipo);
     }
- 
-    // ================================================================
-    // UI — sin cambios estructurales, mismos IDs del HTML
-    // ================================================================
- 
-    mostrarFotoAlumno(alumno) {
-        const fotoElement = document.getElementById('student-photo');
-        const infoBox     = document.getElementById('info-box');
- 
-        if (fotoElement && alumno?.url) {
-            fotoElement.src           = alumno.url;
-            fotoElement.alt           = `Foto de ${alumno.nombre}`;
-            fotoElement.style.display = 'block';
- 
-            if (alumno.bloqueado) {
-                fotoElement.classList.add('bloqueado');
-                if (infoBox) infoBox.style.borderColor = '#dc3545';
-            } else {
-                fotoElement.classList.remove('bloqueado');
-                if (infoBox) infoBox.style.borderColor = '#dee2e6';
+
+    // ── Badge de tipo (arriba a la derecha) ───────────────────
+    actualizarBadge(tipoDetectado, idTipo) {
+        const badge = document.getElementById('tipo-badge');
+        const texto = document.getElementById('tipo-texto');
+        if (!badge || !texto) return;
+
+        badge.className = 'tipo-badge';
+
+        if (tipoDetectado === 'salida') {
+            badge.classList.add('tipo-salida');
+            texto.textContent = '↑ SALIDA';
+        } else {
+            switch (idTipo) {
+                case this.TIPO.RETARDO:
+                    badge.classList.add('tipo-retardo');
+                    texto.textContent = '↓ RETARDO';
+                    break;
+                case this.TIPO.SIN_CREDENCIAL:
+                    badge.classList.add('tipo-retardo');
+                    texto.textContent = '↓ SIN CREDENCIAL';
+                    break;
+                default:
+                    badge.classList.add('tipo-entrada');
+                    texto.textContent = '↓ ENTRADA';
             }
- 
-            fotoElement.onerror = () => {
-                fotoElement.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp';
+        }
+    }
+
+    // ── Foto ─────────────────────────────────────────────────
+    mostrarFoto(alumno) {
+        const foto    = document.getElementById('student-photo');
+        const infoBox = document.getElementById('info-box');
+        if (!foto) return;
+
+        if (alumno?.url) {
+            foto.src           = alumno.url;
+            foto.alt           = alumno.nombre || '';
+            foto.style.display = 'block';
+            foto.onerror       = () => {
+                foto.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp';
             };
         }
-    }
- 
-    limpiarFotoAlumno() {
-        const fotoElement = document.getElementById('student-photo');
-        const infoBox     = document.getElementById('info-box');
-        if (fotoElement) {
-            fotoElement.src           = '';
-            fotoElement.style.display = 'none';
-            fotoElement.classList.remove('bloqueado');
+        if (alumno?.bloqueado) {
+            foto.classList.add('bloqueado');
+            if (infoBox) infoBox.style.borderColor = '#dc3545';
+        } else {
+            foto.classList.remove('bloqueado');
             if (infoBox) infoBox.style.borderColor = '#dee2e6';
         }
     }
- 
-    limpiarDatos() {
-        this.limpiarFotoAlumno();
- 
-        document.getElementById('nombre-output').value        = '';
-        document.getElementById('boleta-output').value        = '';
-        document.getElementById('grupo-output').value         = '';
-        document.getElementById('horario-output').value       = '';
-        document.getElementById('retardos-output').value      = '';
-        document.getElementById('sin-credencial-output').value = '';
- 
-        const innerBox = document.querySelector('.inner-box');
-        if (innerBox) { innerBox.textContent = ''; innerBox.style.display = 'none'; }
- 
-        document.getElementById('boleta-input').value = '';
- 
-        const statusMessage = document.getElementById('status-message');
-        if (statusMessage) statusMessage.textContent = 'Esperando registro...';
- 
-        const statusIndicator = document.getElementById('status-indicator');
-        if (statusIndicator) statusIndicator.style.backgroundColor = '#ffc107';
+
+    limpiarFoto() {
+        const foto    = document.getElementById('student-photo');
+        const infoBox = document.getElementById('info-box');
+        if (foto) { foto.src = ''; foto.style.display = 'none'; foto.classList.remove('bloqueado'); }
+        if (infoBox) infoBox.style.borderColor = '#dee2e6';
     }
- 
-    mostrarResultado(data, tieneRetardo, sinCredencial, puerta, idTipoRegistro, contadorActual) {
-        const alumno     = data.alumno;
-        const horaActual = this.formatearHora(new Date());
- 
-        document.getElementById('nombre-output').value         = alumno.nombre;
-        document.getElementById('boleta-output').value         = alumno.boleta;
-        document.getElementById('grupo-output').value          = alumno.nombre_grupo;
-        document.getElementById('horario-output').value        = this.obtenerHorarioTexto(data.horario);
-        document.getElementById('retardos-output').value       = alumno.retardos || 0;
-        document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0;
- 
-        const tipoTexto = this.obtenerTipoRegistroTexto(idTipoRegistro, tieneRetardo, sinCredencial);
-        let mensaje     = this.generarMensajeResultado(tipoTexto, puerta, horaActual);
-        let tipoColor   = 'success';
- 
-        // Avisos de sin credencial
-        if (sinCredencial && idTipoRegistro !== this.tiposRegistro.salida) {
-            if      (contadorActual === 0) mensaje += ' — PRIMERA ENTRADA SIN CREDENCIAL';
-            else if (contadorActual === 1) mensaje += ' — SEGUNDA ENTRADA SIN CREDENCIAL';
-            else if (contadorActual >= 2)  { mensaje += ' — TERCERA Y ÚLTIMA ENTRADA SIN CREDENCIAL'; tipoColor = 'warning'; }
-        }
- 
-        if (tieneRetardo) tipoColor = 'warning';
- 
-        this.mostrarEstado(mensaje, tipoColor);
-        setTimeout(() => { this.limpiarDatos(); }, 2500);
-    }
- 
-    mostrarResultadoFinSemana(alumno, puerta, tipo) {
-        const hoy        = new Date();
-        const nombreDia  = this.diasSemana[hoy.getDay()];
-        const horaActual = this.formatearHora(hoy);
- 
-        document.getElementById('nombre-output').value         = alumno.nombre;
-        document.getElementById('boleta-output').value         = alumno.boleta;
-        document.getElementById('grupo-output').value          = alumno.nombre_grupo;
-        document.getElementById('horario-output').value        = 'FIN DE SEMANA';
-        document.getElementById('retardos-output').value       = alumno.retardos || 0;
-        document.getElementById('sin-credencial-output').value = alumno.sin_credencial || 0;
- 
-        this.mostrarEstado(
-            `${nombreDia.toUpperCase()} — SIN CLASES — ${tipo.toUpperCase()} — Hora: ${horaActual}`,
-            'warning'
-        );
-        setTimeout(() => { this.limpiarDatos(); }, 2500);
-    }
- 
-    obtenerTipoRegistroTexto(idTipoRegistro, tieneRetardo, sinCredencial) {
-        // IDs nuevos: 1=entrada_normal, 2=salida, 3=retardo, 4=sin_credencial
-        const tipos = {
-            1: 'entrada_normal',
-            2: 'salida',
-            3: 'retardo',
-            4: 'entrada_sin_credencial'
-        };
- 
-        const tipo = tipos[idTipoRegistro] || 'entrada_normal';
- 
-        if (tieneRetardo && sinCredencial) return 'retardo_sin_credencial';
-        if (tipo === 'salida' && sinCredencial) return 'salida_sin_credencial';
-        return tipo;
-    }
- 
-    generarMensajeResultado(tipoRegistro, puerta, hora) {
-        const puertaFormateada = this.formatearNombrePuerta(puerta);
- 
-        const mensajes = {
-            entrada_normal:          `Entrada normal — Puerta: ${puertaFormateada} — Hora: ${hora}`,
-            retardo:                 `ENTRADA CON RETARDO — Puerta: ${puertaFormateada} — Hora: ${hora}`,
-            entrada_sin_credencial:  `Entrada sin credencial — Puerta: ${puertaFormateada} — Hora: ${hora}`,
-            retardo_sin_credencial:  `RETARDO Y SIN CREDENCIAL — Puerta: ${puertaFormateada} — Hora: ${hora}`,
-            salida:                  `Salida registrada — Puerta: ${puertaFormateada} — Hora: ${hora}`,
-            salida_sin_credencial:   `Salida sin credencial — Puerta: ${puertaFormateada} — Hora: ${hora}`
-        };
- 
-        return mensajes[tipoRegistro] || `Registro — Puerta: ${puertaFormateada} — Hora: ${hora}`;
-    }
- 
-    obtenerHorarioTexto(horario) {
-        if (!horario || horario.length === 0) return 'Sin horario';
-        const horas        = horario.map(h => h.inicio).sort();
-        const primeraHora  = horas[0]?.substring(0, 5) || '';
-        const ultimaHora   = horas[horas.length - 1]?.substring(0, 5) || '';
-        return `${primeraHora} — ${ultimaHora}`;
-    }
- 
+
+    // ── Estado visual (status bar + inner box) ────────────────
     mostrarEstado(mensaje, tipo) {
-        const statusMessage   = document.getElementById('status-message');
-        const statusIndicator = document.getElementById('status-indicator');
-        const innerBox        = document.querySelector('.inner-box');
- 
-        const colores = { success: '#4CAF50', error: '#f44336', warning: '#ff9800' };
-        const color   = colores[tipo] || '#4CAF50';
- 
-        if (statusMessage)   statusMessage.textContent          = mensaje;
-        if (statusIndicator) statusIndicator.style.backgroundColor = color;
- 
+        const colores  = { success: '#4CAF50', error: '#f44336', warning: '#ff9800' };
+        const color    = colores[tipo] || '#4CAF50';
+        const statusMsg = document.getElementById('status-message');
+        const statusInd = document.getElementById('status-indicator');
+        const innerBox  = document.querySelector('.inner-box');
+
+        if (statusMsg)  statusMsg.textContent = mensaje;
+        if (statusInd)  statusInd.style.backgroundColor = color;
         if (innerBox) {
-            innerBox.textContent              = mensaje;
-            innerBox.style.backgroundColor    = color;
-            innerBox.style.color              = 'white';
-            innerBox.style.padding            = '20px';
-            innerBox.style.borderRadius       = '8px';
-            innerBox.style.textAlign          = 'center';
-            innerBox.style.fontSize           = '16px';
-            innerBox.style.fontWeight         = 'bold';
-            innerBox.style.display            = 'flex';
-            innerBox.style.alignItems         = 'center';
-            innerBox.style.justifyContent     = 'center';
+            Object.assign(innerBox.style, {
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: color, color: 'white', padding: '20px',
+                borderRadius: '8px', textAlign: 'center',
+                fontSize: '16px', fontWeight: 'bold',
+            });
+            innerBox.textContent = mensaje;
         }
     }
- 
-    mostrarError(mensaje) { this.mostrarEstado(mensaje, 'error'); }
- 
-    formatearNombrePuerta(puertaValue) {
-        const puertas = { 'mexico-tacuba': 'México-Tacuba', 'mar': 'Mar-Mediterráneo', 'mar-mediterraneo': 'Mar-Mediterráneo' };
-        return puertas[puertaValue] || puertaValue;
+
+    // ── Limpiar pantalla ──────────────────────────────────────
+    limpiar() {
+        this.limpiarFoto();
+        ['nombre-output','boleta-output','grupo-output','horario-output',
+         'retardos-output','sin-credencial-output'].forEach(id => this.set(id, ''));
+        this.set('boleta-input', '');
+
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) statusMsg.textContent = 'Esperando registro...';
+        const statusInd = document.getElementById('status-indicator');
+        if (statusInd) statusInd.style.backgroundColor = '#ffc107';
+
+        const innerBox = document.querySelector('.inner-box');
+        if (innerBox) { innerBox.textContent = ''; innerBox.style.removeProperty('background-color'); }
+
+        const badge = document.getElementById('tipo-badge');
+        const texto = document.getElementById('tipo-texto');
+        if (badge) badge.className = 'tipo-badge tipo-espera';
+        if (texto) texto.textContent = '— esperando —';
     }
- 
-    convertirHoraAMinutos(horaString) {
-        if (!horaString) return 0;
-        const [horas, minutos] = horaString.split(':').map(Number);
-        return horas * 60 + minutos;
+
+    // ── Utilidades ────────────────────────────────────────────
+    set(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
     }
- 
-    formatearHora(fecha) {
-        return [
-            fecha.getHours().toString().padStart(2, '0'),
-            fecha.getMinutes().toString().padStart(2, '0'),
-            fecha.getSeconds().toString().padStart(2, '0')
-        ].join(':');
+
+    hhmm(str) {
+        if (!str) return 0;
+        const [h, m] = str.split(':').map(Number);
+        return h * 60 + m;
+    }
+
+    rangoHorario(horario) {
+        if (!horario?.length) return 'Sin horario';
+        const horas = horario.map(h => h.inicio).sort();
+        return `${horas[0]?.slice(0,5) || ''} — ${horas[horas.length-1]?.slice(0,5) || ''}`;
+    }
+
+    formatHora(d) {
+        return [d.getHours(), d.getMinutes(), d.getSeconds()]
+            .map(n => String(n).padStart(2,'0')).join(':');
+    }
+
+    nombrePuerta(v) {
+        return { 'mexico-tacuba':'México-Tacuba', 'mar':'Mar-Mediterráneo',
+                 'mar-mediterraneo':'Mar-Mediterráneo' }[v] || v;
     }
 }
- 
+
 document.addEventListener('DOMContentLoaded', () => { new RegistroSystem(); });
- 
