@@ -13,6 +13,7 @@ import alumnosRoutes   from './routes/alumnos.routes.js';
 import registrosRoutes from './routes/registros.routes.js';
 import uploadRoutes    from './routes/upload.routes.js';
 
+
 import { supabaseAdmin } from './database/supabase.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -55,6 +56,7 @@ app.use('/api/auth',      authRoutes);
 app.use('/api/alumnos',   alumnosRoutes);
 app.use('/api/registros', registrosRoutes);
 app.use('/api/upload',    uploadRoutes);
+app.use('/api/usuarios', usuariosRoutes);
 
 // ── ARCHIVOS ESTÁTICOS DEL FRONTEND ──────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {

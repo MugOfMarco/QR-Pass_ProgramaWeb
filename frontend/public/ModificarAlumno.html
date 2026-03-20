@@ -3,119 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Alumnos</title>
-    <link rel="stylesheet" href="./css/modificarAlumno.css">
-    <script src="./JS/validaciones.js"></script>
-    <script src="./JS/navigation.js"></script> <!-- PRIMERO el menú -->
-    <script src="./JS/menu.js"></script>
-    <script src="./JS/gestionAlumnos.js"></script>
+    <title>Gestión de Alumnos — CECyT 9</title>
+    <link rel="stylesheet" href="../css/modificarAlumno.css">
 </head>
 <body>
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton"> 
-                    <img src="../imgs/menu.png" alt="">
+                <button type="button" id="menu-toggle-btn">
+                    <img src="../imgs/menu.png" alt="Menú">
                 </button>
             </div>
             <h1 class="title">Gestión de Alumnos</h1>
             <div class="logo">
-                <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="">
+                <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
             </div>
         </div>
     </header>
 
     <nav class="menu-navegacion">
         <ul id="lista-opciones" class="menu-lista">
-            <li>
-                <a href="./Entrada_Salida.html">Registro de entrada y salida</a>
-            </li>
-            <li>
-                <a href="./BuscarAlumno.html">Buscar alumno</a>
-            </li>
+            <li><a href="./Entrada_Salida.html">Registro de entrada y salida</a></li>
+            <li><a href="./BuscarAlumno.html">Buscar alumno</a></li>
             <li class="admin-only-link">
                 <a href="./ModificarAlumno.html">Modificar alumno</a>
             </li>
         </ul>
     </nav>
-
     <div id="menu-overlay" class="menu-overlay"></div>
-    
+
     <div class="main-container">
-        <!-- ¡AQUÍ FALTA TODO EL FORMULARIO! -->
-        <!-- Copia y pega esta sección COMPLETA: -->
+
+        <!-- ── Columna izquierda: búsqueda ─────────────────── -->
         <section class="student-search-section">
             <div class="container">
                 <h2 class="section-title">Buscar Alumno</h2>
                 <div class="input-group">
-                    <label for="search-boleta" class="label-highlight">Ingresar boleta</label>
-                    <input type="text" id="search-boleta" name="search-boleta" class="input-solo-numeros" placeholder="Buscar por boleta..." maxlength="10">
+                    <label for="search-boleta" class="label-highlight">Boleta</label>
+                    <input type="text" id="search-boleta"
+                           placeholder="Ingresa la boleta…"
+                           maxlength="10" autocomplete="off">
                 </div>
                 <div class="action-button-container">
-                    <button type="button" id="btn-buscar">Buscar Alumno</button>
+                    <button type="button" id="btn-buscar">Buscar</button>
                 </div>
             </div>
         </section>
 
+        <!-- ── Columna derecha: formulario ─────────────────── -->
         <section class="student-form-section">
             <div class="container">
                 <h2 class="section-title" id="form-title">Registrar Nuevo Alumno</h2>
-                
+
+                <!-- Preview foto -->
                 <div class="photo-preview-container">
                     <div id="photo-preview" class="photo-preview">
-                        <img id="preview-image" crossorigin="anonymous" alt="Vista previa de la foto" style="display: none;">
-                        <div id="no-photo-message">No hay foto seleccionada</div>
+                        <img id="preview-image" crossorigin="anonymous"
+                             alt="Vista previa" style="display:none;">
+                        <div id="no-photo-message">Sin foto seleccionada</div>
                     </div>
-                    <button type="button" id="btn-remove-photo" style="display: none;">✕ Quitar foto</button>
+                    <button type="button" id="btn-remove-photo" style="display:none;">
+                        × Quitar foto
+                    </button>
                 </div>
-                
-                <form id="student-form">
+
+                <form id="student-form" autocomplete="off">
                     <fieldset class="student-data-form">
                         <legend id="fieldset-legend">Datos del Alumno</legend>
-                        
+
+                        <!-- Foto -->
                         <div class="field">
-                            <label for="form-foto">Foto del Alumno</label>
-                            <input type="file" id="form-foto" name="foto" accept="image/*" class="input-foto">
-                            <small class="form-text">Formatos: JPG, PNG, GIF. Máx: 5MB</small>
+                            <label for="form-foto">Foto</label>
+                            <input type="file" id="form-foto"
+                                   accept="image/jpeg,image/png,image/gif,image/webp"
+                                   class="input-foto">
+                            <small class="form-text">JPG · PNG · GIF · WebP — máx 5 MB</small>
                         </div>
 
+                        <!-- Boleta -->
                         <div class="field">
                             <label for="form-boleta">Boleta</label>
-                            <input type="text" id="form-boleta" name="boleta" maxlength="10" required class="input-solo-numeros">
+                            <input type="text" id="form-boleta"
+                                   maxlength="10" required
+                                   placeholder="10 dígitos">
                         </div>
 
+                        <!-- Nombre -->
                         <div class="field">
-                            <label for="form-nombre">Nombre del Alumno</label>
-                            <input type="text" maxlength="40" id="form-nombre" name="nombre" required class="input-solo-letras">
+                            <label for="form-nombre">Nombre completo</label>
+                            <input type="text" id="form-nombre"
+                                   maxlength="200" required
+                                   class="input-solo-letras"
+                                   placeholder="Apellidos Nombre">
                         </div>
 
+                        <!-- Grupo — SELECT poblado dinámicamente desde BD -->
                         <div class="field">
                             <label for="form-grupo">Grupo</label>
-                            <input type="text" id="form-grupo" name="grupo" maxlength="5">
-                        </div>
-
-                        <div class="field">
-                            <label>Horario Escolar</label>
-                            <div id="contenedor-horario-dinamico" class="horario-container" style="border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-height: 50px;">
-                                </div>
-                            
-                            <button type="button" id="btn-agregar-clase" class="button-secondary" style="margin-top: 10px; font-size: 0.9em; width: auto; padding: 5px 15px;">
-                                + Agregar Materia
-                            </button>
-                        </div>
-                        <div class="field">
-                            <label for="form-estatus">Estatus</label>
-                            <select id="form-estatus">
-                            <option value="activo">Activo</option>
-                            <option value="baja temporal">Baja Temporal</option>
-                            <option value="egresado">Egresado</option>
-                            <option value="baja definitiva">Baja Definitiva</option>
+                            <select id="form-grupo" required>
+                                <option value="">Cargando grupos…</option>
                             </select>
                         </div>
 
+                        <!-- Materias extra (irregulares) -->
+                        <div class="field">
+                            <label>Materias extra <small>(solo irregulares)</small></label>
+                            <div id="contenedor-horario-dinamico"
+                                 class="horario-container"
+                                 style="border:1px solid #ccc;padding:10px;
+                                        border-radius:5px;min-height:50px;">
+                            </div>
+                            <button type="button" id="btn-agregar-clase"
+                                    class="button-secondary"
+                                    style="margin-top:8px;font-size:.9em;
+                                           width:auto;padding:5px 15px;">
+                                + Agregar materia
+                            </button>
+                        </div>
+
+                        <!-- Estado académico — SELECT poblado dinámicamente desde BD -->
+                        <div class="field">
+                            <label for="form-estatus">Estado académico</label>
+                            <select id="form-estatus" required>
+                                <option value="">Cargando estados…</option>
+                            </select>
+                        </div>
+
+                        <!-- Puertas abiertas -->
                         <div class="checkbox-field">
-                            <input type="checkbox" id="form-puertas-abiertas" name="puertas-abiertas">
-                            <label for="form-puertas-abiertas">Permitir puertas abiertas</label>
+                            <input type="checkbox" id="form-puertas-abiertas">
+                            <label for="form-puertas-abiertas">
+                                Permitir puertas abiertas
+                            </label>
                         </div>
 
                     </fieldset>
@@ -124,25 +143,28 @@
                         <button type="submit" id="btn-guardar" class="button-primary">
                             Registrar Alumno
                         </button>
-                        <button type="button" id="btn-eliminar" class="button-danger" style="display: none;">
-                            Eliminar Alumno
+                        <button type="button" id="btn-eliminar" class="button-danger"
+                                style="display:none;">
+                            Dar de Baja
                         </button>
                         <button type="button" id="btn-cancelar" class="button-secondary">
-                            Limpiar Campos
+                            Limpiar
                         </button>
                     </div>
                 </form>
             </div>
         </section>
+
     </div>
 
     <footer class="site-footer">
         <div class="footer-container">
-            <p>© 2024 Sistema de Control Escolar - CECyT 9</p>
+            <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
         </div>
     </footer>
 
-    <!-- Scripts en orden correcto -->
-    
+    <script src="./JS/navigation.js"></script>
+    <script src="./JS/validaciones.js"></script>
+    <script src="./JS/gestionAlumnos.js"></script>
 </body>
 </html>
