@@ -1,7 +1,13 @@
-import { supabase, supabaseAdmin } from '../database/supabase.js';
+// ============================================================
+// backend/models/Alumno.js
+// ============================================================
+import { supabaseAdmin } from '../database/supabase.js';
 
 class Alumno {
 
+    // ────────────────────────────────────────────────────────
+    // OBTENER DATOS BÁSICOS + INFO
+    // ────────────────────────────────────────────────────────
     static async obtenerBasico(boleta) {
         const { data, error } = await supabaseAdmin
             .from('alumnos')
@@ -40,6 +46,33 @@ class Alumno {
         };
     }
 
+    // ────────────────────────────────────────────────────────
+    // ÚLTIMO REGISTRO HOY — para auto-detectar entrada/salida
+    // Devuelve { id_tipo_registro, fecha_hora } o null
+    // ────────────────────────────────────────────────────────
+    static async ultimoRegistroHoy(boleta) {
+        const hoyInicio = new Date();
+        hoyInicio.setHours(0, 0, 0, 0);
+
+        const hoyFin = new Date();
+        hoyFin.setHours(23, 59, 59, 999);
+
+        const { data, error } = await supabaseAdmin
+            .from('registros_acceso')
+            .select('id_tipo_registro, fecha_hora')
+            .eq('boleta', parseInt(boleta))
+            .gte('fecha_hora', hoyInicio.toISOString())
+            .lte('fecha_hora', hoyFin.toISOString())
+            .order('fecha_hora', { ascending: false })
+            .limit(1);
+
+        if (error || !data || data.length === 0) return null;
+        return data[0];
+    }
+
+    // ────────────────────────────────────────────────────────
+    // BUSCAR (por nombre o boleta)
+    // ────────────────────────────────────────────────────────
     static async buscar(query) {
         const { data, error } = await supabaseAdmin
             .from('alumnos')
@@ -61,6 +94,9 @@ class Alumno {
         }));
     }
 
+    // ────────────────────────────────────────────────────────
+    // VERIFICAR BLOQUEO
+    // ────────────────────────────────────────────────────────
     static async verificarBloqueo(boleta) {
         const { data, error } = await supabaseAdmin
             .from('info_alumno')
@@ -92,6 +128,9 @@ class Alumno {
         return { success: true, message: 'Alumno desbloqueado correctamente.' };
     }
 
+    // ────────────────────────────────────────────────────────
+    // HISTORIAL DE REGISTROS
+    // ────────────────────────────────────────────────────────
     static async obtenerRegistros(boleta) {
         const { data, error } = await supabaseAdmin
             .from('registros_acceso')
@@ -130,15 +169,62 @@ class Alumno {
         return { success: true, id_justificacion: data.id_justificacion };
     }
 
+    // ────────────────────────────────────────────────────────
+    // RESOLVER id_grupo A PARTIR DEL NOMBRE
+    // Nombre de grupo tiene formato: <semestre><turno><numero>
+    //   ej: "3CM1"  = semestre 3, Matutino, grupo 1
+    //   ej: "6IV7"  = semestre 6, vespertIno (V), grupo 7
+    // Solo necesitamos buscar el nombre en la tabla grupos.
+    // ────────────────────────────────────────────────────────
+    static async resolverIdGrupo(nombreGrupo) {
+        if (!nombreGrupo) return null;
+
+        const nombre = String(nombreGrupo).trim().toUpperCase();
+
+        const { data, error } = await supabaseAdmin
+            .from('grupos')
+            .select('id_grupo')
+            .ilike('nombre_grupo', nombre)
+            .single();
+
+        if (error || !data) return null;
+        return data.id_grupo;
+    }
+
+    // ────────────────────────────────────────────────────────
+    // RESOLVER id_estado A PARTIR DEL TEXTO
+    // ────────────────────────────────────────────────────────
+    static async resolverIdEstado(estadoTexto) {
+        if (!estadoTexto) return null;
+
+        const { data, error } = await supabaseAdmin
+            .from('estado_academico')
+            .select('id_estado')
+            .ilike('estado', estadoTexto.trim())
+            .single();
+
+        if (error || !data) return null;
+        return data.id_estado;
+    }
+
+    // ────────────────────────────────────────────────────────
+    // REGISTRAR ALUMNO NUEVO
+    // ────────────────────────────────────────────────────────
     static async registrar(alumnoData) {
-        const { boleta, nombre, id_grupo_base, id_estado_academico, url } = alumnoData;
+        const { boleta, nombre, nombre_grupo, id_estado_academico, url } = alumnoData;
+
+        // Resolver id_grupo desde el nombre (ej: "6IV7")
+        const id_grupo_base = await Alumno.resolverIdGrupo(nombre_grupo);
+        if (!id_grupo_base) {
+            return { success: false, message: `Grupo "${nombre_grupo}" no encontrado en el sistema.` };
+        }
 
         const { error: errorAlumno } = await supabaseAdmin
             .from('alumnos')
             .insert({
                 boleta:              parseInt(boleta),
                 nombre_completo:     nombre,
-                id_grupo_base:       parseInt(id_grupo_base),
+                id_grupo_base,
                 id_estado_academico: parseInt(id_estado_academico)
             });
 
@@ -147,22 +233,31 @@ class Alumno {
         const { error: errorInfo } = await supabaseAdmin
             .from('info_alumno')
             .insert({
-                boleta:    parseInt(boleta),
-                url_foto:  url || 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp'
+                boleta:   parseInt(boleta),
+                url_foto: url || 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp'
             });
 
         if (errorInfo) return { success: false, message: errorInfo.message };
         return { success: true, message: 'Alumno registrado correctamente.' };
     }
 
+    // ────────────────────────────────────────────────────────
+    // MODIFICAR ALUMNO
+    // ────────────────────────────────────────────────────────
     static async modificar(boleta, alumnoData) {
-        const { nombre, id_grupo_base, id_estado_academico, puertas_abiertas, url } = alumnoData;
+        const { nombre, nombre_grupo, id_estado_academico, puertas_abiertas, url } = alumnoData;
+
+        // Resolver id_grupo desde el nombre
+        const id_grupo_base = await Alumno.resolverIdGrupo(nombre_grupo);
+        if (!id_grupo_base) {
+            return { success: false, message: `Grupo "${nombre_grupo}" no encontrado en el sistema.` };
+        }
 
         const { error: errorAlumno } = await supabaseAdmin
             .from('alumnos')
             .update({
                 nombre_completo:     nombre,
-                id_grupo_base:       parseInt(id_grupo_base),
+                id_grupo_base,
                 id_estado_academico: parseInt(id_estado_academico),
                 puertas_abiertas:    puertas_abiertas || false
             })
@@ -180,6 +275,9 @@ class Alumno {
         return { success: true, message: 'Alumno modificado correctamente.' };
     }
 
+    // ────────────────────────────────────────────────────────
+    // CATÁLOGOS
+    // ────────────────────────────────────────────────────────
     static async obtenerGrupos() {
         const { data, error } = await supabaseAdmin
             .from('grupos')

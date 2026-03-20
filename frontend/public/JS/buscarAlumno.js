@@ -827,42 +827,58 @@ class SistemaAlumnos {
         }
     }
 
-    mostrarIncidencias() {
+        mostrarIncidencias() {
         const tbody = document.getElementById('incidents-tbody');
         if (!tbody) return;
-        
+ 
         tbody.innerHTML = '';
-
+ 
         if (this.incidencias.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 2rem;">No se encontraron registros</td>
-                </tr>
-            `;
+                    <td colspan="4" style="text-align:center;padding:2rem">
+                        No se encontraron registros
+                    </td>
+                </tr>`;
             return;
         }
-
-        this.incidencias.forEach((incidencia) => {
+ 
+        this.incidencias.forEach((inc) => {
             const tr = document.createElement('tr');
-            tr.dataset.idRegistro = incidencia.id_registro;
-            
-            const fecha = new Date(incidencia.fecha);
-            const fechaFormateada = fecha.toLocaleDateString('es-MX');
-            const horaFormateada = fecha.toLocaleTimeString('es-MX', { 
-                hour: '2-digit', 
-                minute: '2-digit'
-            });
-
+            tr.dataset.idRegistro = inc.id_registro;
+ 
+            // ─── CORRECCIÓN: usar fecha_hora (no fecha) ───
+            const fechaObj = inc.fecha_hora ? new Date(inc.fecha_hora) : null;
+            const fechaFmt = fechaObj
+                ? fechaObj.toLocaleDateString('es-MX')
+                : '—';
+            const horaFmt  = fechaObj
+                ? fechaObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                : '—';
+ 
+            // ─── CORRECCIÓN: usar punto_acceso (no puerta) ───
+            const puertaFmt = inc.punto_acceso || '—';
+ 
+            // Clase CSS según el tipo
+            const tipoClase = (inc.tipo || '').toLowerCase().replace(/\s+/g, '_');
+ 
+            // Marcar si ya tiene justificación
+            const yaJustificado = inc.justificacion
+                ? '<span title="' + inc.justificacion + '">✅</span> '
+                : '';
+ 
             tr.innerHTML = `
                 <td>
-                    <input type="checkbox" class="incidencia-checkbox" data-id="${incidencia.id_registro}">
-                    ${this.formatearNombrePuerta(incidencia.puerta)}
+                    <input type="checkbox" class="incidencia-checkbox"
+                           data-id="${inc.id_registro}"
+                           ${inc.justificacion ? 'disabled title="Ya justificado"' : ''}>
+                    ${puertaFmt}
                 </td>
-                <td>${fechaFormateada}</td>
-                <td>${horaFormateada}</td>
-                <td class="tipo-${incidencia.tipo}">${this.formatearTipoIncidencia(incidencia.tipo)}</td>
-            `;
-
+                <td>${fechaFmt}</td>
+                <td>${horaFmt}</td>
+                <td class="tipo-${tipoClase}">
+                    ${yaJustificado}${inc.tipo || '—'}
+                </td>`;
             tbody.appendChild(tr);
         });
     }

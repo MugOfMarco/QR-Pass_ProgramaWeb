@@ -3,35 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro</title>
+    <title>Registro QR Pass</title>
     <link rel="stylesheet" href="../css/en_sa.css">
+    <style>
+        /* Badge de movimiento auto-detectado */
+        .badge-movimiento {
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            transition: background 0.3s, color 0.3s;
+        }
+        .badge-idle    { background: #e0e0e0; color: #999; }
+        .badge-entrada { background: #4CAF50; color: #fff; }
+        .badge-salida  { background: #2196F3; color: #fff; }
+
+        .qr-label-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+    </style>
 </head>
 <body>
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
                 <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton">
-                    <img src="../imgs/menu.png" alt="">
+                    <img src="../imgs/menu.png" alt="Menú">
                 </button>
             </div>
-            <h1 class="title">Entrada por Scanner/Manual</h1>
+            <h1 class="title">Entrada / Salida — QR Pass</h1>
             <div class="logo">
-                <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="">
+                <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
             </div>
         </div>
     </header>
 
     <nav class="menu-navegacion">
         <ul id="lista-opciones" class="menu-lista">
-            <li>
-                <a href="./Entrada_Salida.html">Registro de entrada y salida</a>
-            </li>
-            <li>
-                <a href="./BuscarAlumno.html">Buscar alumno</a>
-            </li>
-            <li class="admin-only-link">
-                <a href="./ModificarAlumno.html">Modificar alumno</a>
-            </li>
+            <li><a href="./Entrada_Salida.html">Registro de entrada y salida</a></li>
+            <li><a href="./BuscarAlumno.html">Buscar alumno</a></li>
+            <li class="admin-only-link"><a href="./ModificarAlumno.html">Modificar alumno</a></li>
         </ul>
     </nav>
 
@@ -42,39 +59,31 @@
         <h2 id="status-message">Esperando registro...</h2>
 
         <div class="main-container">
-            <!-- COLUMNA IZQUIERDA: Puerta y Foto -->
+            <!-- COLUMNA IZQUIERDA: Puerta + Foto -->
             <section>
                 <div class="container">
                     <fieldset class="option-group">
                         <legend>Puerta de ingreso</legend>
-                        <input type="radio" id="mexico-tacuba" name="puerta" value="mexico-tacuba" checked required>
-                        <label for="mexico">México-Tacuba</label>
-                        <input type="radio" id="mar" name="puerta" value="mar" required>
-                        <label for="mar">Mar-Mediterraneo</label>
+                        <input type="radio" id="mexico-tacuba" name="puerta" value="mexico-tacuba" checked>
+                        <label for="mexico-tacuba">México-Tacuba</label>
+                        <input type="radio" id="mar" name="puerta" value="mar">
+                        <label for="mar">Mar-Mediterráneo</label>
                     </fieldset>
-                    
-                    <!-- AQUÍ VA LA FOTO DEL ALUMNO -->
-                     <div class="placeholder-box Registro">
-                        <div class="inner-box">
-                            <!-- Mensajes de registro aparecen aquí -->
-                        </div>
+
+                    <div class="placeholder-box Registro">
+                        <div class="inner-box"></div>
                     </div>
-                    
                 </div>
             </section>
 
-            <!-- COLUMNA DERECHA: Tipo y Resultado -->
+            <!-- COLUMNA DERECHA: Foto del alumno -->
             <section>
                 <div class="container">
-                    <fieldset class="option-group">
-                        <legend>Tipo</legend>
-                        <input type="radio" id="entrada" name="tipo" value="entrada" checked required>
-                        <label for="entrada">Entrada</label>
-                        <input type="radio" id="salida" name="tipo" value="salida" required>
-                        <label for="salida">Salida</label>
-                    </fieldset>
-                    
-                    <!-- AQUÍ VA EL MENSAJE DE ENTRADA/SALIDA -->
+                    <!-- Badge que muestra ENTRADA o SALIDA auto-detectada -->
+                    <div style="text-align:center; margin-bottom: 8px;">
+                        <span id="tipo-movimiento-display" class="badge-movimiento badge-idle">—</span>
+                    </div>
+
                     <div class="placeholder-box info-box" id="info-box">
                         <img id="student-photo" src="" alt="Foto del alumno" style="display: none;">
                     </div>
@@ -82,40 +91,45 @@
             </section>
         </div>
 
+        <!-- CAMPOS DE SALIDA -->
         <div class="column-outputs">
             <div class="text-entry field">
-                <label for="qr-input">Registro por QR</label>
-                <input type="text" id="boleta-input" name="qr-input" class="qr-input-url">
+                <div class="qr-label-row">
+                    <label for="boleta-input">Registro por QR / Boleta</label>
+                </div>
+                <input type="text" id="boleta-input" name="qr-input" class="qr-input-url"
+                       placeholder="Escanea o escribe la boleta y presiona Enter"
+                       autocomplete="off">
             </div>
 
             <div class="text-entry field">
-                <label for="nombre">Nombre</label>
+                <label for="nombre-output">Nombre</label>
                 <input type="text" id="nombre-output" name="nombre" readonly>
             </div>
 
             <div class="text-entry field">
-                <label for="boleta">Boleta</label>
+                <label for="boleta-output">Boleta</label>
                 <input type="text" id="boleta-output" name="boleta" readonly>
             </div>
 
             <div class="text-entry field">
-                <label for="horario">Horario</label>
+                <label for="horario-output">Horario</label>
                 <input type="text" id="horario-output" name="horario" readonly>
             </div>
 
             <div class="text-entry field">
-                <label for="grupo">Grupo</label>
+                <label for="grupo-output">Grupo</label>
                 <input type="text" id="grupo-output" name="grupo" readonly>
             </div>
 
             <div class="container-outputs">
                 <div class="text-entry field">
                     <input type="text" id="retardos-output" name="retardos" readonly>
-                    <label for="retardos">Retardos</label>
+                    <label for="retardos-output">Retardos</label>
                 </div>
                 <div class="text-entry field">
                     <input type="text" id="sin-credencial-output" name="sin-credencial" readonly>
-                    <label for="sin-credencial">Sin credencial</label>
+                    <label for="sin-credencial-output">Sin credencial</label>
                 </div>
             </div>
         </div>
