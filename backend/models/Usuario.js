@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 class Usuario {
 
-    // ─── Obtener por username (login) ─────────────────────────
+    // ── Login ─────────────────────────────────────────────────
     static async obtenerPorUsername(usuario) {
         const { data, error } = await supabaseAdmin
             .from('usuarios_sistema')
@@ -13,22 +13,26 @@ class Usuario {
                 nombre_completo, email, activo,
                 roles ( nombre_rol )
             `)
-            .eq('usuario', usuario)
+            .eq('usuario', usuario.trim())
             .eq('activo', true)
             .single();
 
         if (error || !data) return null;
+
+        // FIX: null-safe — si la FK de rol está rota no crashea
+        const rol = data.roles?.nombre_rol ?? 'Vigilante';
+
         return {
             id_usuario:      data.id_usuario,
             usuario:         data.usuario,
             password:        data.password_hash,
             nombre_completo: data.nombre_completo,
-            email:           data.email,
-            tipo_usuario:    data.roles.nombre_rol,
+            email:           data.email ?? null,
+            tipo_usuario:    rol,
         };
     }
 
-    // ─── Listar todos los usuarios (para el admin) ────────────
+    // ── Listar todos ──────────────────────────────────────────
     static async listar() {
         const { data, error } = await supabaseAdmin
             .from('usuarios_sistema')
@@ -44,15 +48,15 @@ class Usuario {
             id_usuario:      u.id_usuario,
             usuario:         u.usuario,
             nombre_completo: u.nombre_completo,
-            email:           u.email,
+            email:           u.email ?? null,
             activo:          u.activo,
             fecha_creacion:  u.fecha_creacion,
-            id_rol:          u.roles?.id_rol,
-            rol:             u.roles?.nombre_rol,
+            id_rol:          u.roles?.id_rol   ?? null,
+            rol:             u.roles?.nombre_rol ?? '—',
         }));
     }
 
-    // ─── Obtener un usuario por ID ────────────────────────────
+    // ── Obtener por ID ────────────────────────────────────────
     static async obtenerPorId(id) {
         const { data, error } = await supabaseAdmin
             .from('usuarios_sistema')
@@ -69,25 +73,22 @@ class Usuario {
             id_usuario:      data.id_usuario,
             usuario:         data.usuario,
             nombre_completo: data.nombre_completo,
-            email:           data.email,
+            email:           data.email ?? null,
             activo:          data.activo,
-            id_rol:          data.roles?.id_rol,
-            rol:             data.roles?.nombre_rol,
+            id_rol:          data.roles?.id_rol    ?? null,
+            rol:             data.roles?.nombre_rol ?? '—',
         };
     }
 
-    // ─── Crear usuario nuevo ──────────────────────────────────
+    // ── Crear ─────────────────────────────────────────────────
     static async crear({ usuario, password, nombre_completo, email, id_rol }) {
-        // Verificar que el username no exista
         const { data: existe } = await supabaseAdmin
             .from('usuarios_sistema')
             .select('id_usuario')
             .eq('usuario', usuario.trim())
             .maybeSingle();
-
         if (existe) return { success: false, message: `El usuario "${usuario}" ya existe.` };
 
-        // Verificar email único si se proporcionó
         if (email) {
             const { data: emailExiste } = await supabaseAdmin
                 .from('usuarios_sistema')
@@ -116,9 +117,8 @@ class Usuario {
         return { success: true, message: 'Usuario creado correctamente.', id_usuario: data.id_usuario };
     }
 
-    // ─── Modificar datos de un usuario ───────────────────────
+    // ── Modificar ─────────────────────────────────────────────
     static async modificar(id, { nombre_completo, email, id_rol, activo }) {
-        // Verificar email único (excluyendo al propio usuario)
         if (email) {
             const { data: emailExiste } = await supabaseAdmin
                 .from('usuarios_sistema')
@@ -126,42 +126,37 @@ class Usuario {
                 .eq('email', email.trim().toLowerCase())
                 .neq('id_usuario', parseInt(id))
                 .maybeSingle();
-            if (emailExiste) return { success: false, message: 'Ese correo ya está registrado en otro usuario.' };
+            if (emailExiste) return { success: false, message: 'Ese correo ya está en otro usuario.' };
         }
 
-        const updateData = {
+        const patch = {
             nombre_completo: nombre_completo.trim(),
             email:           email ? email.trim().toLowerCase() : null,
             id_rol:          parseInt(id_rol),
         };
-
-        // activo solo lo toca el admin (no dejamos que alguien se desactive a sí mismo desde aquí)
-        if (activo !== undefined) updateData.activo = Boolean(activo);
+        if (activo !== undefined) patch.activo = Boolean(activo);
 
         const { error } = await supabaseAdmin
             .from('usuarios_sistema')
-            .update(updateData)
+            .update(patch)
             .eq('id_usuario', parseInt(id));
 
         if (error) return { success: false, message: error.message };
-        return { success: true, message: 'Usuario actualizado correctamente.' };
+        return { success: true, message: 'Usuario actualizado.' };
     }
 
-    // ─── Cambiar contraseña ───────────────────────────────────
-    // El admin puede cambiar la de cualquiera (sin verificar actual)
-    // El usuario puede cambiar la suya si verifica la actual
+    // ── Cambiar contraseña ────────────────────────────────────
     static async cambiarPassword(id, { password_actual, password_nueva, esAdmin = false }) {
         if (!esAdmin) {
-            // Usuario cambia la suya — debe verificar la actual
-            const { data, error } = await supabaseAdmin
+            const { data } = await supabaseAdmin
                 .from('usuarios_sistema')
                 .select('password_hash')
                 .eq('id_usuario', parseInt(id))
                 .single();
 
-            if (error || !data) return { success: false, message: 'Usuario no encontrado.' };
+            if (!data) return { success: false, message: 'Usuario no encontrado.' };
 
-            const valida = await bcrypt.compare(password_actual, data.password_hash);
+            const valida = await bcrypt.compare(password_actual ?? '', data.password_hash);
             if (!valida) return { success: false, message: 'La contraseña actual es incorrecta.' };
         }
 
@@ -170,7 +165,6 @@ class Usuario {
         }
 
         const hash = await bcrypt.hash(password_nueva, 10);
-
         const { error } = await supabaseAdmin
             .from('usuarios_sistema')
             .update({ password_hash: hash })
@@ -180,29 +174,26 @@ class Usuario {
         return { success: true, message: 'Contraseña actualizada correctamente.' };
     }
 
-    // ─── Desactivar usuario (baja lógica) ────────────────────
+    // ── Desactivar / Reactivar ────────────────────────────────
     static async desactivar(id) {
         const { error } = await supabaseAdmin
             .from('usuarios_sistema')
             .update({ activo: false })
             .eq('id_usuario', parseInt(id));
-
         if (error) return { success: false, message: error.message };
         return { success: true, message: 'Usuario desactivado.' };
     }
 
-    // ─── Reactivar usuario ────────────────────────────────────
     static async reactivar(id) {
         const { error } = await supabaseAdmin
             .from('usuarios_sistema')
             .update({ activo: true })
             .eq('id_usuario', parseInt(id));
-
         if (error) return { success: false, message: error.message };
         return { success: true, message: 'Usuario reactivado.' };
     }
 
-    // ─── Listar roles disponibles ─────────────────────────────
+    // ── Roles ─────────────────────────────────────────────────
     static async obtenerRoles() {
         const { data, error } = await supabaseAdmin
             .from('roles')

@@ -1,18 +1,16 @@
-// ============================================================
-// backend/app.js — VERSIÓN LIMPIA (sin MySQL, sin server.js)
-// ============================================================
+// backend/app.js — ÚNICO punto de entrada
 import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import path from 'path';
-import session from 'express-session';
+import express      from 'express';
+import cors         from 'cors';
+import path         from 'path';
+import session      from 'express-session';
 import { fileURLToPath } from 'url';
 
 import authRoutes      from './routes/auth.routes.js';
 import alumnosRoutes   from './routes/alumnos.routes.js';
 import registrosRoutes from './routes/registros.routes.js';
 import uploadRoutes    from './routes/upload.routes.js';
-
+import usuariosRoutes  from './routes/usuarios.routes.js';   // ← FIX: import faltante
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -26,12 +24,11 @@ const PORT = process.env.SERVER_PORT || 3000;
 app.use(cors({
     origin: [
         process.env.FRONTEND_URL || 'http://localhost:3000',
-        'http://127.0.0.1:3000'   // dev: cubre ambos orígenes
+        'http://127.0.0.1:3000',
     ],
-    credentials: true
+    credentials: true,
 }));
 
-// ── BODY PARSERS ──────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -42,26 +39,23 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        secure:   false,            // cambiar a true en producción con HTTPS
+        secure:   false,
         sameSite: 'lax',
-        maxAge:   1000 * 60 * 60 * 8  // 8 horas
-    }
+        maxAge:   1000 * 60 * 60 * 8,
+    },
 }));
 
 // ── RUTAS API ─────────────────────────────────────────────────
-// Auth pública (contiene el login)
 app.use('/api/auth',      authRoutes);
-
-// Las demás tienen requireAuth + requireRole internos en cada ruta
 app.use('/api/alumnos',   alumnosRoutes);
 app.use('/api/registros', registrosRoutes);
 app.use('/api/upload',    uploadRoutes);
-app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/usuarios',  usuariosRoutes);   // ← FIX: montaje faltante
 
-// ── ARCHIVOS ESTÁTICOS DEL FRONTEND ──────────────────────────
+// ── ARCHIVOS ESTÁTICOS ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
     extensions: ['html', 'css', 'js'],
-    index:      false
+    index:      false,
 }));
 
 // ── PROTECCIÓN DE VISTAS HTML POR ROL ────────────────────────
@@ -69,31 +63,41 @@ app.use((req, res, next) => {
     const ruta = req.path;
     if (!ruta.endsWith('.html')) return next();
 
-    const paginasPublicas = ['/login.html', '/index.html'];
-    if (paginasPublicas.includes(ruta)) return next();
-
+    const publicas = ['/login.html', '/index.html'];
+    if (publicas.includes(ruta)) return next();
     if (!req.session.user) return res.redirect('/login.html');
 
-    const { tipo } = req.session.user;
-    const soloAdmin = ['/ModificarAlumno.html', '/RegistrarAlumno.html', '/DescargasBD.html'];
+    const tipo = req.session.user.tipo;
+    const soloAdmin = [
+        '/ModificarAlumno.html',
+        '/RegistrarAlumno.html',
+        '/DescargasBD.html',
+        '/GestionUsuarios.html',
+    ];
     if (soloAdmin.includes(ruta) && tipo !== 'Administrador') {
         return res.status(403).send('<h1>Acceso Denegado</h1><a href="/">Volver</a>');
     }
-
     next();
 });
 
-// ── RAÍZ: REDIRIGE SEGÚN ROL ──────────────────────────────────
+// ── RAÍZ ──────────────────────────────────────────────────────
 app.get('/', (req, res) => {
     if (!req.session.user) return res.redirect('/login.html');
-    if (req.session.user.tipo === 'Administrador') return res.redirect('/menu.html');
-    return res.redirect('/Entrada_Salida.html');
+    return req.session.user.tipo === 'Administrador'
+        ? res.redirect('/menu.html')
+        : res.redirect('/Entrada_Salida.html');
 });
 
 // ── RUTAS HTML EXPLÍCITAS ─────────────────────────────────────
 [
-    '/login.html', '/Entrada_Salida.html', '/BuscarAlumno.html',
-    '/DescargasBD.html', '/ModificarAlumno.html', '/RegistrarAlumno.html', '/menu.html'
+    '/login.html',
+    '/Entrada_Salida.html',
+    '/BuscarAlumno.html',
+    '/DescargasBD.html',
+    '/ModificarAlumno.html',
+    '/RegistrarAlumno.html',
+    '/GestionUsuarios.html',   // ← FIX: faltaba
+    '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>
         res.sendFile(path.join(__dirname, '..', 'frontend', 'public', ruta))
@@ -112,12 +116,12 @@ app.use((req, res) => {
 });
 
 // ── ERROR GLOBAL ──────────────────────────────────────────────
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
     console.error('Error Crítico:', err.stack);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
 });
 
-// ── ARRANQUE CON PING A SUPABASE ─────────────────────────────
+// ── ARRANQUE ──────────────────────────────────────────────────
 async function iniciarServidor() {
     try {
         const { error } = await supabaseAdmin
@@ -125,15 +129,14 @@ async function iniciarServidor() {
             .select('id_config')
             .limit(1);
 
-        if (error) throw new Error(`Supabase no responde: ${error.message}`);
+        if (error) throw new Error(`Supabase: ${error.message}`);
 
         console.log('✅ Conexión a Supabase establecida');
-        app.listen(PORT, () => {
-            console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-        });
-
+        app.listen(PORT, () =>
+            console.log(`🚀 Servidor en http://localhost:${PORT}`)
+        );
     } catch (err) {
-        console.error('❌ Error al iniciar el servidor:', err.message);
+        console.error('❌ Error al iniciar:', err.message);
         process.exit(1);
     }
 }
