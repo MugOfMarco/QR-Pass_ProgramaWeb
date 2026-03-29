@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Alumnos - QR Pass</title>
+    <link rel="stylesheet" href="/css/en_sa.css">
+    <style>
+        .search-wrapper { max-width: 1400px; margin: 0 auto; padding: 2rem; width: 100%; }
+        .register-subtitle { text-align: center; font-size: 1.5rem; font-weight: 800; color: #111; margin-bottom: 1.5rem; }
+        .search-bar-container { margin-bottom: 2rem; }
+        .search-label { color: #d32f2f; font-size: 1.4rem; font-weight: 800; display: block; margin-bottom: 0.5rem; }
+        .search-input { width: 100%; padding: 12px 20px; font-size: 1.1rem; border: 2px solid #333; border-radius: 15px; outline: none; transition: border-color 0.3s; }
+        .search-input:focus { border-color: #5c1f33; }
+        .datos-label { font-weight: 800; font-size: 1.2rem; background-color: white; padding: 5px 20px; border-radius: 10px; display: inline-block; margin-bottom: -10px; position: relative; z-index: 10; }
+        .layout-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 2rem; align-items: start; }
+        
+        .student-list-container { width: 100%; }
+        .student-list { border: 2px solid #000; background-color: white; border-radius: 4px; min-height: 200px;}
+        .student-row { display: flex; align-items: center; border-bottom: 2px solid #000; min-height: 80px; }
+        .student-row:last-child { border-bottom: none; }
+        .student-icon { padding: 1rem; width: 80px; display: flex; justify-content: center; align-items: center; border-right: 2px solid #000; }
+        .student-icon svg { width: 40px; height: 40px; }
+        .student-data { padding: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; width: 100%; font-size: 0.95rem; }
+        .student-data strong { font-weight: 800; }
+        
+        .filters-panel { border: 2px solid #000; border-radius: 15px; background-color: white; overflow: hidden; display: flex; flex-direction: column; }
+        .filters-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; font-weight: 800; font-size: 1.1rem; border-bottom: 2px solid #000; }
+        .filter-section { padding: 10px 15px; border-bottom: 2px solid #000; }
+        .filter-section:last-child { border-bottom: none; }
+        .filter-section h4 { margin-bottom: 8px; font-size: 1rem; font-weight: 800; text-align: center; }
+        .filter-label { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.9rem; color: #555; cursor: pointer; }
+        .filter-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #5c1f33; }
+        
+        .btn-pdf { width: 100%; background-color: #e53935; color: white; font-weight: 800; font-size: 1.1rem; padding: 12px; border: 2px solid #000; border-radius: 10px; cursor: pointer; margin-top: 15px; transition: background-color 0.3s; }
+        .btn-pdf:hover { background-color: #c62828; }
+        
+        @media (max-width: 1024px) { .layout-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="Boton-nav">
+                <button type="button" id="menu-toggle-btn">
+                    <img src="/imgs/menu.png" alt="Menú">
+                </button>
+            </div>
+            <h1 class="title">Gestión de Alumnos</h1>
+            <div class="logo">
+                <img src="/imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+            </div>
+        </div>
+    </header>
+
+    <nav class="menu-navegacion">
+        <ul id="lista-opciones" class="menu-lista">
+            <li><a href="/Entrada_Salida.html">Registro de entrada y salida</a></li>
+            <li><a href="/BuscarAlumno.html">Buscar alumno</a></li>
+            <li class="admin-only-link"><a href="/ModificarAlumno.html">Modificar alumno</a></li>
+            <li class="admin-only-link"><a href="/GestionUsuarios.html">Gestión de usuarios</a></li>
+        </ul>
+    </nav>
+    <div id="menu-overlay" class="menu-overlay"></div>
+
+    <div class="search-wrapper">
+        <div class="register-subtitle">
+            <a href="/RegistrarAlumno.html" style="color: black; text-decoration: none;">Registrar Nuevo Alumno</a>
+        </div>
+
+        <div class="search-bar-container">
+            <label class="search-label">Buscar alumnos</label>
+            <form id="search-form" onsubmit="event.preventDefault();">
+                <input type="text" id="search-input" class="search-input" placeholder="Ingresa nombre o boleta...">
+            </form>
+        </div>
+
+        <div class="layout-grid">
+            <div class="student-list-container">
+                <span class="datos-label">Datos</span>
+                <div class="student-list" id="student-list-container"></div>
+            </div>
+
+            <div class="filters-sidebar">
+                <form id="filtros-form">
+                    <div class="filters-panel">
+                        <div class="filters-header">
+                            Filtros 
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        </div>
+                        
+                        <div class="filter-section">
+                            <h4>Turno</h4>
+                            <label class="filter-label"><input type="radio" name="turno" value="Matutino"> Matutino</label>
+                            <label class="filter-label"><input type="radio" name="turno" value="Vespertino"> Vespertino</label>
+                        </div>
+
+                        <div class="filter-section">
+                            <h4>Puertas abiertas</h4>
+                            <label class="filter-label"><input type="radio" name="puertas" value="true"> Si</label>
+                            <label class="filter-label"><input type="radio" name="puertas" value="false"> No</label>
+                        </div>
+
+                        <div class="filter-section">
+                            <h4>Situacion academica</h4>
+                            <label class="filter-label"><input type="radio" name="estado" value="Regular"> Regular</label>
+                            <label class="filter-label"><input type="radio" name="estado" value="Creditos"> Creditos</label>
+                            <label class="filter-label"><input type="radio" name="estado" value="Dictamen"> Dictamen</label>
+                        </div>
+                    </div>
+                </form>
+
+                <button class="btn-pdf" type="button">Descargar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/JS/navigation.js"></script>
+    <script src="/JS/filtrarAlumnos.js"></script>
+</body>
+</html>

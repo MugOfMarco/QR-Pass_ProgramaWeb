@@ -33,12 +33,28 @@ class SistemaAlumnos {
 
             this.initEventListeners();
             this.configureButtonsByRole();
+
+            // =========================================================
+            // NUEVO: LEER LA BOLETA DESDE LA URL (Query String)
+            // =========================================================
+            const urlParams = new URLSearchParams(window.location.search);
+            const boletaParam = urlParams.get('boleta'); // Extrae "12345" de ?boleta=12345
+            
+            if (boletaParam) {
+                // 1. Llenamos el input visualmente para que el admin lo vea
+                const inputBoleta = document.getElementById('search-boleta-inc');
+                if (inputBoleta) inputBoleta.value = boletaParam;
+                
+                // 2. Disparamos la búsqueda automáticamente
+                this.buscarAlumno(boletaParam);
+            }
+            // =========================================================
+
         } catch (e) {
             console.error('Error verificando auth:', e);
             window.location.href = '/login.html';
         }
     }
-
     // ─────────────────────────────────────────────────────────
     // EVENTOS
     // ─────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 // backend/controllers/usuarios.controller.js
+// RENOMBRA el archivo actual "usuario.controller.js" a "usuarios.controller.js"
 import Usuario from '../models/Usuario.js';
 import sanitizeHtml from 'sanitize-html';
 
@@ -6,7 +7,6 @@ const s = (v) => typeof v === 'string'
     ? sanitizeHtml(v, { allowedTags: [], allowedAttributes: {} }).trim()
     : v;
 
-// ── GET /api/usuarios ─────────────────────────────────────────
 export const listarUsuarios = async (_req, res) => {
     try {
         const usuarios = await Usuario.listar();
@@ -16,7 +16,6 @@ export const listarUsuarios = async (_req, res) => {
     }
 };
 
-// ── GET /api/usuarios/roles ───────────────────────────────────
 export const listarRoles = async (_req, res) => {
     try {
         const roles = await Usuario.obtenerRoles();
@@ -26,7 +25,6 @@ export const listarRoles = async (_req, res) => {
     }
 };
 
-// ── GET /api/usuarios/:id ─────────────────────────────────────
 export const obtenerUsuario = async (req, res) => {
     try {
         const usuario = await Usuario.obtenerPorId(req.params.id);
@@ -37,7 +35,6 @@ export const obtenerUsuario = async (req, res) => {
     }
 };
 
-// ── POST /api/usuarios ────────────────────────────────────────
 export const crearUsuario = async (req, res) => {
     try {
         const { usuario, password, nombre_completo, email, id_rol } = req.body;
@@ -51,7 +48,7 @@ export const crearUsuario = async (req, res) => {
 
         const result = await Usuario.crear({
             usuario:         s(usuario),
-            password,                       // no sanitizar — es la contraseña
+            password,
             nombre_completo: s(nombre_completo),
             email:           email ? s(email) : null,
             id_rol,
@@ -66,7 +63,6 @@ export const crearUsuario = async (req, res) => {
     }
 };
 
-// ── PUT /api/usuarios/:id ─────────────────────────────────────
 export const modificarUsuario = async (req, res) => {
     try {
         const { nombre_completo, email, id_rol, activo } = req.body;
@@ -75,7 +71,6 @@ export const modificarUsuario = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Faltan campos obligatorios.' });
         }
 
-        // Un usuario no puede cambiar su propio rol ni desactivarse a sí mismo
         const esElMismo = req.session.user?.id === parseInt(req.params.id);
         if (esElMismo && activo === false) {
             return res.status(400).json({ success: false, message: 'No puedes desactivarte a ti mismo.' });
@@ -96,9 +91,6 @@ export const modificarUsuario = async (req, res) => {
     }
 };
 
-// ── PUT /api/usuarios/:id/password ───────────────────────────
-// Admin cambia la de cualquiera sin verificar actual
-// Usuario cambia la suya verificando la actual
 export const cambiarPassword = async (req, res) => {
     try {
         const { password_actual, password_nueva } = req.body;
@@ -106,11 +98,9 @@ export const cambiarPassword = async (req, res) => {
         const esAdmin      = req.session.user?.tipo === 'Administrador';
         const esElMismo    = req.session.user?.id   === idSolicitado;
 
-        // Solo el admin o el propio usuario pueden cambiar una contraseña
         if (!esAdmin && !esElMismo) {
             return res.status(403).json({ success: false, message: 'Sin permisos.' });
         }
-
         if (!password_nueva) {
             return res.status(400).json({ success: false, message: 'La nueva contraseña es requerida.' });
         }
@@ -129,7 +119,6 @@ export const cambiarPassword = async (req, res) => {
     }
 };
 
-// ── PUT /api/usuarios/:id/desactivar ─────────────────────────
 export const desactivarUsuario = async (req, res) => {
     try {
         if (req.session.user?.id === parseInt(req.params.id)) {
@@ -144,7 +133,6 @@ export const desactivarUsuario = async (req, res) => {
     }
 };
 
-// ── PUT /api/usuarios/:id/reactivar ──────────────────────────
 export const reactivarUsuario = async (req, res) => {
     try {
         const result = await Usuario.reactivar(req.params.id);

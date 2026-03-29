@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Alumnos — CECyT 9</title>
+    <title>Registrar/Modificar Alumno — CECyT 9</title>
     <link rel="stylesheet" href="../css/modificarAlumno.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
                     <img src="../imgs/menu.png" alt="Menú">
                 </button>
             </div>
-            <h1 class="title">Gestión de Alumnos</h1>
+            <h1 class="title">Registrar/Modificar alumno</h1>
             <div class="logo">
                 <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
             </div>
@@ -25,146 +25,111 @@
         <ul id="lista-opciones" class="menu-lista">
             <li><a href="./Entrada_Salida.html">Registro de entrada y salida</a></li>
             <li><a href="./BuscarAlumno.html">Buscar alumno</a></li>
-            <li class="admin-only-link">
-                <a href="./ModificarAlumno.html">Modificar alumno</a>
-            </li>
+            <li class="admin-only-link"><a href="./ModificarAlumno.html">Modificar alumno</a></li>
         </ul>
     </nav>
     <div id="menu-overlay" class="menu-overlay"></div>
 
-    <div class="main-container">
+    <div class="main-wrapper">
+        <h2 class="page-subtitle">Registrar Nuevo Alumno</h2>
 
-        <!-- ── Columna izquierda: búsqueda ─────────────────── -->
-        <section class="student-search-section">
-            <div class="container">
-                <h2 class="section-title">Buscar Alumno</h2>
-                <div class="input-group">
-                    <label for="search-boleta" class="label-highlight">Boleta</label>
-                    <input type="text" id="search-boleta"
-                           placeholder="Ingresa la boleta…"
-                           maxlength="10" autocomplete="off">
-                </div>
-                <div class="action-button-container">
-                    <button type="button" id="btn-buscar">Buscar</button>
+        <div class="top-search-bar">
+            <div class="search-group">
+                <label for="search-boleta" class="text-red">Ingresar boleta</label>
+                <div class="search-input-wrapper">
+                    <input type="text" id="search-boleta" maxlength="10" autocomplete="off">
+                    <button type="button" id="btn-buscar" class="btn-dark">Buscar alumno</button>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- ── Columna derecha: formulario ─────────────────── -->
-        <section class="student-form-section">
-            <div class="container">
-                <h2 class="section-title" id="form-title">Registrar Nuevo Alumno</h2>
-
-                <!-- Preview foto -->
-                <div class="photo-preview-container">
-                    <div id="photo-preview" class="photo-preview">
-                        <img id="preview-image" crossorigin="anonymous"
-                             alt="Vista previa" style="display:none;">
-                        <div id="no-photo-message">Sin foto seleccionada</div>
-                    </div>
-                    <button type="button" id="btn-remove-photo" style="display:none;">
-                        × Quitar foto
-                    </button>
-                </div>
-
-                <form id="student-form" autocomplete="off">
-                    <fieldset class="student-data-form">
-                        <legend id="fieldset-legend">Datos del Alumno</legend>
-
-                        <!-- Foto -->
-                        <div class="field">
-                            <label for="form-foto">Foto</label>
-                            <input type="file" id="form-foto"
-                                   accept="image/jpeg,image/png,image/gif,image/webp"
-                                   class="input-foto">
-                            <small class="form-text">JPG · PNG · GIF · WebP — máx 5 MB</small>
+        <div class="form-card">
+            <span class="card-label">Datos del alumno</span>
+            
+            <form id="student-form" autocomplete="off">
+                <div class="form-grid">
+                    
+                    <div class="left-col">
+                        <div class="field custom-file-upload">
+                            <label>Foto de Alumno</label>
+                            <div class="file-input-wrapper">
+                                <button type="button" class="btn-file" onclick="document.getElementById('form-foto').click()">Selecciona un archivo</button>
+                                <span class="file-name" id="file-name-display">Sin archivos seleccionados</span>
+                                <input type="file" id="form-foto" accept="image/jpeg,image/png,image/gif" style="display: none;">
+                            </div>
+                            <small class="helper-text">Formatos: JPG, PNG, GIF. MAX: 5MB</small>
                         </div>
 
-                        <!-- Boleta -->
                         <div class="field">
                             <label for="form-boleta">Boleta</label>
-                            <input type="text" id="form-boleta"
-                                   maxlength="10" required
-                                   placeholder="10 dígitos">
+                            <input type="text" id="form-boleta" maxlength="10" required>
                         </div>
 
-                        <!-- Nombre -->
                         <div class="field">
-                            <label for="form-nombre">Nombre completo</label>
-                            <input type="text" id="form-nombre"
-                                   maxlength="200" required
-                                   class="input-solo-letras"
-                                   placeholder="Apellidos Nombre">
+                            <label for="form-nombre">Nombre de Alumno</label>
+                            <input type="text" id="form-nombre" maxlength="200" required class="input-solo-letras">
                         </div>
 
-                        <!-- Grupo — SELECT poblado dinámicamente desde BD -->
                         <div class="field">
                             <label for="form-grupo">Grupo</label>
-                            <select id="form-grupo" required>
-                                <option value="">Cargando grupos…</option>
-                            </select>
+                            <input type="text" id="form-grupo" required> 
                         </div>
 
-                        <!-- Materias extra (irregulares) -->
                         <div class="field">
-                            <label>Materias extra <small>(solo irregulares)</small></label>
-                            <div id="contenedor-horario-dinamico"
-                                 class="horario-container"
-                                 style="border:1px solid #ccc;padding:10px;
-                                        border-radius:5px;min-height:50px;">
-                            </div>
-                            <button type="button" id="btn-agregar-clase"
-                                    class="button-secondary"
-                                    style="margin-top:8px;font-size:.9em;
-                                           width:auto;padding:5px 15px;">
-                                + Agregar materia
-                            </button>
-                        </div>
-
-                        <!-- Estado académico — SELECT poblado dinámicamente desde BD -->
-                        <div class="field">
-                            <label for="form-estatus">Estado académico</label>
+                            <label for="form-estatus">Estatus</label>
                             <select id="form-estatus" required>
-                                <option value="">Cargando estados…</option>
+                                <option value="Activo">Activo</option>
+                                <option value="Baja">Baja</option>
                             </select>
                         </div>
 
-                        <!-- Puertas abiertas -->
                         <div class="checkbox-field">
                             <input type="checkbox" id="form-puertas-abiertas">
-                            <label for="form-puertas-abiertas">
-                                Permitir puertas abiertas
-                            </label>
+                            <label for="form-puertas-abiertas" class="bold-label">Permitir puertas abiertas</label>
+                        </div>
+                    </div>
+
+                    <div class="right-col">
+                        
+                        <div class="photo-preview-box">
+                            <span id="no-photo-message">No hay foto seleccionada</span>
+                            <img id="preview-image" src="" alt="Vista previa" style="display:none;">
                         </div>
 
-                    </fieldset>
+                        <div class="horario-section">
+                            <label class="bold-label">Horario escolar</label>
+                            <div class="horario-box">
+                                
+                                <div class="fila-horario-mock">
+                                    <input type="text" value="Lun" readonly class="input-dia-mock">
+                                    <input type="text" value="7:00 a. m." readonly class="input-hora-mock">
+                                    <div class="hora-row">
+                                        <input type="text" value="8:30 a. m." readonly class="input-hora-mock">
+                                        <span class="dots">...</span>
+                                    </div>
+                                    <div class="materia-row">
+                                        <select class="select-materia-mock"><option>Seleccionar Materia...</option></select>
+                                        <span class="icon-close">⊗</span>
+                                    </div>
+                                </div>
 
-                    <div class="action-buttons">
-                        <button type="submit" id="btn-guardar" class="button-primary">
-                            Registrar Alumno
-                        </button>
-                        <button type="button" id="btn-eliminar" class="button-danger"
-                                style="display:none;">
-                            Dar de Baja
-                        </button>
-                        <button type="button" id="btn-cancelar" class="button-secondary">
-                            Limpiar
-                        </button>
+                                <button type="button" id="btn-agregar-clase" class="btn-add-materia">+ Agregar Materia</button>
+                            </div>
+                        </div>
+
                     </div>
-                </form>
-            </div>
-        </section>
-
+                </div> <div class="form-actions">
+                    <button type="submit" id="btn-guardar" class="btn-dark">Registrar alumno</button>
+                    <button type="button" id="btn-cancelar" class="btn-outline">Limpiar campos</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <footer class="site-footer">
-        <div class="footer-container">
-            <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
-        </div>
+        <div class="footer-container"><p>© 2026 Sistema de Control Escolar — CECyT 9</p></div>
     </footer>
 
     <script src="./JS/navigation.js"></script>
-    <script src="./JS/validaciones.js"></script>
-    <script src="./JS/gestionAlumnos.js"></script>
-</body>
+    </body>
 </html>

@@ -97,13 +97,86 @@ export const obtenerAlumno = async (req, res) => {
     }
 };
 
-// ── GET /api/alumnos/buscar/alumnos?query= ───────────────────
+// ── GET /api/alumnos/buscar/alumnos ──────────────────────────
 export const buscarAlumnos = async (req, res) => {
     try {
-        const alumnos = await Alumno.buscar(sanitize(req.query.query || ''));
-        return res.json({ success: true, alumnos });
+        // 1. Extraemos y sanitizamos todos los posibles filtros del frontend
+        const q       = sanitize(req.query.q || '');
+        const puertas = sanitize(req.query.puertas || '');
+        const turno   = sanitize(req.query.turno || '');
+        const estado  = sanitize(req.query.estado || '');
+        const espa    = sanitize(req.query.espa || '');
+
+        // 2. Iniciamos la consulta base a Supabase uniendo las tablas necesarias
+        // Usamos inner joins y left joins explícitos para traer nombres y no solo IDs
+        let query = supabaseAdmin
+            .from('alumnos')
+            .select(`
+                boleta, 
+                nombre_completo, 
+                puertas_abiertas,
+                estado_academico:id_estado_academico (estado),
+                grupos:id_grupo_base (
+                    nombre_grupo,
+                    turnos:id_turno (nombre_turno)
+                )
+            `);
+
+        // 3. Aplicamos el filtro de búsqueda por texto (Nombre o Boleta)
+        if (q) {
+            // Verifica si el texto es un número para buscar exactamente por boleta
+            if (!isNaN(q)) {
+                query = query.eq('boleta', parseInt(q));
+            } else {
+                query = query.ilike('nombre_completo', `%${q}%`);
+            }
+        }
+        
+        // 4. Aplicamos los filtros de los Checkboxes
+        if (puertas === 'true') query = query.eq('puertas_abiertas', true);
+        if (puertas === 'false') query = query.eq('puertas_abiertas', false);
+
+        // Para filtrar por estado académico, como es una tabla relacionada, 
+        // filtramos después en memoria o usamos la sintaxis de Supabase para foreign tables
+        // En este caso, para el nivel de Supabase free, es más seguro y rápido traer los datos
+        // y filtrarlos mediante la API.
+
+        // 5. Ejecutar consulta
+        const { data: alumnosRaw, error } = await query;
+
+        if (error) throw error;
+
+        // 6. Post-procesamiento: Limpiar el JSON para que el frontend lo lea fácil
+        // y aplicar los filtros complejos (Turno y Estado) que vienen de las tablas unidas
+        let alumnosMapeados = alumnosRaw.map(al => ({
+            boleta: al.boleta,
+            nombre_completo: al.nombre_completo,
+            puertas_abiertas: al.puertas_abiertas,
+            estado_academico: al.estado_academico?.estado || 'Desconocido',
+            grupo: al.grupos?.nombre_grupo || 'Sin Grupo',
+            turno: al.grupos?.turnos?.nombre_turno || 'Sin Turno'
+        }));
+
+        // Filtrado en memoria de las relaciones complejas
+        if (turno) {
+            alumnosMapeados = alumnosMapeados.filter(al => al.turno === turno);
+        }
+        if (estado) {
+            alumnosMapeados = alumnosMapeados.filter(al => al.estado_academico === estado);
+        }
+
+        // 7. Responder al Frontend
+        return res.json({ 
+            success: true, 
+            data: alumnosMapeados 
+        });
+
     } catch (err) {
-        return res.status(500).json({ success: false, message: 'Error al buscar.' });
+        console.error('❌ Error en buscarAlumnos:', err);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Error al ejecutar la búsqueda en la base de datos.' 
+        });
     }
 };
 

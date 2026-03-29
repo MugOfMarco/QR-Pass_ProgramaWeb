@@ -1,538 +1,262 @@
-/* ============================================
-   MODIFICARALUMNO.CSS - VERSIÓN FINAL
-   INCLUYE ESTILOS PARA HORARIO DINÁMICO
-============================================ */
+/* =========================================================
+   NUEVOS ESTILOS PARA EL LAYOUT DE REGISTRAR ALUMNO (MOCKUP)
+   ========================================================= */
 
-/* 1. RESET Y ESTILOS BASE */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Arial', 'Helvetica', sans-serif;
-    background-color: #f5f5f5;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* 2. HEADER Y NAVEGACIÓN SUPERIOR */
-.site-header {
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    padding: 1.5rem 2rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-.header-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Botón de menú hamburguesa */
-.Boton-nav button {
-    width: 50px;
-    height: 50px;
-    background-color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.Boton-nav img {
-    width: 30px;
-    height: 30px;
-    transition: transform 0.3s ease;
-}
-
-.Boton-nav:hover img {
-    transform: scale(1.1);
-}
-
-.title {
-    color: white;
-    font-size: 2.5rem;
-    font-weight: 700;
-    text-align: center;
-}
-
-.logo img {
-    width: 60px;
-    height: 60px;
-}
-
-/* 3. CONTENEDOR PRINCIPAL (GRID) */
-.main-container {
-    flex: 1;
-    max-width: 1400px;
+.main-wrapper {
+    max-width: 1000px;
     margin: 2rem auto;
-    padding: 2rem;
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Divide la pantalla en 2 columnas */
-    gap: 3rem;
+    padding: 0 1rem;
     width: 100%;
 }
 
-/* 4. SECCIÓN DE BÚSQUEDA (IZQUIERDA) */
-.student-search-section {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-}
-
-.container {
-    width: 100%;
-}
-
-.input-group {
+.page-subtitle {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #000;
     margin-bottom: 2rem;
 }
 
-.label-highlight {
-    display: block;
-    color: #b71c1c;
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
+/* Barra de búsqueda superior */
+.top-search-bar {
+    margin-bottom: 2rem;
 }
 
-.input-group input {
-    width: 100%;
-    padding: 1rem 1.5rem;
-    font-size: 1.1rem;
-    border: 3px solid #333;
-    border-radius: 50px;
-    background-color: white;
-    transition: all 0.3s ease;
-}
-
-.input-group input:focus {
-    outline: none;
-    border-color: #5c1f33;
-    box-shadow: 0 0 0 3px rgba(92, 31, 51, 0.1);
-}
-
-.action-button-container {
-    display: flex;
-    justify-content: center;
-}
-
-#btn-buscar {
-    padding: 1.2rem 2.5rem;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: white;
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(92, 31, 51, 0.3);
-}
-
-#btn-buscar:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(92, 31, 51, 0.4);
-}
-
-#btn-buscar:active {
-    transform: translateY(-1px);
-}
-
-/* 5. SECCIÓN DE FORMULARIO (DERECHA) */
-.student-edit-section .container {
+.search-group {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    width: fit-content;
 }
 
-.student-data-form {
-    border: 3px solid #333;
-    border-radius: 15px;
-    padding: 2rem;
-    background-color: white;
-}
-
-.student-data-form legend {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #333;
-    padding: 0 1rem;
-}
-
-/* Estilos de los inputs generales */
-.field {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 1.5rem;
-}
-
-.field label {
+.text-red {
+    color: #d32f2f;
+    font-weight: 800;
     font-size: 1.1rem;
-    font-weight: 600;
-    color: #333;
     margin-bottom: 0.5rem;
 }
 
-.field input:not([type="checkbox"]),
-.field select {
-    width: 100%;
-    padding: 0.9rem 1.2rem;
+.search-input-wrapper {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-input-wrapper input {
+    width: 250px;
+    padding: 8px 12px;
+    border: 2px solid #000;
+    border-radius: 12px;
     font-size: 1rem;
-    border: 2px solid #666;
-    border-radius: 8px;
-    background-color: white;
-    color: #333;
-    transition: all 0.3s ease;
 }
 
-.field input:focus:not(:disabled),
-.field select:focus:not(:disabled) {
-    outline: none;
-    border-color: #5c1f33;
-    box-shadow: 0 0 0 3px rgba(92, 31, 51, 0.1);
-}
-
-/* -----------------------------------------------------------------
-   🔴 NUEVO: ESTILOS PARA EL CONSTRUCTOR DE HORARIO DINÁMICO
-   Esto controla cómo se ven las filas de materias agregadas
-   ----------------------------------------------------------------- */
-
-/* Contenedor principal donde se agregan las filas */
-.horario-container {
-    border: 2px dashed #ccc; /* Borde punteado para indicar área dinámica */
-    background-color: #fcfcfc;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 10px;
-    max-height: 350px; /* Evita que crezca infinito */
-    overflow-y: auto;  /* Scroll si hay muchas materias */
-}
-
-/* Cada fila individual (Día - Hora - Materia - Botón) */
-.fila-horario {
-    display: flex;
-    flex-wrap: wrap; /* Permite que baje de línea en celulares */
-    gap: 8px;
-    align-items: center;
-    background: white;
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-/* Inputs específicos dentro de la fila de horario */
-.fila-horario select, 
-.fila-horario input {
-    padding: 6px;
-    font-size: 0.9rem;
-    border: 1px solid #bbb;
-    border-radius: 4px;
-}
-
-/* Tamaños específicos para que se vea ordenado */
-.input-dia { flex: 1; min-width: 80px; }
-.input-inicio, .input-fin { width: 85px; }
-.input-materia { flex: 2; min-width: 120px; }
-
-/* Botón rojo de eliminar (la X) */
-.btn-eliminar-fila {
-    background-color: #ff4d4d;
+.btn-dark {
+    background-color: #4a192c; /* Color guinda del mockup */
     color: white;
-    border: none;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+    border: 2px solid #000;
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-weight: 800;
     cursor: pointer;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-    margin-left: auto; /* Empuja el botón a la derecha */
+    font-size: 1rem;
+    transition: background-color 0.2s;
 }
 
-.btn-eliminar-fila:hover {
-    background-color: #d60000;
+.btn-dark:hover {
+    background-color: #351220;
 }
 
-/* -----------------------------------------------------------------
-   FIN DE LOS NUEVOS ESTILOS DE HORARIO
-   ----------------------------------------------------------------- */
-
-.checkbox-field {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
+/* Tarjeta Principal */
+.form-card {
+    border: 2px solid #000;
+    border-radius: 15px;
+    padding: 2.5rem;
+    background-color: white;
+    position: relative;
     margin-top: 1rem;
 }
 
-.checkbox-field input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-/* 6. BOTONES DE ACCIÓN (Guardar/Cancelar) */
-.action-buttons {
-    display: flex;
-    gap: 1.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.action-buttons button {
-    padding: 1.2rem 2.5rem;
+.card-label {
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    background-color: #f5f5f5; /* Mismo color del body */
+    padding: 0 15px;
+    font-weight: 800;
     font-size: 1.2rem;
-    font-weight: 700;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 200px;
+    color: #000;
 }
 
-.button-primary {
-    color: white;
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    box-shadow: 0 4px 15px rgba(92, 31, 51, 0.3);
+/* Grid de Columnas */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
 }
 
-.button-primary:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(92, 31, 51, 0.4);
+/* Estilos de los inputs */
+.field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.2rem;
 }
 
-.button-secondary {
-    color: #333;
-    background-color: #e0e0e0;
-    border: 2px solid #999;
+.field label {
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin-bottom: 5px;
+    color: #000;
 }
 
-.button-secondary:hover:not(:disabled) {
-    background-color: #d0d0d0;
-    transform: translateY(-3px);
+.field input[type="text"], 
+.field select {
+    padding: 10px 12px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    font-size: 1rem;
+    width: 100%;
 }
 
-.button-danger {
-    color: white;
-    background-color: #dc3545;
-    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-}
-
-.button-danger:hover {
-    background-color: #c82333;
-    transform: translateY(-3px);
-}
-
-/* 7. ESTILOS DE PREVISUALIZACIÓN DE FOTO */
-.photo-preview-container {
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.photo-preview {
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 10px;
-    border: 2px dashed #ddd;
+/* Input File Personalizado */
+.file-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 2px solid #000;
     border-radius: 8px;
     overflow: hidden;
+}
+
+.btn-file {
+    background-color: #e0e0e0;
+    border: none;
+    border-right: 2px solid #000;
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.file-name {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    flex: 1;
+}
+
+.helper-text {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Checkbox */
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+
+.checkbox-field input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #000;
+}
+
+.bold-label {
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+/* Columna Derecha (Foto y Horario) */
+.right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.photo-preview-box {
+    width: 250px;
+    height: 150px;
+    border: 2px dashed #999;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #f8f9fa;
+    margin-bottom: 2rem;
+    color: #999;
+    font-weight: bold;
+    font-size: 0.9rem;
 }
 
-#preview-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-
-#no-photo-message {
-    color: #6c757d;
-    font-style: italic;
-}
-
-.input-foto {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 100%;
-}
-
-.form-text {
-    display: block;
-    margin-top: 5px;
-    color: #6c757d;
-    font-size: 0.9em;
-}
-
-/* 8. FOOTER */
-.site-footer {
-    background-color: #5c1f33;
-    color: white;
+.horario-box {
+    border: 2px solid #999;
+    border-radius: 12px;
     padding: 1.5rem;
-    text-align: center;
-    margin-top: auto;
+    width: 100%;
+    margin-top: 5px;
+    background-color: white;
 }
 
-.footer-container p {
+/* Estilos para la fila del horario (Basado en el mockup) */
+.fila-horario-mock input {
+    width: 100%;
+    padding: 6px;
+    border: 2px solid #000;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.hora-row, .materia-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.hora-row input { margin-bottom: 0; }
+.select-materia-mock { flex: 1; padding: 6px; border: 2px solid #000; border-radius: 6px; }
+.icon-close { color: #d32f2f; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
+
+.btn-add-materia {
+    width: 100%;
+    background-color: #d9d9d9;
+    border: 2px solid #000;
+    border-radius: 6px;
+    padding: 6px;
+    font-weight: 800;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+/* Botones Finales */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn-outline {
+    background-color: white;
+    color: #000;
+    border: 2px solid #000;
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-weight: 800;
+    cursor: pointer;
     font-size: 1rem;
 }
 
-/* =========================================================
-   9. MENÚ LATERAL DESLIZANTE
-   ========================================================= */
-
-.menu-navegacion {
-    position: fixed;
-    top: 0;
-    left: -320px; /* Oculto fuera de pantalla a la izquierda */
-    width: 300px;
-    height: 100vh;
-    background: white;
-    border-right: 3px solid #5c1f33;
-    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
-    z-index: 1001;
-    transition: left 0.3s ease-in-out; /* Animación suave */
-    overflow-y: auto; /* Scroll si hay muchos items */
-}
-
-/* Cuando el menú está visible */
-.menu-navegacion.menu-visible {
-    left: 0; /* Se desliza hacia la derecha */
-}
-
-/* Lista del menú */
-.menu-lista {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    padding-top: 140px; /* Espacio para no tapar el header */
-}
-
-.menu-lista li {
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.menu-lista li:last-child {
-    border-bottom: none;
-}
-
-.menu-lista a {
-    display: block;
-    padding: 1.2rem 1.5rem;
-    text-decoration: none;
-    color: #333;
-    font-size: 1.1rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.menu-lista a:hover {
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    color: white;
-    padding-left: 2rem;
-}
-
-/* Overlay oscuro de fondo */
-.menu-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    cursor: pointer;
-}
-
-.menu-overlay.menu-visible {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* =========================================================
-   10. RESPONSIVE
-   ========================================================= */
-
-@media (max-width: 1024px) {
-    .main-container {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-
-    .title {
-        font-size: 2rem;
-    }
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-    .header-container {
-        flex-wrap: wrap;
-        gap: 1rem;
+    .form-grid {
+        grid-template-columns: 1fr;
     }
-
-    .title {
-        order: -1;
-        width: 100%;
-        font-size: 1.8rem;
-    }
-
-    /* Menú más ancho en dispositivos móviles */
-    .menu-navegacion {
-        left: -90vw; /* Oculto más lejos */
-        width: 85vw; /* 85% del ancho de pantalla */
-        max-width: 350px;
-    }
-    
-    .menu-navegacion.menu-visible {
-        left: 0;
-    }
-    
-    .menu-lista {
-        padding-top: 100px; /* Menos espacio en móvil */
-    }
-
-    /* Botones de acción en columna */
-    .action-buttons {
+    .search-input-wrapper {
         flex-direction: column;
+        align-items: flex-start;
     }
-
-    .action-buttons button {
-        min-width: 100%;
-    }
-
-    /* Filas de horario adaptadas a móvil */
-    .fila-horario {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .input-dia, .input-inicio, .input-fin, .input-materia {
+    .search-input-wrapper input {
         width: 100%;
-    }
-    
-    .btn-eliminar-fila {
-        width: 100%;
-        border-radius: 4px;
-        margin-top: 5px;
-        background-color: #ffcccc;
-        color: #cc0000;
     }
 }
