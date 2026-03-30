@@ -1,302 +1,196 @@
-/* Reset y estilos base */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* ============================================================
+   en_sa.css — Entrada / Salida
+   Importa global.css primero en el HTML.
+   Aquí solo estilos propios de esta vista.
+   ============================================================ */
 
-body {
-    font-family: 'Arial', 'Helvetica', sans-serif;
-    background-color: #f5f5f5;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Header */
-.site-header {
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    padding: 1.5rem 2rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    position: relative;
-    z-index: 100;
-}
-
-.header-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Botón de navegación */
-.Boton-nav button {
-    width: 50px;
-    height: 50px;
-    background-color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.Boton-nav img {
-    width: 30px;
-    height: 30px;
-    transition: transform 0.3s ease;
-}
-
-.Boton-nav:hover img {
-    transform: scale(1.1);
-}
-
-/* Título del header */
-.title {
-    color: white;
-    font-size: 2.5rem;
-    font-weight: 700;
-    text-align: center;
-}
-
-/* Logo */
-.logo img {
-    width: 60px;
-    height: 60px;
-}
-
-/* ===== ESTILOS PARA EL MENÚ DE NAVEGACIÓN ===== */
-
-/* Contenedor del menú */
-.menu-navegacion {
-    position: relative;
-    z-index: 1000;
-}
-
-/* Lista del menú - OCULTA POR DEFECTO */
-.menu-lista {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: white;
-    border: 3px solid #5c1f33;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    list-style: none;
-    padding: 1rem 0;
-    margin: 0;
-    min-width: 280px;
-    z-index: 1001;
-    display: none;
-}
-
-/* Lista del menú - VISIBLE */
-.menu-lista.menu-visible {
-    display: block;
-}
-
-/* Elementos de la lista */
-.menu-lista li {
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.menu-lista li:last-child {
-    border-bottom: none;
-}
-
-/* Enlaces del menú */
-.menu-lista a {
-    display: block;
-    padding: 1rem 1.5rem;
-    text-decoration: none;
-    color: #333;
-    font-size: 1.1rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.menu-lista a:hover {
-    background: linear-gradient(135deg, #5c1f33 0%, #3d1422 100%);
-    color: white;
-    padding-left: 2rem;
-}
-
-/* Overlay para cerrar menú */
-.menu-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    display: none;
-}
-
-.menu-overlay.menu-visible {
-    display: block;
-}
-
-/* Contenedor de estado */
+/* ── Contenedor de estado (barra superior) ────────────────── */
 .status-container {
-    background-color: white;
+    background-color: var(--color-white);
     padding: 1rem 2rem;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,.1);
 }
 
 #status-indicator {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #ffc107;
     display: inline-block;
-    margin-right: 1rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: var(--color-warning);
+    margin-right: .8rem;
     vertical-align: middle;
 }
 
 #status-message {
     display: inline;
-    font-size: 1.2rem;
-    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
 }
 
-/* Contenedor principal */
+/* ── Layout de 2 columnas ─────────────────────────────────── */
 .main-container {
     max-width: 1400px;
-    margin: 2rem auto;
-    padding: 2rem;
+    margin: 1.5rem auto;
+    padding: 0 2rem;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     width: 100%;
 }
 
-.main-container section {
-    display: flex;
-    flex-direction: column;
-}
+.main-container section { display: flex; flex-direction: column; }
+.main-container .container { display: flex; flex-direction: column; gap: 1.5rem; }
 
-.container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-/* Grupos de opciones (radio buttons) */
+/* ── Radio de puerta ──────────────────────────────────────── */
 .option-group {
-    border: 3px solid #333;
-    border-radius: 15px;
-    padding: 1.5rem;
-    background-color: white;
+    border: 3px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.2rem 1.5rem;
+    background-color: var(--color-white);
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 }
 
 .option-group legend {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    color: #333;
-    padding: 0 1rem;
+    color: var(--color-text);
+    padding: 0 .5rem;
 }
 
 .option-group input[type="radio"] {
-    width: 30px;
-    height: 30px;
+    width: 22px;
+    height: 22px;
+    accent-color: var(--color-primary);
     cursor: pointer;
-    accent-color: #5c1f33;
 }
 
 .option-group label {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: #333;
     cursor: pointer;
 }
 
-/* Cajas placeholder */
+/* ── Cajas placeholder / info ─────────────────────────────── */
 .placeholder-box {
-    border-radius: 15px;
-    background: linear-gradient(135deg, #b0b0b0 0%, #909090 100%);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .Registro {
-    min-height: 270px;
-    padding: 2rem;
+    min-height: 240px;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #b0b0b0 0%, #909090 100%);
 }
 
 .inner-box {
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 10px;
+    min-height: 180px;
+    background-color: rgba(255,255,255,.3);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 1rem;
+    transition: background-color .3s, color .3s;
 }
 
 .info-box {
-    min-height: 270px;
+    min-height: 240px;
     border: 3px solid #8b4513;
-    background: white;
+    background: var(--color-white);
+    overflow: hidden;
+    position: relative;
 }
 
-/* Columna de outputs */
+/* ── Foto del alumno ──────────────────────────────────────── */
+#student-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 8px;
+    background-color: var(--color-white);
+    transition: transform .3s;
+}
+
+#student-photo.bloqueado {
+    border: 4px solid var(--color-error);
+    filter: grayscale(30%);
+    opacity: .9;
+}
+
+/* ── Badge de tipo de movimiento ─────────────────────────── */
+.badge-movimiento {
+    display: inline-block;
+    padding: 5px 18px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: .95rem;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    transition: background .3s, color .3s;
+}
+
+.badge-idle    { background: #e0e0e0; color: #999; }
+.badge-entrada { background: var(--color-success); color: #fff; }
+.badge-salida  { background: #2196f3; color: #fff; }
+
+/* ── Columna de outputs (campos de texto) ─────────────────── */
 .column-outputs {
     max-width: 1400px;
     margin: 0 auto 2rem;
     padding: 0 2rem;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    gap: 1.2rem;
 }
 
-/* Campos de texto */
-.text-entry.field {
-    display: flex;
-    flex-direction: column;
-}
+.text-entry.field { display: flex; flex-direction: column; }
 
 .text-entry.field label {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
-    color: #333;
-    margin-bottom: 0.5rem;
+    color: var(--color-text);
+    margin-bottom: .4rem;
 }
 
 .text-entry.field input {
-    padding: 0.9rem 1.2rem;
-    font-size: 1rem;
-    border: 3px solid #333;
-    border-radius: 50px;
-    background-color: white;
-    color: #333;
-    transition: all 0.3s ease;
+    padding: .8rem 1.1rem;
+    font-size: .95rem;
+    border: 3px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-white);
+    color: var(--color-text);
 }
 
-.text-entry.field input:focus:not(:read-only) {
+.text-entry.field input:focus:not([readonly]) {
     outline: none;
-    border-color: #5c1f33;
-    box-shadow: 0 0 0 3px rgba(92, 31, 51, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(92,31,51,.1);
 }
 
-.text-entry.field input:read-only {
+.text-entry.field input[readonly] {
     background-color: #f9f9f9;
     cursor: default;
 }
 
-/* Contenedor especial para retardos y sin credencial */
+/* ── Retardos / sin credencial (invertidos) ───────────────── */
 .container-outputs {
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    gap: 1.2rem;
 }
 
 .container-outputs .text-entry.field {
@@ -305,352 +199,25 @@ body {
 
 .container-outputs .text-entry.field label {
     margin-bottom: 0;
-    margin-top: 0.5rem;
+    margin-top: .4rem;
     text-align: center;
 }
 
 .container-outputs .text-entry.field input {
     text-align: center;
-    font-weight: 600;
-}
-
-/* ===== RESPONSIVE ===== */
-
-@media (max-width: 1024px) {
-    .main-container {
-        grid-template-columns: 1fr;
-    }
-
-    .column-outputs {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .title {
-        font-size: 2rem;
-    }
-    
-    .menu-lista {
-        min-width: 250px;
-        left: 1rem;
-    }
-    
-    .menu-lista a {
-        font-size: 1rem;
-        padding: 0.9rem 1.3rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .header-container {
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .title {
-        order: -1;
-        width: 100%;
-        text-align: center;
-        font-size: 1.8rem;
-    }
-
-    .main-container {
-        padding: 1rem;
-    }
-
-    .column-outputs {
-        padding: 0 1rem;
-        grid-template-columns: 1fr;
-    }
-
-    .container-outputs {
-        grid-template-columns: 1fr;
-    }
-
-    .option-group {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .option-group input[type="radio"] {
-        width: 24px;
-        height: 24px;
-    }
-
-    .Registro,
-    .info-box {
-        min-height: 200px;
-    }
-
-    .menu-lista {
-        position: fixed;
-        top: 140px;
-        left: 50%;
-        transform: translateX(-50%);
-        min-width: 90%;
-        max-width: 400px;
-    }
-    
-    .Boton-nav {
-        order: -1;
-    }
-}
-
-@media (max-width: 480px) {
-    .status-container {
-        padding: 0.8rem 1rem;
-    }
-
-    #status-indicator {
-        width: 16px;
-        height: 16px;
-    }
-
-    #status-message {
-        font-size: 1rem;
-    }
-
-    .option-group legend {
-        font-size: 1.1rem;
-    }
-
-    .option-group label {
-        font-size: 1rem;
-    }
-
-    .text-entry.field label {
-        font-size: 1rem;
-    }
-
-    .text-entry.field input {
-        padding: 0.7rem 1rem;
-        font-size: 0.95rem;
-    }
-
-    .menu-lista {
-        top: 120px;
-        min-width: 95%;
-    }
-    
-    .menu-lista a {
-        font-size: 0.95rem;
-        padding: 0.8rem 1.2rem;
-    }
-}
-
-/* Estilos para la foto del alumno en registro */
-#info-box {
-    width: 100%;
-    height: 250px; /* Aumentar altura */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f8f9fa;
-    border: 2px solid #dee2e6;
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-    margin-top: 15px;
-}
-
-#student-photo {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Mostrar imagen completa */
-    transition: transform 0.3s ease;
-    background-color: white;
-    padding: 5px;
-}
-
-#student-photo:hover {
-    transform: scale(1.02);
-}
-
-/* Estilo para cuando no hay foto */
-#info-box:not(:has(img[src]))::before {
-    content: "Foto del alumno aparecerá aquí";
-    color: #6c757d;
-    font-style: italic;
-    font-size: 16px;
-    text-align: center;
-    padding: 20px;
-}
-
-/* Estilos para cuando el alumno está bloqueado */
-#student-photo.bloqueado {
-    border: 4px solid #dc3545;
-    filter: grayscale(30%);
-    opacity: 0.9;
-}
-
-.main-container {
-    max-width: 1400px;
-    margin: 2rem auto;
-    padding: 2rem;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    width: 100%;
-}
-
-.main-container section {
-    display: flex;
-    flex-direction: column;
-}
-
-/* Contenedor de cada columna */
-.container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-/* Estilos para la columna izquierda (puerta y tipo) */
-.option-group {
-    border: 3px solid #333;
-    border-radius: 15px;
-    padding: 1.5rem;
-    background-color: white;
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-}
-
-.option-group legend {
-    font-size: 1.3rem;
     font-weight: 700;
-    color: #333;
-    padding: 0 1rem;
 }
 
-.option-group input[type="radio"] {
-    width: 30px;
-    height: 30px;
-    cursor: pointer;
-    accent-color: #5c1f33;
-}
-
-.option-group label {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #333;
-    cursor: pointer;
-}
-
-/* Estilos para la columna derecha (foto y mensaje) */
-#info-box {
-    width: 100%;
-    height: 250px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f8f9fa;
-    border: 2px solid #dee2e6;
-    border-radius: 15px;
-    overflow: hidden;
-    position: relative;
-}
-
-#student-photo {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-    background-color: white;
-    padding: 10px;
-}
-
-#student-photo:hover {
-    transform: scale(1.02);
-}
-
-/* Estilo para cuando no hay foto */
-#info-box:not(:has(img[src]))::before {
-    content: "Foto del alumno aparecerá aquí";
-    color: #6c757d;
-    font-style: italic;
-    font-size: 16px;
-    text-align: center;
-    padding: 20px;
-}
-
-/* Estilos para cuando el alumno está bloqueado */
-#student-photo.bloqueado {
-    border: 4px solid #dc3545;
-    filter: grayscale(30%);
-    opacity: 0.9;
-}
-
-/* Caja para el mensaje de registro */
-.Registro {
-    min-height: 200px;
-    border: 3px solid #8b4513;
-    border-radius: 15px;
-    background: white;
-    padding: 1.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#registro-mensaje {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2rem;
-    font-weight: 600;
-    text-align: center;
-    padding: 1rem;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-}
-
-/* Colores para diferentes tipos de mensaje */
-#registro-mensaje.success {
-    background-color: #4CAF50;
-    color: white;
-}
-
-#registro-mensaje.error {
-    background-color: #f44336;
-    color: white;
-}
-
-#registro-mensaje.warning {
-    background-color: #ff9800;
-    color: white;
-}
-
-/* Responsive */
+/* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 1024px) {
-    .main-container {
-        grid-template-columns: 1fr;
-    }
-    
-    #info-box {
-        height: 300px;
-    }
+    .main-container { grid-template-columns: 1fr; }
+    .column-outputs { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
-    .main-container {
-        padding: 1rem;
-    }
-    
-    .option-group {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    
-    #info-box {
-        height: 250px;
-    }
-    
-    .Registro {
-        min-height: 150px;
-    }
+    .main-container  { padding: 0 1rem; }
+    .column-outputs  { padding: 0 1rem; grid-template-columns: 1fr; }
+    .container-outputs { grid-template-columns: 1fr; }
+    .option-group    { flex-direction: column; align-items: flex-start; }
+    .Registro, .info-box { min-height: 180px; }
 }

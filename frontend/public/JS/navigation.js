@@ -1,110 +1,85 @@
-// frontend/public/js/navigation.js
-// Control de autenticación + menú lateral
+// frontend/public/JS/navigation.js
+// ============================================================
+// MENÚ LATERAL DESLIZANTE — Panel que se abre de izquierda a derecha
+//
+// Funcionamiento:
+//   · Añade/quita la clase "nav-open" en .menu-navegacion y .menu-overlay
+//   · No usa "display:none" para el menú — la animación usa transform
+//   · También verifica autenticación y oculta enlaces de admin si aplica
+// ============================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🔧 Inicializando navigation.js...');
-    
-    // =========================================================
-    // 1. VERIFICACIÓN DE AUTENTICACIÓN Y PERMISOS
-    // =========================================================
+
+    // ── 1. VERIFICACIÓN DE AUTENTICACIÓN ─────────────────────
     try {
-        const response = await fetch('/api/auth/check'); 
-        const authData = await response.json();
-        
-        if (authData.isAuthenticated && authData.user.tipo !== 'Administrador') {
-            console.log('👤 Usuario autenticado:', authData.user.tipo);
-            
-            // El usuario NO es Administrador (es Prefecto/Policía)
-            // Oculta todos los elementos con la clase 'admin-only-link'
-            const enlacesAdmin = document.querySelectorAll('.admin-only-link'); 
-            
-            enlacesAdmin.forEach(link => {
-                link.style.display = 'none';
+        const res  = await fetch('/api/auth/check', { credentials: 'include' });
+        const data = await res.json();
+
+        if (!data.isAuthenticated) {
+            // Si la página actual no es login, redirigir
+            const esLogin = window.location.pathname.endsWith('login.html')
+                         || window.location.pathname === '/';
+            if (!esLogin) {
+                window.location.href = '/login.html';
+                return;
+            }
+        }
+
+        // Ocultar enlaces que son sólo para administrador
+        if (data.isAuthenticated && data.tipo !== 'Administrador') {
+            document.querySelectorAll('.admin-only-link').forEach(el => {
+                el.style.display = 'none';
             });
-            
-            console.log(`🔒 ${enlacesAdmin.length} enlaces de administrador ocultados`);
-        } else if (authData.isAuthenticated) {
-            console.log('👑 Usuario Administrador - Acceso completo');
         }
-    } catch (error) {
-        console.error('❌ Error verificando autenticación:', error);
+
+    } catch (err) {
+        console.warn('navigation.js: No se pudo verificar auth:', err.message);
     }
-    
-    // =========================================================
-    // 2. CONTROL DEL MENÚ LATERAL DESLIZANTE
-    // =========================================================
-    
-    // Obtener elementos del menú
-    const menuToggleBtn = document.getElementById('menu-toggle-btn');
-    const menuNavegacion = document.querySelector('.menu-navegacion');
-    const menuOverlay = document.getElementById('menu-overlay');
-    const menuLinks = document.querySelectorAll('.menu-lista a');
-    
-    // Verificar que existan los elementos del menú
-    if (!menuToggleBtn) {
-        console.warn('⚠️ No se encontró el botón del menú (#menu-toggle-btn)');
+
+    // ── 2. REFERENCIAS AL DOM ─────────────────────────────────
+    const toggleBtn  = document.getElementById('menu-toggle-btn');
+    const navPanel   = document.querySelector('.menu-navegacion');
+    const overlay    = document.getElementById('menu-overlay');
+    const menuLinks  = document.querySelectorAll('.menu-lista a');
+
+    if (!toggleBtn || !navPanel || !overlay) {
+        // La página no tiene menú (ej. login.html) → salir silenciosamente
         return;
     }
-    
-    if (!menuNavegacion) {
-        console.warn('⚠️ No se encontró el contenedor del menú (.menu-navegacion)');
-        return;
+
+    // ── 3. FUNCIONES OPEN / CLOSE ────────────────────────────
+    function openNav() {
+        navPanel.classList.add('nav-open');
+        overlay.classList.add('nav-open');
+        toggleBtn.setAttribute('aria-expanded', 'true');
     }
-    
-    if (!menuOverlay) {
-        console.warn('⚠️ No se encontró el overlay (#menu-overlay)');
-        return;
+
+    function closeNav() {
+        navPanel.classList.remove('nav-open');
+        overlay.classList.remove('nav-open');
+        toggleBtn.setAttribute('aria-expanded', 'false');
     }
-    
-    console.log('✅ Elementos del menú encontrados');
-    
-    // Función para abrir el menú
-    function abrirMenu() {
-        menuNavegacion.classList.add('menu-visible');
-        menuOverlay.classList.add('menu-visible');
-        console.log('📂 Menú abierto');
+
+    function toggleNav() {
+        navPanel.classList.contains('nav-open') ? closeNav() : openNav();
     }
-    
-    // Función para cerrar el menú
-    function cerrarMenu() {
-        menuNavegacion.classList.remove('menu-visible');
-        menuOverlay.classList.remove('menu-visible');
-        console.log('📁 Menú cerrado');
-    }
-    
-    // Toggle del menú al hacer click en el botón hamburguesa
-    menuToggleBtn.addEventListener('click', function(e) {
-        e.preventDefault();
+
+    // ── 4. EVENTOS ───────────────────────────────────────────
+    toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        
-        if (menuNavegacion.classList.contains('menu-visible')) {
-            cerrarMenu();
-        } else {
-            abrirMenu();
-        }
+        toggleNav();
     });
-    
-    // Cerrar menú al hacer click en el overlay
-    menuOverlay.addEventListener('click', function() {
-        cerrarMenu();
-    });
-    
-    // Cerrar menú al hacer click en cualquier link del menú
+
+    overlay.addEventListener('click', closeNav);
+
     menuLinks.forEach(link => {
-        link.addEventListener('click', function() {
-            // Pequeño delay para que se vea la animación antes de navegar
-            setTimeout(() => {
-                cerrarMenu();
-            }, 150);
+        link.addEventListener('click', () => {
+            // Pequeño delay para que la animación de cierre sea visible
+            setTimeout(closeNav, 120);
         });
     });
-    
-    // Cerrar menú con la tecla ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && menuNavegacion.classList.contains('menu-visible')) {
-            cerrarMenu();
-        }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeNav();
     });
-    
-    console.log('✅ Menú de navegación inicializado correctamente');
 });

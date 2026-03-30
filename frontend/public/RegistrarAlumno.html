@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Alumno</title>
-    <link rel="stylesheet" href="../css/registrarAlumno.css"> </head>
+    <title>Registrar Alumno — CECyT 9</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/registrarAlumno.css">
+</head>
 <body>
 
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton"> 
+                <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
                     <img src="../imgs/menu.png" alt="">
                 </button>
             </div>
@@ -21,72 +23,56 @@
         </div>
     </header>
 
-    <nav class="menu-navegacion">
+    <nav class="menu-navegacion" aria-label="Menú principal">
         <ul id="lista-opciones" class="menu-lista">
-            <li>
-                <a href="./Entrada_Salida.html">Registro de entrada y salida</a>
-            </li>
-
-            <li>
-                <a href="./BuscarAlumno.html">Buscar alumno</a>
-            </li>
-
-            <li class="admin-only-link">
-
-                <a href="./ModificarAlumno.html">Modificar alumno</a>
-            </li>
-            
-            <li class="admin-only-link">
-
-                <a href="./RegistrarAlumno.html">Registrar alumno</a>
-            </li>
+            <li><a href="./Entrada_Salida.html">Registro de entrada y salida</a></li>
+            <li><a href="./BuscarAlumno.html">Buscar alumno</a></li>
+            <li class="admin-only-link"><a href="./ModificarAlumno.html">Modificar alumno</a></li>
+            <li class="admin-only-link"><a href="./GestionUsuarios.html">Gestión de usuarios</a></li>
+            <li class="admin-only-link"><a href="./FiltrarAlumnos.html">Filtro de alumnos</a></li>
         </ul>
     </nav>
-
     <div id="menu-overlay" class="menu-overlay"></div>
-    
-    <div class="main-container">
 
+    <div class="main-container">
         <section class="student-registration-section">
             <div class="container">
-                
                 <form id="register-student-form">
                     <fieldset class="student-data-form">
                         <legend>Datos del Nuevo Alumno</legend>
-                        
+
                         <div class="field">
                             <label for="register-boleta">Boleta</label>
-                            <input type="text" id="register-boleta" name="" required class="input-solo-numeros">
+                            <input type="text" id="register-boleta" required class="input-solo-numeros">
                         </div>
 
                         <div class="field">
                             <label for="register-nombre">Nombre del Alumno</label>
-                            <input type="text" id="register-nombre" name="nombre" required class="input-solo-letras">
+                            <input type="text" id="register-nombre" required class="input-solo-letras">
                         </div>
 
                         <div class="field">
                             <label for="register-grupo">Grupo</label>
-                            <input type="text" id="register-grupo" name="grupo">
+                            <input type="text" id="register-grupo">
                         </div>
 
                         <div class="field">
                             <label for="register-horario">Horario</label>
-                            <input type="text" id="register-horario" name="horario">
+                            <input type="text" id="register-horario">
                         </div>
-                        
+
                         <div class="field">
                             <label for="register-estatus">Estatus</label>
-                            <select id="register-estatus" name="estatus">
+                            <select id="register-estatus">
                                 <option value="activo" selected>Activo</option>
                                 <option value="inactivo">Inactivo</option>
                             </select>
                         </div>
 
                         <div class="checkbox-field">
-                            <input type="checkbox" id="register-puertas-abiertas" name="puertas-abiertas">
+                            <input type="checkbox" id="register-puertas-abiertas">
                             <label for="register-puertas-abiertas">Permitir puertas abiertas</label>
                         </div>
-
                     </fieldset>
 
                     <div class="action-buttons">
@@ -98,15 +84,13 @@
                         </button>
                     </div>
                 </form>
-
             </div>
         </section>
-
     </div>
 
     <footer class="site-footer">
         <div class="footer-container">
-            <p>footer de la pagina</p>
+            <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
         </div>
     </footer>
 

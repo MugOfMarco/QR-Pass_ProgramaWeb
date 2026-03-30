@@ -1,0 +1,502 @@
+/* ============================================================
+   GLOBAL.CSS — QR Pass · CECyT 9
+   Estilos compartidos por TODAS las páginas del sistema.
+   Cada página puede importar su propio CSS adicional después:
+     <link rel="stylesheet" href="../css/global.css">
+     <link rel="stylesheet" href="../css/[pagina].css">
+   ============================================================ */
+
+/* ── 1. VARIABLES ─────────────────────────────────────────── */
+:root {
+    --color-primary:      #5c1f33;
+    --color-primary-dark: #3d1422;
+    --color-primary-light:#7a2945;
+    --color-accent:       #ffb800;
+    --color-bg:           #f5f5f5;
+    --color-white:        #ffffff;
+    --color-text:         #333333;
+    --color-text-muted:   #666666;
+    --color-border:       #333333;
+    --color-border-light: #dddddd;
+    --color-success:      #4caf50;
+    --color-error:        #f44336;
+    --color-warning:      #ff9800;
+    --color-error-dark:   #b71c1c;
+    --color-error-bg:     #fce8ed;
+
+    --radius-sm:  6px;
+    --radius-md:  10px;
+    --radius-lg:  15px;
+    --radius-xl:  50px;
+
+    --shadow-sm:  0 2px 8px  rgba(0,0,0,.08);
+    --shadow-md:  0 4px 15px rgba(0,0,0,.15);
+    --shadow-lg:  0 8px 30px rgba(0,0,0,.20);
+    --shadow-nav: 0 4px 20px rgba(0,0,0,.30);
+
+    --header-grad: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+
+    --nav-width: 280px;
+    --transition: all .3s ease;
+}
+
+/* ── 2. RESET ─────────────────────────────────────────────── */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── 3. HEADER ────────────────────────────────────────────── */
+.site-header {
+    background: var(--header-grad);
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,.3);
+    position: relative;
+    z-index: 100;
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title {
+    color: var(--color-white);
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-align: center;
+    flex: 1;
+}
+
+.logo img {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+}
+
+/* ── 4. BOTÓN HAMBURGUESA ─────────────────────────────────── */
+.Boton-nav button,
+#menu-toggle-btn {
+    width: 46px;
+    height: 46px;
+    background-color: var(--color-white);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.Boton-nav button:hover,
+#menu-toggle-btn:hover {
+    background-color: #f0f0f0;
+    transform: scale(1.05);
+}
+
+.Boton-nav img,
+#menu-toggle-btn img {
+    width: 28px;
+    height: 28px;
+    pointer-events: none;
+}
+
+/* ── 5. NAV LATERAL (PANEL DESLIZANTE) ───────────────────── */
+/*
+   El menú se despliega desde la izquierda como un panel lateral
+   que cubre parcialmente el contenido. Se abre con la clase
+   .nav-open en el <body> (añadida por navigation.js).
+*/
+
+.menu-navegacion {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--nav-width);
+    height: 100%;
+    background: var(--color-white);
+    box-shadow: var(--shadow-nav);
+    z-index: 1100;
+    transform: translateX(-100%);
+    transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-navegacion.nav-open {
+    transform: translateX(0);
+}
+
+/* Encabezado interno del panel */
+.menu-navegacion::before {
+    content: "QR Pass";
+    display: block;
+    background: var(--header-grad);
+    color: var(--color-white);
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 1.4rem 1.6rem;
+    border-bottom: 3px solid var(--color-primary-dark);
+}
+
+.menu-lista {
+    list-style: none;
+    padding: .5rem 0;
+    margin: 0;
+    flex: 1;
+}
+
+.menu-lista li {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.menu-lista li:last-child {
+    border-bottom: none;
+}
+
+.menu-lista a {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 600;
+    transition: var(--transition);
+    position: relative;
+}
+
+.menu-lista a::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--color-primary);
+    border-radius: 0 4px 4px 0;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.menu-lista a:hover {
+    background-color: var(--color-error-bg);
+    color: var(--color-primary);
+    padding-left: 2rem;
+}
+
+.menu-lista a:hover::before {
+    opacity: 1;
+}
+
+/* Overlay oscuro detrás del menú */
+.menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1050;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .35s ease;
+}
+
+.menu-overlay.nav-open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ── 6. FOOTER ────────────────────────────────────────────── */
+.site-footer {
+    background: var(--header-grad);
+    padding: .9rem 1rem;
+    margin-top: auto;
+}
+
+.footer-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.footer-container p {
+    color: var(--color-white);
+    font-size: .85rem;
+    font-weight: 600;
+}
+
+/* ── 7. FORMULARIOS — ELEMENTOS COMUNES ───────────────────── */
+.field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.2rem;
+}
+
+.field label {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: .4rem;
+}
+
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="password"],
+.field input[type="number"],
+.field input[type="time"],
+.field select,
+.field textarea {
+    width: 100%;
+    padding: .7rem 1rem;
+    font-size: .95rem;
+    border: 2px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    background-color: var(--color-white);
+    color: var(--color-text);
+    transition: border-color .2s;
+    font-family: inherit;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(92,31,51,.1);
+}
+
+.field input[readonly],
+.field input:read-only {
+    background-color: #f9f9f9;
+    cursor: default;
+}
+
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-top: 1rem;
+}
+
+.checkbox-field input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+.checkbox-field label,
+.bold-label {
+    font-weight: 700;
+    font-size: .95rem;
+    cursor: pointer;
+}
+
+/* ── 8. BOTONES COMUNES ───────────────────────────────────── */
+.btn-primary,
+.btn-dark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .65rem 1.4rem;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--color-white);
+    background: var(--header-grad);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-primary:hover,
+.btn-dark:hover {
+    opacity: .88;
+    transform: translateY(-2px);
+}
+
+.btn-primary:disabled,
+.btn-dark:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-secondary,
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .65rem 1.4rem;
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    background: var(--color-white);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+    background-color: #f0f0f0;
+}
+
+/* ── 9. TARJETAS ──────────────────────────────────────────── */
+.card {
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+}
+
+/* ── 10. BADGES ───────────────────────────────────────────── */
+.badge {
+    display: inline-block;
+    padding: .2rem .65rem;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+.badge-admin    { background: var(--color-error-bg); color: #8b1a30; }
+.badge-prefecto { background: #e8f0fe; color: #1a3a8b; }
+.badge-vigilante{ background: #e8f5e9; color: #1a5e20; }
+.badge-activo   { background: #e8f5e9; color: #1a5e20; }
+.badge-inactivo { background: var(--color-error-bg); color: #8b1a30; }
+
+/* ── 11. TOAST / NOTIFICACIÓN ─────────────────────────────── */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    padding: .8rem 1.4rem;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: .9rem;
+    color: var(--color-white);
+    z-index: 3000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+
+.toast.visible { opacity: 1; }
+.toast.ok  { background: #2e7d32; }
+.toast.err { background: #b71c1c; }
+
+/* ── 12. TABLAS ───────────────────────────────────────────── */
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-border-light);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .88rem;
+}
+
+thead th {
+    background: var(--header-grad);
+    color: var(--color-white);
+    padding: .65rem .85rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: .82rem;
+    position: sticky;
+    top: 0;
+}
+
+thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+
+tbody td {
+    padding: .6rem .85rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+
+tbody tr:hover td { background: #fdf8f9; }
+
+/* ── 13. MODALES ──────────────────────────────────────────── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.visible { display: flex; }
+
+.modal {
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    width: 380px;
+    max-width: 92vw;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal h3 {
+    margin: 0 0 1.2rem;
+    color: var(--color-primary-dark);
+    font-size: 1.1rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: .6rem;
+    margin-top: 1.2rem;
+}
+
+/* ── 14. UTILIDADES ───────────────────────────────────────── */
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mb-1 { margin-bottom: .5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.gap-1 { gap: .5rem; }
+.gap-2 { gap: 1rem; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+
+/* ── 15. RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 768px) {
+    .title { font-size: 1.3rem; }
+
+    .site-header { padding: .8rem 1rem; }
+
+    :root { --nav-width: 260px; }
+}
+
+@media (max-width: 480px) {
+    .title { font-size: 1.1rem; }
+    .logo img { width: 42px; height: 42px; }
+}

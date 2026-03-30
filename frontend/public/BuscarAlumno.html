@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscar Alumno</title>
+    <title>Buscar Alumno — QR Pass</title>
+    <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/buscarAlumno.css">
 </head>
 <body>
+
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" class="tu-clase-de-boton">
+                <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
                     <img src="../imgs/menu.png" alt="">
                 </button>
             </div>
@@ -21,47 +23,39 @@
         </div>
     </header>
 
-    <nav class="menu-navegacion">
+    <nav class="menu-navegacion" aria-label="Menú principal">
         <ul id="lista-opciones" class="menu-lista">
-            <li>
-                <a href="./Entrada_Salida.html">Registro de entrada y salida</a>
-            </li>
-            <li>
-                <a href="./BuscarAlumno.html">Buscar alumno</a>
-            </li>
-            <li class="admin-only-link">
-                <a href="./ModificarAlumno.html">Modificar alumno</a>
-            </li>
-
+            <li><a href="./Entrada_Salida.html">Registro de entrada y salida</a></li>
+            <li><a href="./BuscarAlumno.html">Buscar alumno</a></li>
+            <li class="admin-only-link"><a href="./ModificarAlumno.html">Modificar alumno</a></li>
+            <li class="admin-only-link"><a href="./GestionUsuarios.html">Gestión de usuarios</a></li>
+            <li class="admin-only-link"><a href="./FiltrarAlumnos.html">Filtro de alumnos</a></li>
         </ul>
     </nav>
-
     <div id="menu-overlay" class="menu-overlay"></div>
 
     <div class="main-container">
+        <!-- Columna izquierda -->
         <section class="student-search-section">
             <div class="container">
                 <div class="input-group">
                     <label for="search-boleta-inc" class="label-highlight">Ingrese boleta</label>
-                    <input type="text" id="search-boleta-inc" name="search-boleta-inc" class="input-solo-numeros" maxlength="10">
+                    <input type="text" id="search-boleta-inc" class="input-solo-numeros" maxlength="10">
                 </div>
 
                 <div class="student-data-display">
                     <div class="field">
                         <label for="display-boleta">Boleta</label>
-                        <input type="text" id="display-boleta" name="display-boleta" readonly>
+                        <input type="text" id="display-boleta" readonly>
                     </div>
-
                     <div class="field">
                         <label for="display-alumno">Alumno</label>
-                        <input type="text" id="display-alumno" name="display-alumno" readonly>
+                        <input type="text" id="display-alumno" readonly>
                     </div>
-
                     <div class="field">
                         <label for="display-grupo">Grupo</label>
-                        <input type="text" id="display-grupo" name="display-grupo" readonly>
+                        <input type="text" id="display-grupo" readonly>
                     </div>
-
                     <div class="field">
                         <label>Horario</label>
                         <div class="horario-container">
@@ -75,7 +69,7 @@
                                 </thead>
                                 <tbody id="horario-tbody">
                                     <tr>
-                                        <td colspan="3" style="text-align: center; padding: 1rem;">
+                                        <td colspan="3" style="text-align:center;padding:1rem;">
                                             Ingrese una boleta para cargar el horario
                                         </td>
                                     </tr>
@@ -102,16 +96,15 @@
             </div>
         </section>
 
+        <!-- Columna derecha -->
         <section class="student-actions-section">
             <div class="container">
                 <div class="top-section">
                     <div class="photo-container">
-                        <!-- CONTENEDOR DE FOTO DEL ALUMNO -->
-                        <div class="placeholder-box photo-box" id="photo-box">
-                            <img id="student-photo" src="" alt="Foto del estudiante" 
-                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: none;">
+                        <div class="photo-box" id="photo-box">
+                            <img id="student-photo" src="" alt="Foto del estudiante"
+                                style="display:none;">
                         </div>
-
                         <div class="credential-buttons">
                             <button type="button" id="btn-bloquear-credencial" class="btn-credential btn-block">
                                 BLOQUEAR CREDENCIAL
@@ -136,7 +129,7 @@
                                 </thead>
                                 <tbody id="incidents-tbody">
                                     <tr>
-                                        <td colspan="5" style="text-align: center; padding: 2rem;">
+                                        <td colspan="4" style="text-align:center;padding:2rem;">
                                             Ingrese una boleta para buscar
                                         </td>
                                     </tr>
@@ -148,25 +141,17 @@
 
                 <div class="justification-section">
                     <h3 class="justification-title">Justificación</h3>
-                    <select name="item-selector" id="item-selector">
+                    <select id="item-selector">
                         <option value="item1">Selecciona una justificación...</option>
                         <option value="item2">Se habló con el tutor/a</option>
                         <option value="item3">Se habló con el estudiante</option>
                         <option value="item4">Error en el registro</option>
                     </select>
                     <div class="justification-buttons">
-                        <button type="button" id="btn-justselec">
-                            Justificar<br>selección
-                        </button>
-                        <button type="button" id="btn-justret">
-                            Justificar<br>retardos
-                        </button>
-                        <button type="button" id="btn-justsin">
-                            Justificar<br>sin credencial
-                        </button>
-                        <button type="button" id="btn-justall">
-                            Justificar<br>todo
-                        </button>
+                        <button type="button" id="btn-justselec">Justificar<br>selección</button>
+                        <button type="button" id="btn-justret">Justificar<br>retardos</button>
+                        <button type="button" id="btn-justsin">Justificar<br>sin credencial</button>
+                        <button type="button" id="btn-justall">Justificar<br>todo</button>
                     </div>
                 </div>
             </div>
@@ -175,10 +160,10 @@
 
     <footer class="site-footer">
         <div class="footer-container">
-            <p>© 2024 Sistema de Control Escolar - CECyT 9</p>
+            <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
         </div>
     </footer>
-    
+
     <script src="./JS/navigation.js"></script>
     <script src="./JS/buscarAlumno.js"></script>
 </body>
