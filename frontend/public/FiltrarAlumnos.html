@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Directorio de Alumnos — QR Pass</title>
-    <link rel="stylesheet" href="/css/global.css">
+    <link rel="stylesheet" href="/css/en_sa.css">
     <style>
         .search-wrapper {
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem 1.5rem;
+            width: 100%;
         }
 
         .register-subtitle {
@@ -22,7 +23,7 @@
 
         .search-label {
             color: #d32f2f;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 800;
             display: block;
             margin-bottom: .5rem;
@@ -32,27 +33,81 @@
             width: 100%;
             padding: 11px 18px;
             font-size: 1rem;
-            border: 2px solid var(--color-border);
-            border-radius: var(--radius-lg);
+            border: 2px solid #333;
+            border-radius: 15px;
             outline: none;
             transition: border-color .3s;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
         }
 
-        .search-input:focus { border-color: var(--color-primary); }
+        .search-input:focus { border-color: #5c1f33; }
+
+        /* Barra de selección activa */
+        #seleccion-bar {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            background: #5c1f33;
+            color: white;
+            padding: .65rem 1.1rem;
+            border-radius: 10px;
+            margin-bottom: .8rem;
+            flex-wrap: wrap;
+        }
+
+        #seleccion-contador {
+            font-weight: 700;
+            font-size: .9rem;
+            flex: 1;
+        }
+
+        #seleccion-bar button {
+            background: rgba(255,255,255,.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,.4);
+            border-radius: 6px;
+            padding: .3rem .8rem;
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        #seleccion-bar button:hover { background: rgba(255,255,255,.28); }
+
+        /* Toolbar sobre la lista */
+        .list-toolbar {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            margin-bottom: .4rem;
+            flex-wrap: wrap;
+        }
 
         .datos-label {
             font-weight: 800;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             background-color: white;
-            padding: 5px 20px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-bottom: -10px;
-            position: relative;
-            z-index: 10;
+            padding: 4px 14px;
+            border-radius: 8px;
+            border: 2px solid #000;
         }
 
+        #btn-select-all {
+            background: white;
+            border: 2px solid #5c1f33;
+            color: #5c1f33;
+            border-radius: 8px;
+            padding: 4px 13px;
+            font-size: .83rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        #btn-select-all:hover { background: #5c1f33; color: white; }
+
+        /* Layout */
         .layout-grid {
             display: grid;
             grid-template-columns: 3fr 1fr;
@@ -60,7 +115,7 @@
             align-items: start;
         }
 
-        /* ── Lista de alumnos ─────────── */
+        /* Lista */
         .student-list {
             border: 2px solid #000;
             background-color: white;
@@ -74,38 +129,60 @@
             border-bottom: 2px solid #000;
             min-height: 72px;
             cursor: pointer;
-            transition: background .2s;
+            transition: background .15s;
         }
-        .student-row:last-child { border-bottom: none; }
-        .student-row:hover { background: #f5f5f5; }
+
+        .student-row:last-child  { border-bottom: none; }
+        .student-row:hover       { background: #f5f5f5; }
+
+        .student-row.row-seleccionada {
+            background: #fce8ed !important;
+            border-left: 4px solid #5c1f33;
+        }
+
+        .student-checkbox-col {
+            padding: .5rem .7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .alumno-checkbox {
+            width: 17px;
+            height: 17px;
+            accent-color: #5c1f33;
+            cursor: pointer;
+        }
 
         .student-icon {
-            padding: 1rem;
-            width: 72px;
+            padding: .8rem;
+            width: 60px;
             display: flex;
             justify-content: center;
             align-items: center;
             border-right: 2px solid #000;
             flex-shrink: 0;
+            color: #444;
         }
 
-        .student-icon svg { width: 36px; height: 36px; }
+        .student-icon svg { width: 32px; height: 32px; }
 
         .student-data {
-            padding: .8rem 1rem;
+            padding: .65rem .9rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: .35rem 1.5rem;
+            gap: .3rem 1.5rem;
             width: 100%;
-            font-size: .88rem;
+            font-size: .87rem;
         }
 
         .student-data strong { font-weight: 800; }
 
-        /* ── Panel de filtros ─────────── */
+        /* Panel filtros */
         .filters-panel {
             border: 2px solid #000;
-            border-radius: var(--radius-lg);
+            border-radius: 15px;
             background-color: white;
             overflow: hidden;
         }
@@ -114,21 +191,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 14px;
+            padding: 9px 13px;
             font-weight: 800;
-            font-size: 1rem;
+            font-size: .97rem;
             border-bottom: 2px solid #000;
         }
 
         .filter-section {
-            padding: 10px 14px;
+            padding: 9px 13px;
             border-bottom: 2px solid #000;
         }
+
         .filter-section:last-child { border-bottom: none; }
 
         .filter-section h4 {
-            margin-bottom: 7px;
-            font-size: .95rem;
+            margin-bottom: 6px;
+            font-size: .9rem;
             font-weight: 800;
             text-align: center;
         }
@@ -136,9 +214,9 @@
         .filter-label {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 5px;
-            font-size: .88rem;
+            gap: 7px;
+            margin-bottom: 4px;
+            font-size: .86rem;
             color: #555;
             cursor: pointer;
         }
@@ -146,27 +224,43 @@
         .filter-label input[type="radio"] {
             width: 15px;
             height: 15px;
-            accent-color: var(--color-primary);
+            accent-color: #5c1f33;
         }
+
+        #btn-clear-filters {
+            width: 100%;
+            background-color: #f5f5f5;
+            color: #333;
+            font-weight: 700;
+            font-size: .88rem;
+            padding: 9px;
+            border: 2px solid #999;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 9px;
+            transition: background .2s;
+        }
+
+        #btn-clear-filters:hover { background-color: #e0e0e0; }
 
         .btn-pdf {
             width: 100%;
             background-color: #e53935;
             color: white;
             font-weight: 800;
-            font-size: 1rem;
-            padding: 11px;
+            font-size: .97rem;
+            padding: 10px;
             border: 2px solid #000;
-            border-radius: var(--radius-md);
+            border-radius: 10px;
             cursor: pointer;
-            margin-top: 12px;
+            margin-top: 7px;
             transition: background-color .3s;
         }
+
         .btn-pdf:hover { background-color: #c62828; }
 
-        @media (max-width: 1024px) {
-            .layout-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 1024px) { .layout-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 600px)  { .student-data { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -174,7 +268,7 @@
     <header class="site-header">
         <div class="header-container">
             <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <button type="button" id="menu-toggle-btn">
                     <img src="/imgs/menu.png" alt="Menú">
                 </button>
             </div>
@@ -185,35 +279,49 @@
         </div>
     </header>
 
-    <nav class="menu-navegacion" aria-label="Menú principal">
+    <nav class="menu-navegacion">
         <ul id="lista-opciones" class="menu-lista">
             <li><a href="/Entrada_Salida.html">Registro de entrada y salida</a></li>
             <li><a href="/BuscarAlumno.html">Buscar alumno</a></li>
             <li class="admin-only-link"><a href="/ModificarAlumno.html">Modificar alumno</a></li>
             <li class="admin-only-link"><a href="/GestionUsuarios.html">Gestión de usuarios</a></li>
+            <li class="admin-only-link"><a href="/FiltrarAlumnos.html">Filtro de alumnos</a></li>
         </ul>
     </nav>
     <div id="menu-overlay" class="menu-overlay"></div>
 
     <div class="search-wrapper">
+
         <div class="register-subtitle">
-            <a href="/RegistrarAlumno.html" style="color:black;text-decoration:none;">
-                + Registrar Nuevo Alumno
+            <a href="/ModificarAlumno.html" style="color:black;text-decoration:none;">
+                + Registrar / Modificar Alumno
             </a>
         </div>
 
         <label class="search-label" for="search-input">Buscar alumnos</label>
         <form id="search-form" onsubmit="event.preventDefault();">
             <input type="text" id="search-input" class="search-input"
-                   placeholder="Ingresa nombre o boleta...">
+                   placeholder="Ingresa nombre o boleta…">
         </form>
 
+        <!-- Barra flotante de selección -->
+        <div id="seleccion-bar">
+            <span id="seleccion-contador"></span>
+            <button type="button" id="btn-deselect-bar">✕ Deseleccionar todos</button>
+        </div>
+
         <div class="layout-grid">
+
+            <!-- Lista -->
             <div>
-                <span class="datos-label">Datos</span>
+                <div class="list-toolbar">
+                    <span class="datos-label">Datos</span>
+                    <button type="button" id="btn-select-all">☐ Seleccionar todos</button>
+                </div>
                 <div class="student-list" id="student-list-container"></div>
             </div>
 
+            <!-- Filtros -->
             <div class="filters-sidebar">
                 <form id="filtros-form">
                     <div class="filters-panel">
@@ -260,6 +368,7 @@
                     </div>
                 </form>
 
+                <button type="button" id="btn-clear-filters">✕ Limpiar filtros</button>
                 <button class="btn-pdf" type="button">Descargar PDF</button>
             </div>
         </div>

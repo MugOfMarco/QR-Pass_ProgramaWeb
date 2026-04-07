@@ -10,7 +10,8 @@ import authRoutes      from './routes/auth.routes.js';
 import alumnosRoutes   from './routes/alumnos.routes.js';
 import registrosRoutes from './routes/registros.routes.js';
 import uploadRoutes    from './routes/upload.routes.js';
-import usuariosRoutes  from './routes/usuarios.routes.js';   // ← FIX: import faltante
+import usuariosRoutes  from './routes/usuarios.routes.js';
+import reportesRoutes  from './routes/reportes.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -50,7 +51,8 @@ app.use('/api/auth',      authRoutes);
 app.use('/api/alumnos',   alumnosRoutes);
 app.use('/api/registros', registrosRoutes);
 app.use('/api/upload',    uploadRoutes);
-app.use('/api/usuarios',  usuariosRoutes);   // ← FIX: montaje faltante
+app.use('/api/usuarios',  usuariosRoutes);
+app.use('/api/reportes',  reportesRoutes);
 
 // ── ARCHIVOS ESTÁTICOS ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
@@ -68,15 +70,20 @@ app.use((req, res, next) => {
     if (!req.session.user) return res.redirect('/login.html');
 
     const tipo = req.session.user.tipo;
+
+    // Páginas que SOLO puede ver el Administrador
     const soloAdmin = [
         '/ModificarAlumno.html',
         '/RegistrarAlumno.html',
         '/DescargasBD.html',
         '/GestionUsuarios.html',
+        '/FiltrarAlumnos.html',   // ← FIX: añadido
     ];
+
     if (soloAdmin.includes(ruta) && tipo !== 'Administrador') {
         return res.status(403).send('<h1>Acceso Denegado</h1><a href="/">Volver</a>');
     }
+
     next();
 });
 
@@ -96,7 +103,8 @@ app.get('/', (req, res) => {
     '/DescargasBD.html',
     '/ModificarAlumno.html',
     '/RegistrarAlumno.html',
-    '/GestionUsuarios.html',   // ← FIX: faltaba
+    '/GestionUsuarios.html',
+    '/FiltrarAlumnos.html',   // ← FIX: añadido
     '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>
