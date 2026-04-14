@@ -106,6 +106,7 @@ app.get('/', (req, res) => {
     '/GestionUsuarios.html',
     '/FiltrarAlumnos.html',
     '/Dashboard.html',
+    '/BuscarAlumnoVigilante.html',
     '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>

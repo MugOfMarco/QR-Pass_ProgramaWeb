@@ -6,26 +6,127 @@
     <title>Gestión de Usuarios — CECyT 9</title>
     <link rel="stylesheet" href="../css/global.css">
     <style>
-        /* ── Layout ─────────────────────────────────── */
-        .usuarios-container {
-            max-width: 1100px;
+        /* ── Layout ─────────────────────────────────────────── */
+        .usuarios-wrap {
+            max-width: 1180px;
             margin: 2rem auto;
             padding: 0 1.5rem;
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 2rem;
         }
 
-        .card-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--color-primary-dark);
-            margin-bottom: 1.2rem;
+        .usuarios-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* ── Panel sticky derecho ───────────────────────────── */
+        .panel-form {
+            position: sticky;
+            top: 1.2rem;
+        }
+
+        /* ── Encabezado de sección ──────────────────────────── */
+        .section-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 1rem;
         }
 
+        .section-head h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-primary-dark);
+        }
+
+        /* ── Tabla ──────────────────────────────────────────── */
+        .table-scroll {
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border-light);
+        }
+
+        #tabla-usuarios { min-width: 680px; }
+        #tabla-usuarios thead th { white-space: nowrap; }
+
+        .col-email    { color: var(--color-text-muted); font-size: .82rem; }
+        .col-acciones { white-space: nowrap; }
+
+        .tag-tu {
+            color: var(--color-primary);
+            font-size: .7rem;
+            margin-left: 4px;
+            font-weight: 600;
+        }
+
+        /* Botones de acción en tabla */
+        .btn-accion {
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: .28rem .65rem;
+            font-size: .74rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 3px;
+            transition: opacity .2s;
+            font-family: inherit;
+        }
+
+        .btn-editar { background: #e8f0fe; color: #1a3a8b; }
+        .btn-pass   { background: #fff3e0; color: #7a4000; }
+        .btn-toggle { background: #f3e8ff; color: #4a0080; }
+        .btn-accion:hover { opacity: .72; }
+
+        /* ── Formulario ─────────────────────────────────────── */
+        .form-panel-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-primary-dark);
+            margin-bottom: 1.2rem;
+        }
+
+        .form-sec { margin-bottom: .9rem; }
+
+        .form-sec label {
+            display: block;
+            font-size: .8rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: .3rem;
+        }
+
+        .form-sec input,
+        .form-sec select {
+            width: 100%;
+            padding: .55rem .85rem;
+            border: 2px solid var(--color-border-light);
+            border-radius: var(--radius-sm);
+            font-size: .9rem;
+            box-sizing: border-box;
+            transition: border-color .2s;
+            font-family: inherit;
+        }
+
+        .form-sec input:focus,
+        .form-sec select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(92,31,51,.08);
+        }
+
+        .form-sec small { color: #999; font-size: .72rem; }
+
+        .form-actions-panel {
+            display: flex;
+            gap: .6rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .form-actions-panel .btn-primary { flex: 1; }
+
+        /* ── Btn nuevo ──────────────────────────────────────── */
         .btn-nuevo {
             background: var(--header-grad);
             color: white;
@@ -35,125 +136,59 @@
             font-size: .82rem;
             font-weight: 700;
             cursor: pointer;
+            font-family: inherit;
         }
+
         .btn-nuevo:hover { opacity: .88; }
 
-        /* Acciones de tabla */
-        .btn-accion {
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: .28rem .6rem;
-            font-size: .74rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-right: 3px;
-            transition: opacity .2s;
-        }
-        .btn-editar   { background: #e8f0fe; color: #1a3a8b; }
-        .btn-pass     { background: #fff3e0; color: #7a4000; }
-        .btn-toggle   { background: #f3e8ff; color: #4a0080; }
-        .btn-accion:hover { opacity: .72; }
+        /* ── Modal form-sec override ────────────────────────── */
+        .modal .form-sec { margin-bottom: 1rem; }
 
-        /* ── Panel formulario ────────────────────────── */
-        .panel { position: sticky; top: 1.5rem; }
-
-        .form-section { margin-bottom: 1rem; }
-        .form-section label {
-            display: block;
-            font-size: .8rem;
-            font-weight: 700;
-            color: #555;
-            margin-bottom: .3rem;
-        }
-        .form-section input,
-        .form-section select {
-            width: 100%;
-            padding: .55rem .85rem;
-            border: 2px solid #ddd;
-            border-radius: var(--radius-sm);
-            font-size: .9rem;
-            box-sizing: border-box;
-            transition: border-color .2s;
-        }
-        .form-section input:focus,
-        .form-section select:focus {
-            outline: none;
-            border-color: var(--color-primary);
-        }
-        .form-section small { color: #888; font-size: .72rem; }
-
-        .form-actions {
-            display: flex;
-            gap: .6rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-        }
-
-        .btn-primary {
-            flex: 1;
-            background: var(--header-grad);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: .6rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .btn-primary:hover { opacity: .88; }
-
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: .6rem 1rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        @media (max-width: 900px) {
-            .usuarios-container { grid-template-columns: 1fr; }
-            .panel { position: static; }
+        /* ── Responsive ─────────────────────────────────────── */
+        @media (max-width: 960px) {
+            .usuarios-grid { grid-template-columns: 1fr; }
+            .panel-form    { position: static; }
         }
     </style>
 </head>
 <body>
 
-    <header class="site-header">
-        <div class="header-container">
-            <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
-                    <img src="../imgs/menu.png" alt="Menú">
-                </button>
-            </div>
-            <h1 class="title">Gestión de Usuarios</h1>
-            <div class="logo">
-                <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
-            </div>
+<header class="site-header">
+    <div class="header-container">
+        <div class="Boton-nav">
+            <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <img src="../imgs/menu.png" alt="Menú">
+            </button>
         </div>
-    </header>
+        <h1 class="title">Gestión de Usuarios</h1>
+        <div class="logo">
+            <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+        </div>
+    </div>
+</header>
 
-    <nav class="menu-navegacion" aria-label="Menú principal">
-        <ul id="lista-opciones" class="menu-lista">
-            <li><a href="./Entrada_Salida.html">Registro de entrada y salida</a></li>
-            <li><a href="./BuscarAlumno.html">Buscar alumno</a></li>
-            <li class="admin-only-link"><a href="./ModificarAlumno.html">Modificar alumno</a></li>
-            <li class="admin-only-link"><a href="./GestionUsuarios.html">Gestión de usuarios</a></li>
-            <li class="admin-only-link"><a href="./FiltrarAlumnos.html">Filtro de alumnos</a></li>
-        </ul>
-    </nav>
-    <div id="menu-overlay" class="menu-overlay"></div>
+<nav class="menu-navegacion" aria-label="Menú principal">
+    <ul id="lista-opciones" class="menu-lista">
+        <li><a href="/Dashboard.html">Dashboard</a></li>
+        <li><a href="/Entrada_Salida.html">Registro de entrada y salida</a></li>
+        <li><a href="/BuscarAlumno.html">Buscar alumno</a></li>
+        <li class="admin-only-link"><a href="/ModificarAlumno.html">Modificar alumno</a></li>
+        <li class="admin-only-link"><a href="/GestionUsuarios.html">Gestión de usuarios</a></li>
+        <li class="admin-only-link"><a href="/FiltrarAlumnos.html">Filtro de alumnos</a></li>
+    </ul>
+</nav>
+<div id="menu-overlay" class="menu-overlay"></div>
 
-    <!-- ── CONTENIDO ──────────────────────────────────── -->
-    <div class="usuarios-container">
+<div class="usuarios-wrap">
+    <div class="usuarios-grid">
 
         <!-- Tabla -->
         <div class="card">
-            <div class="card-title">
-                <span>Usuarios del sistema</span>
+            <div class="section-head">
+                <h2>Usuarios del sistema</h2>
                 <button class="btn-nuevo" id="btn-nuevo-usuario">+ Nuevo usuario</button>
             </div>
-            <div style="overflow-x:auto;">
+            <div class="table-scroll">
                 <table id="tabla-usuarios">
                     <thead>
                         <tr>
@@ -166,45 +201,60 @@
                         </tr>
                     </thead>
                     <tbody id="tbody-usuarios">
-                        <tr><td colspan="6" style="text-align:center;padding:2rem;color:#999">Cargando…</td></tr>
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:2rem;color:#999">
+                                Cargando usuarios…
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Panel formulario -->
-        <div class="panel">
+        <!-- Formulario -->
+        <div class="panel-form">
             <div class="card">
-                <div class="card-title" id="panel-titulo">Nuevo usuario</div>
+                <div class="form-panel-title" id="panel-titulo">Nuevo usuario</div>
 
                 <form id="form-usuario" autocomplete="off">
                     <input type="hidden" id="f-id">
 
-                    <div class="form-section">
+                    <div class="form-sec">
                         <label for="f-nombre">Nombre completo *</label>
-                        <input type="text" id="f-nombre" maxlength="150" placeholder="Apellidos Nombre" required>
+                        <input type="text" id="f-nombre" maxlength="150"
+                               placeholder="Apellidos Nombre" required>
                     </div>
-                    <div class="form-section">
+
+                    <div class="form-sec">
                         <label for="f-usuario">Nombre de usuario *</label>
-                        <input type="text" id="f-usuario" maxlength="50" placeholder="sin espacios" required autocomplete="off">
+                        <input type="text" id="f-usuario" maxlength="50"
+                               placeholder="sin espacios" required autocomplete="off">
                     </div>
-                    <div class="form-section">
-                        <label for="f-email">Correo electrónico <small>(opcional)</small></label>
-                        <input type="email" id="f-email" maxlength="200" placeholder="usuario@ejemplo.com">
+
+                    <div class="form-sec">
+                        <label for="f-email">
+                            Correo electrónico <small>(opcional)</small>
+                        </label>
+                        <input type="email" id="f-email" maxlength="200"
+                               placeholder="usuario@ejemplo.com">
                     </div>
-                    <div class="form-section">
+
+                    <div class="form-sec">
                         <label for="f-rol">Rol *</label>
                         <select id="f-rol" required>
                             <option value="">Cargando roles…</option>
                         </select>
                     </div>
 
-                    <div id="seccion-password" class="form-section">
-                        <label for="f-password">Contraseña * <small>(mínimo 6 caracteres)</small></label>
-                        <input type="password" id="f-password" maxlength="100" autocomplete="new-password">
+                    <div id="seccion-password" class="form-sec">
+                        <label for="f-password">
+                            Contraseña * <small>(mínimo 6 caracteres)</small>
+                        </label>
+                        <input type="password" id="f-password" maxlength="100"
+                               autocomplete="new-password">
                     </div>
 
-                    <div id="seccion-activo" class="form-section" style="display:none;">
+                    <div id="seccion-activo" class="form-sec" style="display:none">
                         <label for="f-activo">Estado</label>
                         <select id="f-activo">
                             <option value="true">Activo</option>
@@ -212,49 +262,62 @@
                         </select>
                     </div>
 
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary" id="btn-guardar-usuario">Crear usuario</button>
-                        <button type="button" class="btn-secondary" id="btn-cancelar-usuario">Cancelar</button>
+                    <div class="form-actions-panel">
+                        <button type="submit" class="btn-primary" id="btn-guardar-usuario">
+                            Crear usuario
+                        </button>
+                        <button type="button" class="btn-secondary" id="btn-cancelar-usuario">
+                            Cancelar
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
+
     </div>
+</div>
 
-    <!-- ── MODAL CONTRASEÑA ───────────────────────────── -->
-    <div class="modal-overlay" id="modal-password">
-        <div class="modal">
-            <h3 id="modal-titulo">Cambiar contraseña</h3>
+<!-- Modal contraseña -->
+<div class="modal-overlay" id="modal-password">
+    <div class="modal">
+        <h3 id="modal-titulo">Cambiar contraseña</h3>
 
-            <div id="seccion-pass-actual" class="form-section">
-                <label for="m-actual">Contraseña actual *</label>
-                <input type="password" id="m-actual" maxlength="100" autocomplete="current-password">
-            </div>
-            <div class="form-section">
-                <label for="m-nueva">Nueva contraseña * <small>(mínimo 6 caracteres)</small></label>
-                <input type="password" id="m-nueva" maxlength="100" autocomplete="new-password">
-            </div>
-            <div class="form-section">
-                <label for="m-confirmar">Confirmar nueva contraseña *</label>
-                <input type="password" id="m-confirmar" maxlength="100" autocomplete="new-password">
-            </div>
+        <div id="seccion-pass-actual" class="form-sec">
+            <label for="m-actual">Contraseña actual *</label>
+            <input type="password" id="m-actual" maxlength="100"
+                   autocomplete="current-password">
+        </div>
 
-            <div class="modal-actions">
-                <button class="btn-primary" id="btn-confirmar-pass">Guardar contraseña</button>
-                <button class="btn-secondary" id="btn-cerrar-modal">Cancelar</button>
-            </div>
+        <div class="form-sec">
+            <label for="m-nueva">
+                Nueva contraseña * <small>(mínimo 6 caracteres)</small>
+            </label>
+            <input type="password" id="m-nueva" maxlength="100"
+                   autocomplete="new-password">
+        </div>
+
+        <div class="form-sec">
+            <label for="m-confirmar">Confirmar nueva contraseña *</label>
+            <input type="password" id="m-confirmar" maxlength="100"
+                   autocomplete="new-password">
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-primary"   id="btn-confirmar-pass">Guardar contraseña</button>
+            <button class="btn-secondary" id="btn-cerrar-modal">Cancelar</button>
         </div>
     </div>
+</div>
 
-    <div class="toast" id="toast"></div>
+<div class="toast" id="toast"></div>
 
-    <footer class="site-footer">
-        <div class="footer-container">
-            <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
-        </div>
-    </footer>
+<footer class="site-footer">
+    <div class="footer-container">
+        <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
+    </div>
+</footer>
 
-    <script src="./JS/navigation.js"></script>
-    <script src="./JS/gestionusuarios.js"></script>
+<script src="./JS/navigation.js"></script>
+<script src="./JS/gestionusuarios.js"></script>
 </body>
 </html>
