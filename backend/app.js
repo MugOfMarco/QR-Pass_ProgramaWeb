@@ -13,6 +13,7 @@ import uploadRoutes    from './routes/upload.routes.js';
 import usuariosRoutes  from './routes/usuarios.routes.js';
 import reportesRoutes  from './routes/reportes.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import gruposRoutes    from './routes/grupos.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -31,7 +32,7 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));   // carga masiva puede ser grande
 app.use(express.urlencoded({ extended: true }));
 
 // ── SESIÓN ────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ app.use('/api/upload',    uploadRoutes);
 app.use('/api/usuarios',  usuariosRoutes);
 app.use('/api/reportes',  reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/grupos',    gruposRoutes);
 
 // ── ARCHIVOS ESTÁTICOS ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
@@ -79,6 +81,7 @@ app.use((req, res, next) => {
         '/GestionUsuarios.html',
         '/FiltrarAlumnos.html',
         '/Dashboard.html',
+        '/GestionGrupos.html',
     ];
 
     if (soloAdmin.includes(ruta) && tipo !== 'Administrador') {
@@ -107,6 +110,7 @@ app.get('/', (req, res) => {
     '/FiltrarAlumnos.html',
     '/Dashboard.html',
     '/BuscarAlumnoVigilante.html',
+    '/GestionGrupos.html',
     '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>

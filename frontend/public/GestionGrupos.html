@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Grupos — QR Pass CECyT 9</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <!-- SheetJS para parsear Excel en el navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* ── Tokens extra ────────────────────────────────────── */
+        :root {
+            --ipn:       var(--color-primary);
+            --ipn-dark:  var(--color-primary-dark);
+            --ipn-ghost: rgba(92,31,51,.07);
+            --ok:        #16a34a;
+            --warn:      #d97706;
+            --err:       #dc2626;
+            --info:      #2563eb;
+            --surface:   #fff;
+            --border:    var(--color-border-light);
+            --muted:     var(--color-text-muted);
+        }
+
+        /* ── Layout ──────────────────────────────────────────── */
+        .page-wrap {
+            max-width: 1320px;
+            margin: 1.8rem auto;
+            padding: 0 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.6rem;
+        }
+
+        /* ── Barra de herramientas ───────────────────────────── */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+
+        .toolbar h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--ipn-dark);
+            flex: 1;
+        }
+
+        .btn-ipn {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .5rem 1rem;
+            background: var(--header-grad);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: .85rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: opacity .2s;
+        }
+        .btn-ipn:hover { opacity: .88; }
+
+        .btn-out {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .5rem 1rem;
+            background: white;
+            color: var(--ipn);
+            border: 2px solid var(--ipn);
+            border-radius: var(--radius-sm);
+            font-size: .85rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all .2s;
+        }
+        .btn-out:hover { background: var(--ipn-ghost); }
+
+        /* ── Sección carga Excel ─────────────────────────────── */
+        .excel-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .excel-header {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: .9rem 1.2rem;
+            border-bottom: 1px solid var(--border);
+            background: #f9fafb;
+        }
+
+        .excel-header h3 {
+            font-size: .92rem;
+            font-weight: 700;
+            color: var(--color-text);
+            flex: 1;
+        }
+
+        .excel-body {
+            padding: 1.2rem;
+        }
+
+        /* Drop zone */
+        .drop-zone {
+            border: 2px dashed #c9d0d8;
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            background: #fafbfc;
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--ipn);
+            background: var(--ipn-ghost);
+        }
+
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drop-zone .dz-icon { font-size: 2.5rem; display: block; margin-bottom: .5rem; }
+        .drop-zone .dz-text { font-size: .88rem; color: var(--muted); }
+        .drop-zone .dz-sub  { font-size: .75rem; color: #aaa; margin-top: .25rem; }
+
+        /* Formato esperado */
+        .formato-hint {
+            margin-top: 1rem;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: var(--radius-sm);
+            padding: .7rem 1rem;
+            font-size: .8rem;
+            color: #92400e;
+        }
+
+        .formato-hint code {
+            background: #fef3c7;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: .78rem;
+        }
+
+        /* Preview tabla Excel */
+        .preview-wrap {
+            margin-top: 1rem;
+            overflow-x: auto;
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            display: none;
+        }
+
+        .preview-wrap table {
+            font-size: .78rem;
+            min-width: 600px;
+        }
+
+        .preview-wrap thead th { background: var(--header-grad); color: white; }
+
+        .fila-ok   td:first-child { border-left: 3px solid var(--ok); }
+        .fila-err  td:first-child { border-left: 3px solid var(--err); background: #fff0f0; }
+
+        /* Barra de progreso */
+        .progress-wrap {
+            margin-top: .8rem;
+            display: none;
+        }
+
+        .progress-bar-outer {
+            height: 8px;
+            background: var(--border);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, var(--ipn), var(--ipn-dark));
+            border-radius: 999px;
+            transition: width .4s;
+            width: 0%;
+        }
+
+        .progress-label {
+            font-size: .78rem;
+            color: var(--muted);
+            margin-top: .3rem;
+            text-align: center;
+        }
+
+        /* Resultado */
+        .resultado-wrap {
+            margin-top: .8rem;
+            display: none;
+            gap: .5rem;
+            flex-wrap: wrap;
+        }
+
+        .res-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding: .35rem .75rem;
+            border-radius: var(--radius-sm);
+            font-size: .82rem;
+            font-weight: 700;
+        }
+        .res-ok   { background: #e8f5e9; color: #1b5e20; }
+        .res-edit { background: #e3f2fd; color: #0d47a1; }
+        .res-err  { background: #fce8ed; color: #b71c1c; }
+
+        /* ── Tabla de grupos ─────────────────────────────────── */
+        .grupos-section { display: flex; flex-direction: column; gap: 1rem; }
+
+        .grupo-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: box-shadow .2s;
+        }
+
+        .grupo-card:hover { box-shadow: var(--shadow-md); }
+
+        .grupo-header {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: .75rem 1.1rem;
+            cursor: pointer;
+            user-select: none;
+            background: #f8f9fa;
+            border-bottom: 1px solid transparent;
+            transition: background .15s;
+        }
+
+        .grupo-header:hover { background: var(--ipn-ghost); }
+        .grupo-header.open  { border-bottom-color: var(--border); }
+
+        .grupo-chevron {
+            font-size: .85rem;
+            transition: transform .25s;
+            color: var(--muted);
+        }
+
+        .grupo-header.open .grupo-chevron { transform: rotate(90deg); }
+
+        .grupo-nombre {
+            font-weight: 700;
+            font-size: .95rem;
+            color: var(--color-text);
+        }
+
+        .grupo-turno {
+            font-size: .73rem;
+            font-weight: 600;
+            padding: .15rem .55rem;
+            border-radius: 999px;
+            background: #e8f0fe;
+            color: #1a3a8b;
+        }
+
+        .grupo-total {
+            font-size: .78rem;
+            color: var(--muted);
+            margin-left: auto;
+        }
+
+        .btn-edit-grupo {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: .2rem .55rem;
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all .15s;
+        }
+        .btn-edit-grupo:hover { border-color: var(--ipn); color: var(--ipn); }
+
+        /* Alumnos dentro del grupo */
+        .grupo-body {
+            display: none;
+            padding: 0;
+        }
+
+        .grupo-body.open { display: block; }
+
+        /* Barra de acciones masivas del grupo */
+        .grupo-acciones-bar {
+            display: none;
+            align-items: center;
+            gap: .6rem;
+            padding: .55rem 1.1rem;
+            background: var(--ipn);
+            flex-wrap: wrap;
+        }
+
+        .grupo-acciones-bar.visible { display: flex; }
+
+        .acc-label {
+            font-size: .78rem;
+            color: white;
+            font-weight: 700;
+            flex: 1;
+        }
+
+        .acc-select {
+            padding: .3rem .6rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: .8rem;
+            font-family: inherit;
+        }
+
+        .acc-btn {
+            padding: .3rem .75rem;
+            background: rgba(255,255,255,.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,.4);
+            border-radius: var(--radius-sm);
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background .15s;
+        }
+
+        .acc-btn:hover { background: rgba(255,255,255,.28); }
+
+        /* Tabla de alumnos del grupo */
+        .alumnos-tabla-wrap { overflow-x: auto; }
+
+        .alumnos-tabla {
+            width: 100%;
+            font-size: .82rem;
+        }
+
+        .alumnos-tabla thead th {
+            padding: .55rem .75rem;
+            font-size: .74rem;
+            letter-spacing: .03em;
+        }
+
+        .alumnos-tabla tbody td {
+            padding: .5rem .75rem;
+        }
+
+        .alumnos-tabla tbody tr.sel-row td { background: #fce8ed; }
+
+        .alumno-check {
+            accent-color: var(--ipn);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        .badge-bloq {
+            display: inline-block;
+            padding: .1rem .45rem;
+            border-radius: 999px;
+            font-size: .68rem;
+            font-weight: 700;
+            background: #fce8ed;
+            color: #b71c1c;
+        }
+
+        .badge-ok {
+            display: inline-block;
+            padding: .1rem .45rem;
+            border-radius: 999px;
+            font-size: .68rem;
+            font-weight: 700;
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+
+        /* ── Modal grupo ─────────────────────────────────────── */
+        .modal-form label {
+            display: block;
+            font-size: .8rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: .3rem;
+            margin-top: .75rem;
+        }
+
+        .modal-form input,
+        .modal-form select {
+            width: 100%;
+            padding: .55rem .85rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: .92rem;
+            font-family: inherit;
+            transition: border-color .2s;
+            box-sizing: border-box;
+        }
+
+        .modal-form input:focus,
+        .modal-form select:focus {
+            outline: none;
+            border-color: var(--ipn);
+        }
+
+        /* ── Toast ───────────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem; right: 1.5rem;
+            padding: .7rem 1.2rem;
+            border-radius: var(--radius-md);
+            font-size: .85rem;
+            font-weight: 700;
+            color: white;
+            z-index: 4000;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity .3s, transform .3s;
+            pointer-events: none;
+        }
+        .toast.visible { opacity: 1; transform: none; }
+        .toast.ok  { background: var(--ok); }
+        .toast.err { background: var(--err); }
+
+        /* ── Empty ───────────────────────────────────────────── */
+        .empty-row td { text-align: center; padding: 1.5rem; color: var(--muted); }
+
+        @media (max-width: 768px) {
+            .toolbar { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-container">
+        <div class="Boton-nav">
+            <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <img src="../imgs/menu.png" alt="">
+            </button>
+        </div>
+        <h1 class="title">Gestión de Grupos</h1>
+        <div class="logo">
+            <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+        </div>
+    </div>
+</header>
+
+<nav class="menu-navegacion" aria-label="Menú principal">
+    <ul id="lista-opciones" class="menu-lista">
+        <li><a href="/Dashboard.html">Dashboard</a></li>
+        <li><a href="/Entrada_Salida.html">Registro de entrada y salida</a></li>
+        <li><a href="/BuscarAlumno.html">Buscar alumno</a></li>
+        <li class="admin-only-link"><a href="/ModificarAlumno.html">Modificar alumno</a></li>
+        <li class="admin-only-link"><a href="/GestionGrupos.html">Gestión de grupos</a></li>
+        <li class="admin-only-link"><a href="/FiltrarAlumnos.html">Filtrar alumnos</a></li>
+        <li class="admin-only-link"><a href="/GestionUsuarios.html">Gestión de usuarios</a></li>
+    </ul>
+</nav>
+<div id="menu-overlay" class="menu-overlay"></div>
+
+<!-- ══════════════════════ CONTENIDO ══════════════════════════ -->
+<div class="page-wrap">
+
+    <!-- BARRA SUPERIOR -->
+    <div class="toolbar">
+        <h2>Grupos y alumnos</h2>
+        <button class="btn-out" id="btn-descargar-plantilla">⬇ Plantilla Excel</button>
+        <button class="btn-ipn" id="btn-nuevo-grupo">+ Nuevo grupo</button>
+    </div>
+
+    <!-- SECCIÓN CARGA EXCEL -->
+    <div class="excel-card">
+        <div class="excel-header">
+            <span style="font-size:1.3rem">📊</span>
+            <h3>Carga masiva desde Excel</h3>
+            <span style="font-size:.75rem;color:var(--muted)">Máx. 2 000 alumnos · .xlsx / .xls</span>
+        </div>
+        <div class="excel-body">
+
+            <div class="drop-zone" id="drop-zone">
+                <input type="file" id="excel-input" accept=".xlsx,.xls">
+                <span class="dz-icon">📂</span>
+                <span class="dz-text">Arrastra tu archivo Excel aquí o haz clic para seleccionarlo</span>
+                <span class="dz-sub">Formatos: .xlsx · .xls</span>
+            </div>
+
+            <div class="formato-hint">
+                📋 <strong>Formato requerido (primera fila = encabezados):</strong><br>
+                <code>boleta</code> · <code>nombre_completo</code> · <code>nombre_grupo</code> · <code>estado_academico</code> · <code>puertas_abiertas</code><br>
+                El campo <code>puertas_abiertas</code> acepta: <code>SI</code>, <code>NO</code>, <code>TRUE</code>, <code>FALSE</code>.<br>
+                Si la boleta ya existe en el sistema, sus datos serán <strong>actualizados</strong>. Si no existe, se <strong>insertará</strong> como alumno nuevo.
+            </div>
+
+            <div class="preview-wrap" id="preview-wrap">
+                <table>
+                    <thead id="preview-head"></thead>
+                    <tbody id="preview-body"></tbody>
+                </table>
+            </div>
+
+            <div class="progress-wrap" id="progress-wrap">
+                <div class="progress-bar-outer">
+                    <div class="progress-bar-inner" id="progress-bar"></div>
+                </div>
+                <div class="progress-label" id="progress-label">Procesando…</div>
+            </div>
+
+            <div class="resultado-wrap" id="resultado-wrap">
+                <span class="res-badge res-ok"  id="res-insertados">✓ 0 insertados</span>
+                <span class="res-badge res-edit" id="res-actualizados">↺ 0 actualizados</span>
+                <span class="res-badge res-err"  id="res-errores">✗ 0 errores</span>
+            </div>
+
+            <div style="display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap" id="btns-carga">
+                <button class="btn-ipn" id="btn-cargar" disabled>⬆ Cargar en base de datos</button>
+                <button class="btn-out" id="btn-limpiar-excel" style="display:none">✕ Limpiar</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LISTA DE GRUPOS -->
+    <div class="toolbar" style="margin-bottom:-.5rem">
+        <input type="text" id="buscador-grupos" placeholder="Buscar grupo…"
+               style="padding:.45rem .9rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;width:220px;font-family:inherit">
+    </div>
+
+    <div class="grupos-section" id="grupos-section">
+        <p style="color:var(--muted);text-align:center;padding:2rem">Cargando grupos…</p>
+    </div>
+
+</div><!-- /page-wrap -->
+
+<!-- MODAL GRUPO -->
+<div class="modal-overlay" id="modal-grupo">
+    <div class="modal">
+        <h3 id="modal-grupo-titulo">Nuevo grupo</h3>
+        <div class="modal-form">
+            <label for="mg-nombre">Nombre del grupo *</label>
+            <input type="text" id="mg-nombre" maxlength="30" placeholder="Ej. 1CV1" autocomplete="off">
+            <label for="mg-turno">Turno *</label>
+            <select id="mg-turno">
+                <option value="">Cargando…</option>
+            </select>
+        </div>
+        <div class="modal-actions" style="margin-top:1.2rem">
+            <button class="btn-primary" id="btn-guardar-grupo">Crear grupo</button>
+            <button class="btn-secondary" id="btn-cancelar-grupo">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./JS/navigation.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// GestionGrupos.js — inline
+// ══════════════════════════════════════════════════════════════
+
+// ── Estado global ─────────────────────────────────────────────
+let gruposData    = [];   // cache de grupos
+let turnosData    = [];
+let estadosData   = [];
+let excelFilas    = [];   // filas parseadas del Excel
+let modoEditGrupo = null; // null = crear, id = editar
+let seleccionados = {};   // { [idGrupo]: Set<boleta> }
+
+// ── Helpers ────────────────────────────────────────────────────
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const $ = id => document.getElementById(id);
+
+function toast(msg, tipo = 'ok') {
+    const el = $('toast');
+    el.textContent = msg;
+    el.className = `toast ${tipo} visible`;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('visible'), 3500);
+}
+
+// ── Verificar auth ─────────────────────────────────────────────
+(async function() {
+    try {
+        const r    = await fetch('/api/auth/check', { credentials: 'include' });
+        const data = await r.json();
+        if (!data.isAuthenticated) { location.href = '/login.html'; return; }
+        if (data.tipo !== 'Administrador') { location.href = '/Entrada_Salida.html'; return; }
+    } catch { location.href = '/login.html'; return; }
+    await Promise.all([ cargarGrupos(), cargarTurnos(), cargarEstados() ]);
+})();
+
+// ── Cargar datos del servidor ──────────────────────────────────
+async function cargarGrupos() {
+    try {
+        const r    = await fetch('/api/grupos', { credentials: 'include' });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.message);
+        gruposData = data.grupos;
+        renderGrupos();
+    } catch (e) {
+        $('grupos-section').innerHTML = `<p style="color:var(--color-error);text-align:center;padding:2rem">Error: ${esc(e.message)}</p>`;
+    }
+}
+
+async function cargarTurnos() {
+    try {
+        const r    = await fetch('/api/grupos/turnos', { credentials: 'include' });
+        const data = await r.json();
+        if (data.success) {
+            turnosData = data.turnos;
+            const sel = $('mg-turno');
+            sel.innerHTML = '<option value="">— Selecciona turno —</option>';
+            turnosData.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id_turno;
+                opt.textContent = t.nombre_turno;
+                sel.appendChild(opt);
+            });
+        }
+    } catch {}
+}
+
+async function cargarEstados() {
+    try {
+        const r    = await fetch('/api/alumnos/estados/lista', { credentials: 'include' });
+        const data = await r.json();
+        if (data.success) estadosData = data.estados;
+    } catch {}
+}
+
+// ── Render grupos ──────────────────────────────────────────────
+function renderGrupos(filtro = '') {
+    const sec = $('grupos-section');
+    const filtroLow = filtro.toLowerCase();
+
+    const lista = filtro
+        ? gruposData.filter(g => g.nombre.toLowerCase().includes(filtroLow))
+        : gruposData;
+
+    if (!lista.length) {
+        sec.innerHTML = `<p style="color:var(--muted);text-align:center;padding:2rem">No hay grupos${filtro ? ' con ese filtro' : '. Crea uno con "+".'}</p>`;
+        return;
+    }
+
+    sec.innerHTML = '';
+    lista.forEach(g => sec.appendChild(crearTarjetaGrupo(g)));
+}
+
+function crearTarjetaGrupo(g) {
+    if (!seleccionados[g.id_grupo]) seleccionados[g.id_grupo] = new Set();
+
+    const card = document.createElement('div');
+    card.className = 'grupo-card';
+    card.dataset.gid = g.id_grupo;
+
+    card.innerHTML = `
+        <div class="grupo-header" data-gid="${g.id_grupo}">
+            <span class="grupo-chevron">▶</span>
+            <span class="grupo-nombre">${esc(g.nombre)}</span>
+            <span class="grupo-turno">${esc(g.turno)}</span>
+            <span class="grupo-total">${g.total} alumno${g.total !== 1 ? 's' : ''}</span>
+            <button class="btn-edit-grupo" data-gid="${g.id_grupo}"
+                    onclick="event.stopPropagation(); abrirEditarGrupo(${g.id_grupo})">
+                ✏ Editar
+            </button>
+        </div>
+
+        <div class="grupo-body" data-gid="${g.id_grupo}">
+            <!-- Barra de acciones masivas -->
+            <div class="grupo-acciones-bar" id="accBar-${g.id_grupo}">
+                <span class="acc-label" id="accLabel-${g.id_grupo}">0 seleccionados</span>
+
+                <select class="acc-select" id="accEstado-${g.id_grupo}">
+                    <option value="">Cambiar estado…</option>
+                    ${estadosData.map(e => `<option value="${e.id_estado}">${esc(e.estado)}</option>`).join('')}
+                </select>
+                <button class="acc-btn" onclick="aplicarAccion(${g.id_grupo},'estado')">Aplicar estado</button>
+
+                <select class="acc-select" id="accGrupo-${g.id_grupo}">
+                    <option value="">Mover a grupo…</option>
+                    ${gruposData.filter(x => x.id_grupo !== g.id_grupo).map(x =>
+                        `<option value="${x.id_grupo}">${esc(x.nombre)}</option>`).join('')}
+                </select>
+                <button class="acc-btn" onclick="aplicarAccion(${g.id_grupo},'grupo')">Mover</button>
+
+                <button class="acc-btn" style="background:rgba(220,38,38,.7)"
+                        onclick="aplicarAccion(${g.id_grupo},'bloquear')">⛔ Bloquear</button>
+                <button class="acc-btn" onclick="aplicarAccion(${g.id_grupo},'desbloquear')">✅ Desbloquear</button>
+            </div>
+
+            <!-- Tabla de alumnos -->
+            <div class="alumnos-tabla-wrap">
+                <table class="alumnos-tabla">
+                    <thead>
+                        <tr>
+                            <th style="width:36px">
+                                <input type="checkbox" class="alumno-check"
+                                       id="chkAll-${g.id_grupo}"
+                                       onchange="toggleTodos(${g.id_grupo}, this.checked)"
+                                       title="Seleccionar todos">
+                            </th>
+                            <th>Boleta</th>
+                            <th>Nombre</th>
+                            <th>Estado</th>
+                            <th>Puertas</th>
+                            <th>Retardos</th>
+                            <th>Sin cred.</th>
+                            <th>Credencial</th>
+                            <th>Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${g.alumnos.length ? g.alumnos.map(a => `
+                        <tr data-boleta="${a.boleta}" id="row-${g.id_grupo}-${a.boleta}">
+                            <td>
+                                <input type="checkbox" class="alumno-check chk-alumno"
+                                       data-gid="${g.id_grupo}" data-boleta="${a.boleta}"
+                                       onchange="toggleAlumno(${g.id_grupo}, ${a.boleta}, this.checked)">
+                            </td>
+                            <td style="font-family:monospace;font-size:.78rem">${a.boleta}</td>
+                            <td>${esc(a.nombre)}</td>
+                            <td>${esc(a.estado)}</td>
+                            <td style="text-align:center">${a.puertas ? '✅' : '—'}</td>
+                            <td style="text-align:center">${a.retardos}</td>
+                            <td style="text-align:center">${a.sin_credencial}</td>
+                            <td style="text-align:center">
+                                ${a.bloqueado
+                                    ? '<span class="badge-bloq">Bloqueada</span>'
+                                    : '<span class="badge-ok">Activa</span>'}
+                            </td>
+                            <td style="text-align:center">
+                                <a href="/BuscarAlumno.html?boleta=${a.boleta}"
+                                   style="color:var(--ipn);font-size:.78rem;font-weight:700">→</a>
+                            </td>
+                        </tr>`).join('') : `<tr class="empty-row"><td colspan="9">Sin alumnos en este grupo</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    // Toggle abrir/cerrar
+    card.querySelector('.grupo-header').addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-edit-grupo')) return;
+        const body = card.querySelector('.grupo-body');
+        const hdr  = card.querySelector('.grupo-header');
+        const open = body.classList.toggle('open');
+        hdr.classList.toggle('open', open);
+    });
+
+    return card;
+}
+
+// ── Selección de alumnos ──────────────────────────────────────
+function toggleAlumno(gid, boleta, checked) {
+    if (!seleccionados[gid]) seleccionados[gid] = new Set();
+    if (checked) seleccionados[gid].add(boleta);
+    else         seleccionados[gid].delete(boleta);
+    actualizarBarraAcciones(gid);
+}
+
+function toggleTodos(gid, checked) {
+    const grupo = gruposData.find(g => g.id_grupo === gid);
+    if (!grupo) return;
+    if (!seleccionados[gid]) seleccionados[gid] = new Set();
+
+    grupo.alumnos.forEach(a => {
+        if (checked) seleccionados[gid].add(a.boleta);
+        else         seleccionados[gid].delete(a.boleta);
+    });
+
+    // Sincronizar checkboxes individuales
+    document.querySelectorAll(`.chk-alumno[data-gid="${gid}"]`).forEach(cb => {
+        cb.checked = checked;
+        const row = document.getElementById(`row-${gid}-${cb.dataset.boleta}`);
+        if (row) row.classList.toggle('sel-row', checked);
+    });
+
+    actualizarBarraAcciones(gid);
+}
+
+function actualizarBarraAcciones(gid) {
+    const n   = seleccionados[gid]?.size || 0;
+    const bar = $(`accBar-${gid}`);
+    const lbl = $(`accLabel-${gid}`);
+    if (bar) bar.classList.toggle('visible', n > 0);
+    if (lbl) lbl.textContent = `${n} alumno${n !== 1 ? 's' : ''} seleccionado${n !== 1 ? 's' : ''}`;
+}
+
+// ── Acciones masivas ──────────────────────────────────────────
+async function aplicarAccion(gid, tipo) {
+    const boletas = [...(seleccionados[gid] || [])];
+    if (!boletas.length) { toast('Selecciona al menos un alumno', 'err'); return; }
+
+    let valor = null;
+    if (tipo === 'estado') {
+        valor = $(`accEstado-${gid}`)?.value;
+        if (!valor) { toast('Selecciona un estado', 'err'); return; }
+    } else if (tipo === 'grupo') {
+        valor = $(`accGrupo-${gid}`)?.value;
+        if (!valor) { toast('Selecciona un grupo destino', 'err'); return; }
+    }
+
+    const acciones = { estado: 'cambiar estado', grupo: 'mover de grupo', bloquear: 'bloquear', desbloquear: 'desbloquear' };
+    if (!confirm(`¿Aplicar "${acciones[tipo]}" a ${boletas.length} alumno(s)?`)) return;
+
+    try {
+        const r    = await fetch('/api/grupos/accion-masiva', {
+            method:      'POST',
+            headers:     { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ boletas, tipo, valor }),
+        });
+        const data = await r.json();
+        if (data.success) {
+            toast(data.message, 'ok');
+            seleccionados[gid] = new Set();
+            await cargarGrupos();
+        } else {
+            toast(data.message, 'err');
+        }
+    } catch { toast('Error de conexión', 'err'); }
+}
+
+// ── Buscador de grupos ─────────────────────────────────────────
+$('buscador-grupos').addEventListener('input', e => {
+    renderGrupos(e.target.value.trim());
+});
+
+// ── Modal crear / editar grupo ────────────────────────────────
+function abrirModalGrupo(id = null) {
+    modoEditGrupo = id;
+    const grupo = id ? gruposData.find(g => g.id_grupo === id) : null;
+
+    $('modal-grupo-titulo').textContent  = grupo ? 'Editar grupo' : 'Nuevo grupo';
+    $('btn-guardar-grupo').textContent   = grupo ? 'Guardar cambios' : 'Crear grupo';
+    $('mg-nombre').value = grupo?.nombre || '';
+
+    // Seleccionar turno si es edición
+    if (grupo) {
+        const turno = turnosData.find(t => t.nombre_turno === grupo.turno);
+        $('mg-turno').value = turno?.id_turno || '';
+    } else {
+        $('mg-turno').value = '';
+    }
+
+    $('modal-grupo').classList.add('visible');
+    setTimeout(() => $('mg-nombre').focus(), 100);
+}
+
+function abrirEditarGrupo(id) { abrirModalGrupo(id); }
+
+$('btn-nuevo-grupo').addEventListener('click', () => abrirModalGrupo());
+$('btn-cancelar-grupo').addEventListener('click', () => $('modal-grupo').classList.remove('visible'));
+$('modal-grupo').addEventListener('click', e => { if (e.target === $('modal-grupo')) $('modal-grupo').classList.remove('visible'); });
+
+$('btn-guardar-grupo').addEventListener('click', async () => {
+    const nombre = $('mg-nombre').value.trim();
+    const turno  = $('mg-turno').value;
+    if (!nombre || !turno) { toast('Nombre y turno son obligatorios', 'err'); return; }
+
+    const btn = $('btn-guardar-grupo');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+
+    try {
+        const url    = modoEditGrupo ? `/api/grupos/${modoEditGrupo}` : '/api/grupos';
+        const method = modoEditGrupo ? 'PUT' : 'POST';
+        const r    = await fetch(url, {
+            method,
+            headers:     { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ nombre_grupo: nombre, id_turno: turno }),
+        });
+        const data = await r.json();
+
+        if (data.success) {
+            toast(data.message, 'ok');
+            $('modal-grupo').classList.remove('visible');
+            await cargarGrupos();
+        } else {
+            toast(data.message, 'err');
+        }
+    } catch { toast('Error de conexión', 'err'); }
+    finally {
+        btn.disabled    = false;
+        btn.textContent = modoEditGrupo ? 'Guardar cambios' : 'Crear grupo';
+    }
+});
+
+// ── Excel: parseo con SheetJS ──────────────────────────────────
+const dropZone    = $('drop-zone');
+const excelInput  = $('excel-input');
+const btnCargar   = $('btn-cargar');
+const btnLimpiar  = $('btn-limpiar-excel');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) procesarExcel(file);
+});
+excelInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) procesarExcel(file);
+});
+
+function procesarExcel(file) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const wb   = XLSX.read(ev.target.result, { type: 'binary' });
+            const ws   = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+            if (!json.length) { toast('El archivo está vacío', 'err'); return; }
+
+            // Normalizar nombres de columnas (lowercase, sin espacios)
+            excelFilas = json.map((row, i) => {
+                const norm = {};
+                for (const k in row) norm[k.toLowerCase().trim().replace(/\s+/g,'_')] = row[k];
+                return {
+                    _fila:            i + 2,
+                    boleta:           String(norm.boleta || '').trim(),
+                    nombre_completo:  String(norm.nombre_completo || norm.nombre || '').trim(),
+                    nombre_grupo:     String(norm.nombre_grupo || norm.grupo || '').trim(),
+                    estado_academico: String(norm.estado_academico || norm.estado || 'Regular').trim(),
+                    puertas_abiertas: String(norm.puertas_abiertas || norm.puertas || 'NO').trim(),
+                };
+            }).filter(r => r.boleta);  // ignorar filas sin boleta
+
+            mostrarPreview();
+            btnCargar.disabled         = false;
+            btnLimpiar.style.display   = '';
+            $('resultado-wrap').style.display = 'none';
+
+        } catch (e) {
+            toast('Error al leer el archivo: ' + e.message, 'err');
+        }
+    };
+    reader.readAsBinaryString(file);
+}
+
+function mostrarPreview() {
+    const wrap = $('preview-wrap');
+    const head = $('preview-head');
+    const body = $('preview-body');
+
+    head.innerHTML = `<tr>
+        <th>#</th><th>Boleta</th><th>Nombre</th><th>Grupo</th>
+        <th>Estado</th><th>Puertas</th>
+    </tr>`;
+
+    const max = Math.min(excelFilas.length, 20);
+    body.innerHTML = excelFilas.slice(0, max).map(f => `
+        <tr>
+            <td>${f._fila}</td>
+            <td>${esc(f.boleta)}</td>
+            <td>${esc(f.nombre_completo)}</td>
+            <td>${esc(f.nombre_grupo)}</td>
+            <td>${esc(f.estado_academico)}</td>
+            <td>${esc(f.puertas_abiertas)}</td>
+        </tr>`).join('');
+
+    if (excelFilas.length > 20) {
+        body.innerHTML += `<tr><td colspan="6" style="text-align:center;color:var(--muted);font-size:.78rem">
+            … y ${excelFilas.length - 20} filas más</td></tr>`;
+    }
+
+    wrap.style.display = 'block';
+    toast(`${excelFilas.length} filas detectadas. Revisa la vista previa y carga.`, 'ok');
+}
+
+// ── Enviar al servidor ─────────────────────────────────────────
+btnCargar.addEventListener('click', async () => {
+    if (!excelFilas.length) return;
+
+    btnCargar.disabled     = true;
+    btnCargar.textContent  = '⏳ Enviando…';
+    $('progress-wrap').style.display   = 'block';
+    $('resultado-wrap').style.display  = 'none';
+    $('progress-bar').style.width      = '30%';
+    $('progress-label').textContent    = `Enviando ${excelFilas.length} registros…`;
+
+    try {
+        const r = await fetch('/api/grupos/carga-masiva', {
+            method:      'POST',
+            headers:     { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ alumnos: excelFilas }),
+        });
+
+        $('progress-bar').style.width = '100%';
+
+        const data = await r.json();
+
+        if (data.success) {
+            $('res-insertados').textContent    = `✓ ${data.insertados} insertados`;
+            $('res-actualizados').textContent  = `↺ ${data.actualizados} actualizados`;
+            $('res-errores').textContent       = `✗ ${data.errores?.length || 0} errores`;
+            $('resultado-wrap').style.display  = 'flex';
+            $('progress-label').textContent    = '¡Completado!';
+
+            if (data.errores?.length) {
+                console.table(data.errores);
+                toast(`${data.errores.length} error(es) — revisa la consola (F12)`, 'err');
+            } else {
+                toast(data.message, 'ok');
+            }
+
+            await cargarGrupos(); // refrescar lista
+
+        } else {
+            toast(data.message, 'err');
+            $('progress-label').textContent = 'Error';
+        }
+
+    } catch (e) {
+        toast('Error de conexión: ' + e.message, 'err');
+        $('progress-label').textContent = 'Error';
+    } finally {
+        btnCargar.disabled    = false;
+        btnCargar.textContent = '⬆ Cargar en base de datos';
+    }
+});
+
+btnLimpiar.addEventListener('click', () => {
+    excelFilas                         = [];
+    excelInput.value                   = '';
+    $('preview-wrap').style.display    = 'none';
+    $('progress-wrap').style.display   = 'none';
+    $('resultado-wrap').style.display  = 'none';
+    btnCargar.disabled                 = true;
+    btnLimpiar.style.display           = 'none';
+    $('progress-bar').style.width      = '0%';
+});
+
+// ── Descargar plantilla Excel ──────────────────────────────────
+$('btn-descargar-plantilla').addEventListener('click', () => {
+    const ws = XLSX.utils.aoa_to_sheet([
+        ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas'],
+        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO', '1CV1', 'Regular', 'NO'],
+        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '2BN2', 'Regular', 'NO'],
+    ]);
+    ws['!cols'] = [12, 35, 10, 15, 15].map(wch => ({ wch }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Alumnos');
+    XLSX.writeFile(wb, 'plantilla_alumnos_qrpass.xlsx');
+    toast('Plantilla descargada', 'ok');
+});
+</script>
+</body>
+</html>
