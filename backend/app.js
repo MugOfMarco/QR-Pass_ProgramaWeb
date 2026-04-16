@@ -79,7 +79,6 @@ app.use((req, res, next) => {
         '/RegistrarAlumno.html',
         '/DescargasBD.html',
         '/GestionUsuarios.html',
-        '/FiltrarAlumnos.html',
         '/Dashboard.html',
         '/GestionGrupos.html',
     ];

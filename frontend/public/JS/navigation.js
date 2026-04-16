@@ -1,22 +1,25 @@
 // frontend/public/JS/navigation.js
 // ============================================================
-// MENÚ LATERAL DESLIZANTE — Panel que se abre de izquierda a derecha
+// MENÚ LATERAL DESLIZANTE — Construye el menú dinámicamente
+// según el rol del usuario autenticado.
 //
-// Funcionamiento:
-//   · Añade/quita la clase "nav-open" en .menu-navegacion y .menu-overlay
-//   · No usa "display:none" para el menú — la animación usa transform
-//   · También verifica autenticación y oculta enlaces de admin si aplica
+// Vigilante    → Entrada/Salida, Buscar Alumno, Filtrar Alumnos
+// Administrador → Dashboard + todos los módulos de gestión
+//
+// El menú se genera en JS para que no dependamos de los
+// atributos hardcodeados en cada HTML.
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ── 1. VERIFICACIÓN DE AUTENTICACIÓN ─────────────────────
+    let userTipo = null;
+
     try {
         const res  = await fetch('/api/auth/check', { credentials: 'include' });
         const data = await res.json();
 
         if (!data.isAuthenticated) {
-            // Si la página actual no es login, redirigir
             const esLogin = window.location.pathname.endsWith('login.html')
                          || window.location.pathname === '/';
             if (!esLogin) {
@@ -25,29 +28,71 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Ocultar enlaces que son sólo para administrador
-        if (data.isAuthenticated && data.tipo !== 'Administrador') {
-            document.querySelectorAll('.admin-only-link').forEach(el => {
-                el.style.display = 'none';
-            });
-        }
+        userTipo = data.tipo; // 'Administrador' | 'Vigilante' | 'Prefecto'
 
     } catch (err) {
         console.warn('navigation.js: No se pudo verificar auth:', err.message);
     }
 
-    // ── 2. REFERENCIAS AL DOM ─────────────────────────────────
-    const toggleBtn  = document.getElementById('menu-toggle-btn');
-    const navPanel   = document.querySelector('.menu-navegacion');
-    const overlay    = document.getElementById('menu-overlay');
-    const menuLinks  = document.querySelectorAll('.menu-lista a');
+    // ── 2. CONSTRUIR MENÚ SEGÚN ROL ──────────────────────────
+    const listaOpciones = document.getElementById('lista-opciones');
+
+    if (listaOpciones && userTipo) {
+
+        // Módulos de cada rol
+        const menuAdmin = [
+            { href: '/Dashboard.html',              label: 'Dashboard' },
+            { href: '/Entrada_Salida.html',          label: 'Registro entrada / salida' },
+            { href: '/BuscarAlumno.html',            label: 'Buscar alumno' },
+            { href: '/ModificarAlumno.html',         label: 'Modificar alumno' },
+            { href: '/FiltrarAlumnos.html',          label: 'Filtrar alumnos' },
+            { href: '/GestionGrupos.html',           label: 'Gestión de grupos' },
+            { href: '/GestionUsuarios.html',         label: 'Gestión de usuarios' },
+            { href: '/DescargasBD.html',             label: 'Descargar respaldo' },
+        ];
+
+        const menuVigilante = [
+            { href: '/Entrada_Salida.html',          label: 'Entrada / Salida' },
+            { href: '/BuscarAlumnoVigilante.html',   label: 'Buscar alumno' },
+            { href: '/FiltrarAlumnos.html',          label: 'Filtrar alumnos' },
+        ];
+
+        // Prefecto comparte la vista de vigilante en web
+        const items = userTipo === 'Administrador' ? menuAdmin : menuVigilante;
+
+        // Limpiar ítems hardcodeados del HTML y reconstruir
+        listaOpciones.innerHTML = '';
+
+        const currentPath = window.location.pathname;
+
+        items.forEach(item => {
+            const li = document.createElement('li');
+            const a  = document.createElement('a');
+            a.href        = item.href;
+            a.textContent = item.label;
+
+            // Marcar enlace activo según la ruta actual
+            const itemPath = item.href.replace(/^\//, '');
+            if (currentPath.endsWith(itemPath) || currentPath.endsWith(item.href)) {
+                a.classList.add('active');
+            }
+
+            li.appendChild(a);
+            listaOpciones.appendChild(li);
+        });
+    }
+
+    // ── 3. REFERENCIAS AL DOM ─────────────────────────────────
+    const toggleBtn = document.getElementById('menu-toggle-btn');
+    const navPanel  = document.querySelector('.menu-navegacion');
+    const overlay   = document.getElementById('menu-overlay');
 
     if (!toggleBtn || !navPanel || !overlay) {
-        // La página no tiene menú (ej. login.html) → salir silenciosamente
+        // Página sin menú (ej. login.html) → salir silenciosamente
         return;
     }
 
-    // ── 3. FUNCIONES OPEN / CLOSE ────────────────────────────
+    // ── 4. FUNCIONES OPEN / CLOSE ────────────────────────────
     function openNav() {
         navPanel.classList.add('nav-open');
         overlay.classList.add('nav-open');
@@ -64,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         navPanel.classList.contains('nav-open') ? closeNav() : openNav();
     }
 
-    // ── 4. EVENTOS ───────────────────────────────────────────
+    // ── 5. EVENTOS ───────────────────────────────────────────
     toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleNav();
@@ -72,9 +117,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     overlay.addEventListener('click', closeNav);
 
-    menuLinks.forEach(link => {
+    // Re-query después de construir el menú para capturar los nuevos <a>
+    document.querySelectorAll('.menu-lista a').forEach(link => {
         link.addEventListener('click', () => {
-            // Pequeño delay para que la animación de cierre sea visible
             setTimeout(closeNav, 120);
         });
     });
