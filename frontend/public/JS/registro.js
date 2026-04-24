@@ -1,19 +1,4 @@
 // frontend/public/JS/registro.js
-// ============================================================
-// FLUJO:
-//   1. Alumno escanea QR o escribe boleta + Enter
-//   2. Frontend obtiene datos del alumno (foto, horario, etc.)
-//   3. Frontend calcula el SUBTIPO de entrada si aplica:
-//        · ¿Sin QR?  → sinCredencial = true
-//        · ¿Retardo? → id_tipo_registro = 3
-//        · Normal    → id_tipo_registro = 1
-//   4. Manda todo al servidor
-//   5. El SERVIDOR consulta la BD y decide si es ENTRADA o SALIDA
-//      (el frontend no lo decide — nunca)
-//   6. El servidor responde con tipo_detectado: 'entrada' | 'salida'
-//   7. El frontend muestra el resultado según lo que respondió el servidor
-// ============================================================
-
 class RegistroSystem {
     constructor() {
         this.apiBase    = '/api';
@@ -57,8 +42,11 @@ class RegistroSystem {
     async procesar(boleta, esQR) {
         try {
             // ── 1. Obtener alumno + horario ───────────────────
-            const respAlumno = await fetch(`${this.apiBase}/alumnos/${boleta}`);
+            const respAlumno = await fetch(`${this.apiBase}/alumnos/${boleta}`, {
+                credentials: 'include',
+            });
 
+            if (respAlumno.status === 401) { window.location.href = '/login.html'; return; }
             if (respAlumno.status === 404) {
                 this.mostrarEstado('Alumno no encontrado', 'error');
                 return;
@@ -77,43 +65,32 @@ class RegistroSystem {
             const alumno  = dataAlumno.alumno;
             const horario = dataAlumno.horario || [];
 
-            // Mostrar foto inmediatamente
             this.mostrarFoto(alumno);
 
-            // Alumno bloqueado — no registrar
             if (alumno.bloqueado || dataAlumno.bloqueado) {
                 this.mostrarEstado('⛔ ALUMNO BLOQUEADO — Contacte administración', 'error');
                 setTimeout(() => this.limpiar(), 3000);
                 return;
             }
 
-            // ── 2. Calcular subtipo de ENTRADA (si aplica) ────
-            // El servidor decide si es entrada o salida.
-            // Nosotros solo calculamos el subtipo en caso de que sea entrada.
+            // ── 2. Calcular subtipo de ENTRADA ────────────────
             const sinCredencial = !esQR;
 
-            // Aviso preventivo antes de mandar la petición
             if (sinCredencial && (alumno.sin_credencial || 0) >= 3) {
                 this.mostrarEstado('⛔ DEMASIADAS ENTRADAS SIN CREDENCIAL', 'error');
                 this.limpiar();
                 return;
             }
 
-            // Calcular si hay retardo (solo relevante para entradas)
-            const estadoHorario  = this.verificarRetardo(horario);
-            const esRetardo      = estadoHorario?.esRetardo ?? false;
+            const estadoHorario = this.verificarRetardo(horario);
+            const esRetardo     = estadoHorario?.esRetardo ?? false;
 
             let tipoSugerido;
-            if (sinCredencial) {
-                tipoSugerido = this.TIPO.SIN_CREDENCIAL;
-            } else if (esRetardo) {
-                tipoSugerido = this.TIPO.RETARDO;
-            } else {
-                tipoSugerido = this.TIPO.ENTRADA_NORMAL;
-            }
+            if (sinCredencial)    tipoSugerido = this.TIPO.SIN_CREDENCIAL;
+            else if (esRetardo)   tipoSugerido = this.TIPO.RETARDO;
+            else                  tipoSugerido = this.TIPO.ENTRADA_NORMAL;
 
-            // Fin de semana — igual registramos pero lo indicamos
-            const diaSemana = new Date().getDay();
+            const diaSemana   = new Date().getDay();
             const esFinSemana = diaSemana === 0 || diaSemana === 6;
 
             // ── 3. Enviar al servidor ─────────────────────────
@@ -121,8 +98,9 @@ class RegistroSystem {
                         || 'mexico-tacuba';
 
             const respRegistro = await fetch(`${this.apiBase}/registros`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     boleta:           parseInt(boleta),
                     puerta,
@@ -130,6 +108,8 @@ class RegistroSystem {
                     id_tipo_registro: tipoSugerido,
                 }),
             });
+
+            if (respRegistro.status === 401) { window.location.href = '/login.html'; return; }
 
             const resultado = await respRegistro.json();
 
@@ -139,8 +119,6 @@ class RegistroSystem {
             }
 
             // ── 4. Mostrar resultado ──────────────────────────
-            // tipo_detectado viene del servidor: 'entrada' | 'salida'
-            // id_tipo_registro también viene del servidor (definitivo)
             this.mostrarDatos(alumno, horario);
             this.mostrarMensajeFinal(
                 resultado.tipo_detectado,
@@ -160,12 +138,11 @@ class RegistroSystem {
         }
     }
 
-    // ── Verificar retardo contra horario ─────────────────────
     verificarRetardo(horario) {
         if (!horario?.length) return null;
 
-        const ahora     = new Date();
-        const diaStr    = this.diasSemana[ahora.getDay()]
+        const ahora  = new Date();
+        const diaStr = this.diasSemana[ahora.getDay()]
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
         const clasesHoy = horario.filter(h =>
@@ -182,13 +159,12 @@ class RegistroSystem {
             if (diff < menorDiff) { menorDiff = diff; mejor = clase; }
         }
 
-        if (menorDiff > 480) return null;  // más de 8 horas de diferencia → irrelevante
+        if (menorDiff > 480) return null;
 
         const retraso = minutosAhora - this.hhmm(mejor.inicio);
         return { esRetardo: retraso > 20, clase: mejor, retraso };
     }
 
-    // ── Mostrar datos del alumno en los campos ────────────────
     mostrarDatos(alumno, horario) {
         this.set('nombre-output',          alumno.nombre         || '');
         this.set('boleta-output',          alumno.boleta         || '');
@@ -198,21 +174,17 @@ class RegistroSystem {
         this.set('sin-credencial-output',  alumno.sin_credencial ?? 0);
     }
 
-    // ── Construir mensaje final según lo que respondió el servidor
     mostrarMensajeFinal(tipoDetectado, idTipo, alumno, puerta, sinCredencial, esFinSemana) {
-        const hora       = this.formatHora(new Date());
-        const puertaFmt  = this.nombrePuerta(puerta);
-        const contador   = alumno.sin_credencial ?? 0;
+        const hora      = this.formatHora(new Date());
+        const puertaFmt = this.nombrePuerta(puerta);
+        const contador  = alumno.sin_credencial ?? 0;
         let mensaje, color;
 
         if (tipoDetectado === 'salida') {
-            // SALIDA
             mensaje = `✅ SALIDA — ${puertaFmt} — ${hora}`;
             color   = 'success';
             if (sinCredencial) mensaje += ' (sin credencial)';
-
         } else {
-            // ENTRADA — el subtipo ya viene del servidor
             switch (idTipo) {
                 case this.TIPO.RETARDO:
                     mensaje = `⚠ RETARDO — ${puertaFmt} — ${hora}`;
@@ -240,7 +212,6 @@ class RegistroSystem {
         this.actualizarBadge(tipoDetectado, idTipo);
     }
 
-    // ── Badge de tipo (arriba a la derecha) ───────────────────
     actualizarBadge(tipoDetectado, idTipo) {
         const badge = document.getElementById('tipo-badge');
         const texto = document.getElementById('tipo-texto');
@@ -268,7 +239,6 @@ class RegistroSystem {
         }
     }
 
-    // ── Foto ─────────────────────────────────────────────────
     mostrarFoto(alumno) {
         const foto    = document.getElementById('student-photo');
         const infoBox = document.getElementById('info-box');
@@ -298,10 +268,9 @@ class RegistroSystem {
         if (infoBox) infoBox.style.borderColor = '#dee2e6';
     }
 
-    // ── Estado visual (status bar + inner box) ────────────────
     mostrarEstado(mensaje, tipo) {
-        const colores  = { success: '#4CAF50', error: '#f44336', warning: '#ff9800' };
-        const color    = colores[tipo] || '#4CAF50';
+        const colores   = { success: '#4CAF50', error: '#f44336', warning: '#ff9800' };
+        const color     = colores[tipo] || '#4CAF50';
         const statusMsg = document.getElementById('status-message');
         const statusInd = document.getElementById('status-indicator');
         const innerBox  = document.querySelector('.inner-box');
@@ -319,7 +288,6 @@ class RegistroSystem {
         }
     }
 
-    // ── Limpiar pantalla ──────────────────────────────────────
     limpiar() {
         this.limpiarFoto();
         ['nombre-output','boleta-output','grupo-output','horario-output',
@@ -340,7 +308,6 @@ class RegistroSystem {
         if (texto) texto.textContent = '— esperando —';
     }
 
-    // ── Utilidades ────────────────────────────────────────────
     set(id, val) {
         const el = document.getElementById(id);
         if (el) el.value = val;

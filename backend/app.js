@@ -14,6 +14,7 @@ import usuariosRoutes  from './routes/usuarios.routes.js';
 import reportesRoutes  from './routes/reportes.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import gruposRoutes    from './routes/grupos.routes.js';
+import backupRoutes    from './routes/backup.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -23,7 +24,6 @@ const __dirname  = path.dirname(__filename);
 const app  = express();
 const PORT = process.env.SERVER_PORT || 3000;
 
-// ── CORS ──────────────────────────────────────────────────────
 app.use(cors({
     origin: [
         process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -32,10 +32,9 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json({ limit: '10mb' }));   // carga masiva puede ser grande
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ── SESIÓN ────────────────────────────────────────────────────
 app.use(session({
     secret:            process.env.SESSION_SECRET || 'cecyt9_secret_2025',
     resave:            true,
@@ -48,7 +47,6 @@ app.use(session({
     },
 }));
 
-// ── RUTAS API ─────────────────────────────────────────────────
 app.use('/api/auth',      authRoutes);
 app.use('/api/alumnos',   alumnosRoutes);
 app.use('/api/registros', registrosRoutes);
@@ -57,14 +55,13 @@ app.use('/api/usuarios',  usuariosRoutes);
 app.use('/api/reportes',  reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/grupos',    gruposRoutes);
+app.use('/api/backup',    backupRoutes);
 
-// ── ARCHIVOS ESTÁTICOS ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
     extensions: ['html', 'css', 'js'],
     index:      false,
 }));
 
-// ── PROTECCIÓN DE VISTAS HTML POR ROL ────────────────────────
 app.use((req, res, next) => {
     const ruta = req.path;
     if (!ruta.endsWith('.html')) return next();
@@ -89,7 +86,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// ── RAÍZ ──────────────────────────────────────────────────────
 app.get('/', (req, res) => {
     if (!req.session.user) return res.redirect('/login.html');
     return req.session.user.tipo === 'Administrador'
@@ -97,7 +93,6 @@ app.get('/', (req, res) => {
         : res.redirect('/Entrada_Salida.html');
 });
 
-// ── RUTAS HTML EXPLÍCITAS ─────────────────────────────────────
 [
     '/login.html',
     '/Entrada_Salida.html',
@@ -117,7 +112,6 @@ app.get('/', (req, res) => {
     );
 });
 
-// ── 404 ───────────────────────────────────────────────────────
 app.use((req, res) => {
     if (req.accepts('html')) {
         res.status(404).sendFile(
@@ -128,13 +122,11 @@ app.use((req, res) => {
     }
 });
 
-// ── ERROR GLOBAL ──────────────────────────────────────────────
 app.use((err, req, res, _next) => {
     console.error('Error Crítico:', err.stack);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
 });
 
-// ── ARRANQUE ──────────────────────────────────────────────────
 async function iniciarServidor() {
     try {
         const { error } = await supabaseAdmin

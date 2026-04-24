@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.location.href = '/Entrada_Salida.html';
                         break;
                     default:
-                        window.location.href = '/menu.html';
+                        window.location.href = '/Entrada_Salida.html';
                 }
             } else {
                 if (errorMessage) errorMessage.textContent = data.message || 'Error al iniciar sesión';

@@ -1,15 +1,4 @@
 // frontend/public/JS/navigation.js
-// ============================================================
-// MENÚ LATERAL DESLIZANTE — Construye el menú dinámicamente
-// según el rol del usuario autenticado.
-//
-// Vigilante    → Entrada/Salida, Buscar Alumno, Filtrar Alumnos
-// Administrador → Dashboard + todos los módulos de gestión
-//
-// El menú se genera en JS para que no dependamos de los
-// atributos hardcodeados en cada HTML.
-// ============================================================
-
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ── 1. VERIFICACIÓN DE AUTENTICACIÓN ─────────────────────
@@ -28,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        userTipo = data.tipo; // 'Administrador' | 'Vigilante' | 'Prefecto'
+        userTipo = data.tipo;
 
     } catch (err) {
         console.warn('navigation.js: No se pudo verificar auth:', err.message);
@@ -39,28 +28,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (listaOpciones && userTipo) {
 
-        // Módulos de cada rol
         const menuAdmin = [
-            { href: '/Dashboard.html',              label: 'Dashboard' },
-            { href: '/Entrada_Salida.html',          label: 'Registro entrada / salida' },
-            { href: '/BuscarAlumno.html',            label: 'Buscar alumno' },
-            { href: '/ModificarAlumno.html',         label: 'Modificar alumno' },
-            { href: '/FiltrarAlumnos.html',          label: 'Filtrar alumnos' },
-            { href: '/GestionGrupos.html',           label: 'Gestión de grupos' },
-            { href: '/GestionUsuarios.html',         label: 'Gestión de usuarios' },
-            { href: '/DescargasBD.html',             label: 'Descargar respaldo' },
+            { href: '/Dashboard.html',            label: 'Dashboard' },
+            { href: '/Entrada_Salida.html',        label: 'Registro entrada / salida' },
+            { href: '/BuscarAlumno.html',          label: 'Buscar alumno' },
+            { href: '/ModificarAlumno.html',       label: 'Modificar alumno' },
+            { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
+            { href: '/GestionGrupos.html',         label: 'Gestión de grupos' },
+            { href: '/GestionUsuarios.html',       label: 'Gestión de usuarios' },
+            { href: '/DescargasBD.html',           label: 'Descargar respaldo' },
         ];
 
         const menuVigilante = [
-            { href: '/Entrada_Salida.html',          label: 'Entrada / Salida' },
-            { href: '/BuscarAlumnoVigilante.html',   label: 'Buscar alumno' },
-            { href: '/FiltrarAlumnos.html',          label: 'Filtrar alumnos' },
+            { href: '/Entrada_Salida.html',        label: 'Entrada / Salida' },
+            { href: '/BuscarAlumnoVigilante.html', label: 'Buscar alumno' },
+            { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
         ];
 
-        // Prefecto comparte la vista de vigilante en web
         const items = userTipo === 'Administrador' ? menuAdmin : menuVigilante;
 
-        // Limpiar ítems hardcodeados del HTML y reconstruir
         listaOpciones.innerHTML = '';
 
         const currentPath = window.location.pathname;
@@ -71,7 +57,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             a.href        = item.href;
             a.textContent = item.label;
 
-            // Marcar enlace activo según la ruta actual
             const itemPath = item.href.replace(/^\//, '');
             if (currentPath.endsWith(itemPath) || currentPath.endsWith(item.href)) {
                 a.classList.add('active');
@@ -80,6 +65,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             li.appendChild(a);
             listaOpciones.appendChild(li);
         });
+
+        // ── Botón de cerrar sesión al final del menú ──────────
+        const liSep = document.createElement('li');
+        liSep.style.cssText = 'border-top: 2px solid #f0e8ea; margin-top: .5rem;';
+
+        const aCerrar = document.createElement('a');
+        aCerrar.href             = '#';
+        aCerrar.textContent      = '🚪 Cerrar sesión';
+        aCerrar.style.cssText    = 'color: #b71c1c; font-weight: 700;';
+        aCerrar.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+            } catch { /* ignorar */ }
+            window.location.href = '/login.html';
+        });
+
+        liSep.appendChild(aCerrar);
+        listaOpciones.appendChild(liSep);
     }
 
     // ── 3. REFERENCIAS AL DOM ─────────────────────────────────
@@ -87,12 +91,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navPanel  = document.querySelector('.menu-navegacion');
     const overlay   = document.getElementById('menu-overlay');
 
-    if (!toggleBtn || !navPanel || !overlay) {
-        // Página sin menú (ej. login.html) → salir silenciosamente
-        return;
-    }
+    if (!toggleBtn || !navPanel || !overlay) return;
 
-    // ── 4. FUNCIONES OPEN / CLOSE ────────────────────────────
+    // ── 4. OPEN / CLOSE ───────────────────────────────────────
     function openNav() {
         navPanel.classList.add('nav-open');
         overlay.classList.add('nav-open');
@@ -110,21 +111,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ── 5. EVENTOS ───────────────────────────────────────────
-    toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleNav();
-    });
-
+    toggleBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleNav(); });
     overlay.addEventListener('click', closeNav);
 
-    // Re-query después de construir el menú para capturar los nuevos <a>
     document.querySelectorAll('.menu-lista a').forEach(link => {
-        link.addEventListener('click', () => {
-            setTimeout(closeNav, 120);
-        });
+        link.addEventListener('click', () => { setTimeout(closeNav, 120); });
     });
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeNav();
-    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
 });

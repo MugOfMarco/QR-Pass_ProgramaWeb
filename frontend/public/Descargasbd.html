@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Respaldo de Base de Datos — QR Pass</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <style>
+        .backup-wrap {
+            max-width: 760px;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .backup-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(92,31,51,.08), 0 8px 32px rgba(0,0,0,.07);
+            border: 1px solid #e5dde0;
+            overflow: hidden;
+        }
+
+        .backup-head {
+            background: linear-gradient(135deg, #5c1f33, #3d1422);
+            padding: 1.4rem 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .backup-head-icon { font-size: 2rem; }
+
+        .backup-head h2 {
+            color: white;
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .backup-head p {
+            color: rgba(255,255,255,.7);
+            font-size: .82rem;
+            margin: 2px 0 0;
+        }
+
+        .backup-body { padding: 1.8rem; }
+
+        /* Tabla de contenido del respaldo */
+        .tablas-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .5rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .tabla-chip {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            background: #f9f4f6;
+            border: 1px solid #e8dde1;
+            border-radius: 8px;
+            padding: .4rem .7rem;
+            font-size: .75rem;
+            color: #5c1f33;
+            font-weight: 600;
+        }
+
+        .tabla-chip::before {
+            content: '▸';
+            font-size: .65rem;
+            opacity: .6;
+        }
+
+        /* Info box */
+        .info-box {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+            padding: .9rem 1.1rem;
+            font-size: .82rem;
+            color: #92400e;
+            margin-bottom: 1.6rem;
+            line-height: 1.5;
+        }
+
+        .info-box strong { display: block; margin-bottom: .2rem; font-size: .85rem; }
+
+        /* Estado */
+        .status-box {
+            border-radius: 10px;
+            padding: .85rem 1.1rem;
+            font-size: .85rem;
+            font-weight: 600;
+            margin-bottom: 1.4rem;
+            display: none;
+            align-items: center;
+            gap: .6rem;
+        }
+
+        .status-box.visible { display: flex; }
+        .status-box.ok   { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+        .status-box.err  { background: #fce8ed; color: #b71c1c; border: 1px solid #f8bbd0; }
+        .status-box.load { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+
+        /* Progreso */
+        .progress-bar-outer {
+            height: 6px;
+            background: #e8dde1;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 1.4rem;
+            display: none;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, #7a2945, #5c1f33);
+            border-radius: 999px;
+            width: 0%;
+            transition: width .4s ease;
+        }
+
+        /* Botón */
+        .btn-download {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #5c1f33, #3d1422);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: inherit;
+            transition: opacity .2s, transform .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .6rem;
+        }
+
+        .btn-download:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+        .btn-download:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+        .btn-download svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        /* Historial de descargas */
+        .historial {
+            margin-top: 1.6rem;
+            border-top: 1px solid #e8dde1;
+            padding-top: 1.2rem;
+        }
+
+        .historial h4 {
+            font-size: .8rem;
+            font-weight: 700;
+            color: #7a6570;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .7rem;
+        }
+
+        .historial-item {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .45rem 0;
+            border-bottom: 1px solid #f5f0f2;
+            font-size: .8rem;
+            color: #555;
+        }
+
+        .historial-item:last-child { border-bottom: none; }
+        .historial-item .h-icon { font-size: 1rem; }
+        .historial-item .h-info { flex: 1; }
+        .historial-item .h-size { color: #999; font-size: .72rem; }
+
+        .empty-hist { color: #bbb; font-size: .8rem; font-style: italic; }
+
+        @media (max-width: 600px) {
+            .tablas-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-container">
+        <div class="Boton-nav">
+            <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <img src="../imgs/menu.png" alt="">
+            </button>
+        </div>
+        <h1 class="title">Respaldo de Base de Datos</h1>
+        <div class="logo">
+            <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+        </div>
+    </div>
+</header>
+
+<nav class="menu-navegacion" aria-label="Menú principal">
+    <ul id="lista-opciones" class="menu-lista"></ul>
+</nav>
+<div id="menu-overlay" class="menu-overlay"></div>
+
+<div class="backup-wrap">
+    <div class="backup-card">
+
+        <div class="backup-head">
+            <span class="backup-head-icon">🗄️</span>
+            <div>
+                <h2>Respaldo completo de Supabase</h2>
+                <p>Descarga todas las tablas del sistema en formato JSON</p>
+            </div>
+        </div>
+
+        <div class="backup-body">
+
+            <p style="font-size:.88rem;color:#555;margin-bottom:1.2rem">
+                El respaldo incluye las siguientes tablas:
+            </p>
+
+            <div class="tablas-grid">
+                <div class="tabla-chip">alumnos</div>
+                <div class="tabla-chip">info_alumno</div>
+                <div class="tabla-chip">grupos</div>
+                <div class="tabla-chip">estado_academico</div>
+                <div class="tabla-chip">carreras</div>
+                <div class="tabla-chip">turnos</div>
+                <div class="tabla-chip">materias</div>
+                <div class="tabla-chip">semestres</div>
+                <div class="tabla-chip">registros_acceso</div>
+                <div class="tabla-chip">justificaciones</div>
+                <div class="tabla-chip">usuarios_sistema</div>
+                <div class="tabla-chip">roles</div>
+                <div class="tabla-chip">puntos_acceso</div>
+                <div class="tabla-chip">tipos_registro</div>
+                <div class="tabla-chip">horario_grupo</div>
+                <div class="tabla-chip">horario_alumno_extra</div>
+                <div class="tabla-chip">materias_acreditadas</div>
+                <div class="tabla-chip">configuracion_sistema</div>
+            </div>
+
+            <div class="info-box">
+                <strong>⚠️ Importante</strong>
+                El archivo descargado es un JSON estructurado con todos los registros de cada tabla.
+                Guárdalo en un lugar seguro. Si la BD tiene más de 1 000 registros por tabla,
+                se descargan en páginas automáticamente — puede tardar unos segundos.
+            </div>
+
+            <div class="status-box" id="status-box"></div>
+
+            <div class="progress-bar-outer" id="progress-bar-outer">
+                <div class="progress-bar-inner" id="progress-bar"></div>
+            </div>
+
+            <button class="btn-download" id="btn-download">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Descargar respaldo completo
+            </button>
+
+            <div class="historial" id="historial-section">
+                <h4>Descargas en esta sesión</h4>
+                <div id="historial-lista">
+                    <p class="empty-hist">Aún no has descargado ningún respaldo.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer class="site-footer">
+    <div class="footer-container">
+        <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
+    </div>
+</footer>
+
+<script src="./JS/navigation.js"></script>
+<script>
+(async function verificarAcceso() {
+    try {
+        const r    = await fetch('/api/auth/check', { credentials: 'include' });
+        const data = await r.json();
+        if (!data.isAuthenticated) { location.href = '/login.html'; return; }
+        if (data.tipo !== 'Administrador') { location.href = '/Entrada_Salida.html'; return; }
+    } catch { location.href = '/login.html'; }
+})();
+
+const historial = [];
+
+function toast(msg, tipo = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${tipo} visible`;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('visible'), 3500);
+}
+
+function setStatus(msg, tipo) {
+    const box = document.getElementById('status-box');
+    const iconos = { ok: '✅', err: '❌', load: '⏳' };
+    box.className = `status-box ${tipo} visible`;
+    box.innerHTML = `<span>${iconos[tipo]}</span> ${msg}`;
+}
+
+function setProgress(pct) {
+    const outer = document.getElementById('progress-bar-outer');
+    const bar   = document.getElementById('progress-bar');
+    if (pct === null) { outer.style.display = 'none'; return; }
+    outer.style.display = 'block';
+    bar.style.width = `${pct}%`;
+}
+
+function agregarHistorial(filename, bytes) {
+    historial.unshift({ filename, bytes, hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) });
+    const lista = document.getElementById('historial-lista');
+    lista.innerHTML = historial.map(h => `
+        <div class="historial-item">
+            <span class="h-icon">📄</span>
+            <div class="h-info">
+                <strong>${h.filename}</strong><br>
+                <span class="h-size">${(h.bytes / 1024).toFixed(1)} KB — ${h.hora}</span>
+            </div>
+        </div>`).join('');
+}
+
+document.getElementById('btn-download').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-download');
+    btn.disabled = true;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:18px;height:18px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando respaldo…`;
+
+    setStatus('Consultando tablas de Supabase…', 'load');
+    setProgress(20);
+
+    try {
+        const res = await fetch('/api/backup', { credentials: 'include' });
+
+        setProgress(70);
+
+        if (res.status === 401) { location.href = '/login.html'; return; }
+        if (res.status === 403) { setStatus('Sin permisos para descargar respaldos.', 'err'); return; }
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `Error ${res.status}`);
+        }
+
+        const blob = await res.blob();
+        setProgress(90);
+
+        const ahora    = new Date();
+        const fechaStr = `${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}`;
+        const filename = `respaldo_qrpass_${fechaStr}.json`;
+
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href     = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        setProgress(100);
+        setStatus(`Respaldo descargado correctamente (${(blob.size / 1024).toFixed(1)} KB)`, 'ok');
+        agregarHistorial(filename, blob.size);
+        toast('Respaldo descargado', 'ok');
+
+    } catch (err) {
+        console.error('Error descargando respaldo:', err);
+        setStatus('Error al generar el respaldo: ' + err.message, 'err');
+        toast('Error al descargar', 'err');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar respaldo completo`;
+        setTimeout(() => setProgress(null), 2000);
+    }
+});
+</script>
+</body>
+</html>
