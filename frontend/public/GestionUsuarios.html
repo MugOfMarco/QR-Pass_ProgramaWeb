@@ -220,22 +220,29 @@
                     <input type="hidden" id="f-id">
 
                     <div class="form-sec">
-                        <label for="f-nombre">Nombre completo *</label>
-                        <input type="text" id="f-nombre" maxlength="150"
+                        <label for="f-nombre">
+                            Nombre completo *
+                            <small>(solo letras, máx. 100)</small>
+                        </label>
+                        <input type="text" id="f-nombre" maxlength="100"
                                placeholder="Apellidos Nombre" required>
                     </div>
 
                     <div class="form-sec">
-                        <label for="f-usuario">Nombre de usuario *</label>
-                        <input type="text" id="f-usuario" maxlength="50"
-                               placeholder="sin espacios" required autocomplete="off">
+                        <label for="f-usuario">
+                            Nombre de usuario *
+                            <small>(letras, números y _, máx. 30)</small>
+                        </label>
+                        <input type="text" id="f-usuario" maxlength="30"
+                               placeholder="sin espacios ni caracteres especiales"
+                               required autocomplete="off">
                     </div>
 
                     <div class="form-sec">
                         <label for="f-email">
-                            Correo electrónico <small>(opcional)</small>
+                            Correo electrónico <small>(opcional, máx. 150)</small>
                         </label>
-                        <input type="email" id="f-email" maxlength="200"
+                        <input type="email" id="f-email" maxlength="150"
                                placeholder="usuario@ejemplo.com">
                     </div>
 
@@ -248,10 +255,19 @@
 
                     <div id="seccion-password" class="form-sec">
                         <label for="f-password">
-                            Contraseña * <small>(mínimo 6 caracteres)</small>
+                            Contraseña * <small>(mínimo 6, máx. 50 caracteres)</small>
                         </label>
-                        <input type="password" id="f-password" maxlength="100"
+                        <input type="password" id="f-password" maxlength="50"
                                autocomplete="new-password">
+                    </div>
+
+                    <!-- NUEVO: confirmación de contraseña -->
+                    <div id="seccion-password-confirm" class="form-sec">
+                        <label for="f-password-confirm">
+                            Confirmar contraseña *
+                        </label>
+                        <input type="password" id="f-password-confirm" maxlength="50"
+                               autocomplete="new-password" placeholder="Repite la contraseña">
                     </div>
 
                     <div id="seccion-activo" class="form-sec" style="display:none">
@@ -284,21 +300,21 @@
 
         <div id="seccion-pass-actual" class="form-sec">
             <label for="m-actual">Contraseña actual *</label>
-            <input type="password" id="m-actual" maxlength="100"
+            <input type="password" id="m-actual" maxlength="50"
                    autocomplete="current-password">
         </div>
 
         <div class="form-sec">
             <label for="m-nueva">
-                Nueva contraseña * <small>(mínimo 6 caracteres)</small>
+                Nueva contraseña * <small>(mínimo 6, máx. 50)</small>
             </label>
-            <input type="password" id="m-nueva" maxlength="100"
+            <input type="password" id="m-nueva" maxlength="50"
                    autocomplete="new-password">
         </div>
 
         <div class="form-sec">
             <label for="m-confirmar">Confirmar nueva contraseña *</label>
-            <input type="password" id="m-confirmar" maxlength="100"
+            <input type="password" id="m-confirmar" maxlength="50"
                    autocomplete="new-password">
         </div>
 

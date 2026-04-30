@@ -1,10 +1,18 @@
 // backend/controllers/dashboard.controller.js
 // ============================================================
-// Datos para el dashboard del Administrador.
-// Los joins info_alumno → alumnos se hacen en JS (no en Supabase)
-// para evitar depender de la nomenclatura exacta de las FKs.
+// FIX: normalizamos los nombres de puntos de acceso para que
+//      siempre muestren "México-Tacuba" / "Mar-Mediterráneo"
 // ============================================================
 import { supabaseAdmin } from '../database/supabase.js';
+
+function normalizarPuerta(nombre) {
+    if (!nombre) return '—';
+    const n = String(nombre).toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (n.includes('mexico') || n.includes('tacuba') || n.includes('norte')) return 'México-Tacuba';
+    if (n.includes('mar') || n.includes('mediterraneo') || n.includes('sur')) return 'Mar-Mediterráneo';
+    return nombre;
+}
 
 // ─────────────────────────────────────────────────────────────
 // GET /api/dashboard
@@ -16,7 +24,6 @@ export const obtenerDashboard = async (req, res) => {
         const inicioHoy = `${hoyStr}T00:00:00`;
         const finHoy    = `${hoyStr}T23:59:59`;
 
-        // ── Consultas en paralelo ──────────────────────────────
         const [
             resRegistros,
             resBloqueadosSis,
@@ -24,25 +31,23 @@ export const obtenerDashboard = async (req, res) => {
             resProximos,
             resUltimos,
             resTotalAlumnos,
-            resAlumnos,         // para enriquecer bloqueados con nombre/grupo
+            resAlumnos,
             resUsuarios,
+            resPuntosAcceso,
         ] = await Promise.all([
 
-            // 1. Todos los registros de hoy (para KPIs + gráfica + puertas)
             supabaseAdmin
                 .from('registros_acceso')
                 .select('id_tipo_registro, id_punto_acceso, fecha_hora')
                 .gte('fecha_hora', inicioHoy)
                 .lte('fecha_hora', finHoy),
 
-            // 2. Boletas bloqueadas por sistema
             supabaseAdmin
                 .from('info_alumno')
                 .select('boleta, contador_sin_credencial')
                 .eq('bloqueado_sistema', true)
                 .limit(20),
 
-            // 3. Boletas bloqueadas manualmente (sin duplicar los de sistema)
             supabaseAdmin
                 .from('info_alumno')
                 .select('boleta, contador_sin_credencial')
@@ -50,7 +55,6 @@ export const obtenerDashboard = async (req, res) => {
                 .eq('bloqueado_sistema', false)
                 .limit(20),
 
-            // 4. Próximos a bloquearse
             supabaseAdmin
                 .from('info_alumno')
                 .select('boleta, contador_sin_credencial')
@@ -59,7 +63,6 @@ export const obtenerDashboard = async (req, res) => {
                 .gte('contador_sin_credencial', 2)
                 .limit(15),
 
-            // 5. Últimos 10 registros con joins que SÍ funcionan (desde alumnos)
             supabaseAdmin
                 .from('registros_acceso')
                 .select(`
@@ -73,13 +76,10 @@ export const obtenerDashboard = async (req, res) => {
                 .order('fecha_hora', { ascending: false })
                 .limit(10),
 
-            // 6. Total de alumnos
             supabaseAdmin
                 .from('alumnos')
                 .select('boleta', { count: 'exact', head: true }),
 
-            // 7. Datos de alumnos para enriquecer bloqueados (nombre + grupo)
-            // Se carga completo y se filtra en memoria — más robusto que join anidado
             supabaseAdmin
                 .from('alumnos')
                 .select(`
@@ -87,14 +87,24 @@ export const obtenerDashboard = async (req, res) => {
                     grupos:id_grupo_base(nombre_grupo)
                 `),
 
-            // 8. Usuarios activos
             supabaseAdmin
                 .from('usuarios_sistema')
                 .select('id_usuario, usuario, nombre_completo, activo, roles(nombre_rol)')
                 .eq('activo', true),
+
+            // Cargar puntos de acceso para normalizar nombres
+            supabaseAdmin
+                .from('puntos_acceso')
+                .select('id_punto_acceso, nombre_punto'),
         ]);
 
-        // ── Mapa rápido boleta → alumno ────────────────────────
+        // ── Mapa id_punto_acceso → nombre normalizado ──────────
+        const puntosMap = {};
+        for (const p of (resPuntosAcceso.data || [])) {
+            puntosMap[p.id_punto_acceso] = normalizarPuerta(p.nombre_punto);
+        }
+
+        // ── Mapa boleta → alumno ───────────────────────────────
         const alumnoMap = {};
         for (const a of (resAlumnos.data || [])) {
             alumnoMap[a.boleta] = {
@@ -126,16 +136,15 @@ export const obtenerDashboard = async (req, res) => {
             graficoHoras.push({ hora: h, count: porHora[h] });
         }
 
-        // ── Actividad por puerta ───────────────────────────────
-        // puntos_acceso: 1=México-Tacuba, 2=Mar-Mediterráneo (fallback por ID)
-        const nombrePuerta = { 1: 'México-Tacuba', 2: 'Mar-Mediterráneo' };
+        // ── Actividad por puerta — usando nombres normalizados ─
         const puertas = {};
         registrosHoy.forEach(r => {
-            const nombre = nombrePuerta[r.id_punto_acceso] || `Puerta ${r.id_punto_acceso}`;
+            const nombre = puntosMap[r.id_punto_acceso]
+                || normalizarPuerta(`Puerta ${r.id_punto_acceso}`);
             puertas[nombre] = (puertas[nombre] || 0) + 1;
         });
 
-        // ── Formatear bloqueados (join con alumnoMap) ──────────
+        // ── Formatear bloqueados ───────────────────────────────
         const formatBloqueado = (lista) => (lista || []).map(b => ({
             boleta:        b.boleta,
             nombre:        alumnoMap[b.boleta]?.nombre || '—',
@@ -150,7 +159,7 @@ export const obtenerDashboard = async (req, res) => {
             tipo:        r.tipos_registro?.descripcion || '—',
             id_tipo:     r.id_tipo_registro,
             nombre:      r.alumnos?.nombre_completo    || '—',
-            puerta:      r.puntos_acceso?.nombre_punto || '—',
+            puerta:      normalizarPuerta(r.puntos_acceso?.nombre_punto),
         }));
 
         // ── Usuarios ───────────────────────────────────────────
@@ -161,7 +170,6 @@ export const obtenerDashboard = async (req, res) => {
             rol:     u.roles?.nombre_rol || '—',
         }));
 
-        // ── Respuesta ──────────────────────────────────────────
         return res.json({
             success: true,
             fecha:   hoyStr,
