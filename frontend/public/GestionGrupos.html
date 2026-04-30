@@ -8,7 +8,6 @@
     <!-- SheetJS para parsear Excel en el navegador -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ── Tokens extra ────────────────────────────────────── */
         :root {
             --ipn:       var(--color-primary);
             --ipn-dark:  var(--color-primary-dark);
@@ -22,7 +21,6 @@
             --muted:     var(--color-text-muted);
         }
 
-        /* ── Layout ──────────────────────────────────────────── */
         .page-wrap {
             max-width: 1320px;
             margin: 1.8rem auto;
@@ -32,7 +30,6 @@
             gap: 1.6rem;
         }
 
-        /* ── Barra de herramientas ───────────────────────────── */
         .toolbar {
             display: flex;
             align-items: center;
@@ -81,7 +78,6 @@
         }
         .btn-out:hover { background: var(--ipn-ghost); }
 
-        /* ── Sección carga Excel ─────────────────────────────── */
         .excel-card {
             background: var(--surface);
             border-radius: var(--radius-lg);
@@ -106,11 +102,8 @@
             flex: 1;
         }
 
-        .excel-body {
-            padding: 1.2rem;
-        }
+        .excel-body { padding: 1.2rem; }
 
-        /* Drop zone */
         .drop-zone {
             border: 2px dashed #c9d0d8;
             border-radius: var(--radius-md);
@@ -140,7 +133,6 @@
         .drop-zone .dz-text { font-size: .88rem; color: var(--muted); }
         .drop-zone .dz-sub  { font-size: .75rem; color: #aaa; margin-top: .25rem; }
 
-        /* Formato esperado */
         .formato-hint {
             margin-top: 1rem;
             background: #fffbeb;
@@ -158,7 +150,6 @@
             font-size: .78rem;
         }
 
-        /* Preview tabla Excel */
         .preview-wrap {
             margin-top: 1rem;
             overflow-x: auto;
@@ -169,21 +160,10 @@
             display: none;
         }
 
-        .preview-wrap table {
-            font-size: .78rem;
-            min-width: 600px;
-        }
-
+        .preview-wrap table { font-size: .78rem; min-width: 600px; }
         .preview-wrap thead th { background: var(--header-grad); color: white; }
 
-        .fila-ok   td:first-child { border-left: 3px solid var(--ok); }
-        .fila-err  td:first-child { border-left: 3px solid var(--err); background: #fff0f0; }
-
-        /* Barra de progreso */
-        .progress-wrap {
-            margin-top: .8rem;
-            display: none;
-        }
+        .progress-wrap { margin-top: .8rem; display: none; }
 
         .progress-bar-outer {
             height: 8px;
@@ -207,7 +187,6 @@
             text-align: center;
         }
 
-        /* Resultado */
         .resultado-wrap {
             margin-top: .8rem;
             display: none;
@@ -228,7 +207,49 @@
         .res-edit { background: #e3f2fd; color: #0d47a1; }
         .res-err  { background: #fce8ed; color: #b71c1c; }
 
-        /* ── Tabla de grupos ─────────────────────────────────── */
+        /* ── Alerta de errores detallados ─────────────────── */
+        .errores-detalle {
+            margin-top: .8rem;
+            display: none;
+            background: #fff8f8;
+            border: 1px solid #f5c6cb;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .errores-detalle-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .5rem .9rem;
+            background: #fce8ed;
+            cursor: pointer;
+            user-select: none;
+            font-size: .82rem;
+            font-weight: 700;
+            color: #b71c1c;
+        }
+
+        .errores-detalle-body {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: .5rem;
+        }
+
+        .error-row {
+            display: flex;
+            gap: .6rem;
+            padding: .3rem .4rem;
+            border-bottom: 1px solid #f5e6e8;
+            font-size: .76rem;
+        }
+
+        .error-row:last-child { border-bottom: none; }
+        .error-fila { font-family: monospace; color: #666; flex-shrink: 0; }
+        .error-boleta { font-weight: 700; color: #b71c1c; flex-shrink: 0; }
+        .error-msg { color: #555; }
+
+        /* ── Grupos ─────────────────────────────────────────── */
         .grupos-section { display: flex; flex-direction: column; gap: 1rem; }
 
         .grupo-card {
@@ -300,15 +321,9 @@
         }
         .btn-edit-grupo:hover { border-color: var(--ipn); color: var(--ipn); }
 
-        /* Alumnos dentro del grupo */
-        .grupo-body {
-            display: none;
-            padding: 0;
-        }
-
+        .grupo-body { display: none; padding: 0; }
         .grupo-body.open { display: block; }
 
-        /* Barra de acciones masivas del grupo */
         .grupo-acciones-bar {
             display: none;
             align-items: center;
@@ -320,12 +335,7 @@
 
         .grupo-acciones-bar.visible { display: flex; }
 
-        .acc-label {
-            font-size: .78rem;
-            color: white;
-            font-weight: 700;
-            flex: 1;
-        }
+        .acc-label { font-size: .78rem; color: white; font-weight: 700; flex: 1; }
 
         .acc-select {
             padding: .3rem .6rem;
@@ -350,13 +360,9 @@
 
         .acc-btn:hover { background: rgba(255,255,255,.28); }
 
-        /* Tabla de alumnos del grupo */
         .alumnos-tabla-wrap { overflow-x: auto; }
 
-        .alumnos-tabla {
-            width: 100%;
-            font-size: .82rem;
-        }
+        .alumnos-tabla { width: 100%; font-size: .82rem; }
 
         .alumnos-tabla thead th {
             padding: .55rem .75rem;
@@ -364,10 +370,7 @@
             letter-spacing: .03em;
         }
 
-        .alumnos-tabla tbody td {
-            padding: .5rem .75rem;
-        }
-
+        .alumnos-tabla tbody td { padding: .5rem .75rem; }
         .alumnos-tabla tbody tr.sel-row td { background: #fce8ed; }
 
         .alumno-check {
@@ -425,6 +428,16 @@
             border-color: var(--ipn);
         }
 
+        .char-counter {
+            font-size: .7rem;
+            color: var(--muted);
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        .char-counter.warn { color: var(--warn); }
+        .char-counter.err  { color: var(--err); font-weight: 700; }
+
         /* ── Toast ───────────────────────────────────────────── */
         .toast {
             position: fixed;
@@ -444,7 +457,6 @@
         .toast.ok  { background: var(--ok); }
         .toast.err { background: var(--err); }
 
-        /* ── Empty ───────────────────────────────────────────── */
         .empty-row td { text-align: center; padding: 1.5rem; color: var(--muted); }
 
         @media (max-width: 768px) {
@@ -481,10 +493,8 @@
 </nav>
 <div id="menu-overlay" class="menu-overlay"></div>
 
-<!-- ══════════════════════ CONTENIDO ══════════════════════════ -->
 <div class="page-wrap">
 
-    <!-- BARRA SUPERIOR -->
     <div class="toolbar">
         <h2>Grupos y alumnos</h2>
         <button class="btn-out" id="btn-descargar-plantilla">⬇ Plantilla Excel</button>
@@ -534,6 +544,15 @@
                 <span class="res-badge res-err"  id="res-errores">✗ 0 errores</span>
             </div>
 
+            <!-- NUEVO: Detalle de errores colapsable -->
+            <div class="errores-detalle" id="errores-detalle">
+                <div class="errores-detalle-header" id="errores-detalle-toggle">
+                    <span>⚠️ Ver detalle de errores</span>
+                    <span id="errores-chevron">▼</span>
+                </div>
+                <div class="errores-detalle-body" id="errores-detalle-body"></div>
+            </div>
+
             <div style="display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap" id="btns-carga">
                 <button class="btn-ipn" id="btn-cargar" disabled>⬆ Cargar en base de datos</button>
                 <button class="btn-out" id="btn-limpiar-excel" style="display:none">✕ Limpiar</button>
@@ -552,15 +571,20 @@
         <p style="color:var(--muted);text-align:center;padding:2rem">Cargando grupos…</p>
     </div>
 
-</div><!-- /page-wrap -->
+</div>
 
 <!-- MODAL GRUPO -->
 <div class="modal-overlay" id="modal-grupo">
     <div class="modal">
         <h3 id="modal-grupo-titulo">Nuevo grupo</h3>
         <div class="modal-form">
-            <label for="mg-nombre">Nombre del grupo *</label>
-            <input type="text" id="mg-nombre" maxlength="30" placeholder="Ej. 1CV1" autocomplete="off">
+            <label for="mg-nombre">
+                Nombre del grupo *
+                <small style="font-weight:400;color:#999">(máx. 20 caracteres, sin caracteres especiales)</small>
+            </label>
+            <input type="text" id="mg-nombre" maxlength="20"
+                   placeholder="Ej. 1CV1" autocomplete="off">
+            <div class="char-counter" id="mg-nombre-counter">0 / 20</div>
             <label for="mg-turno">Turno *</label>
             <select id="mg-turno">
                 <option value="">Cargando…</option>
@@ -581,15 +605,13 @@
 // GestionGrupos.js — inline
 // ══════════════════════════════════════════════════════════════
 
-// ── Estado global ─────────────────────────────────────────────
-let gruposData    = [];   // cache de grupos
+let gruposData    = [];
 let turnosData    = [];
 let estadosData   = [];
-let excelFilas    = [];   // filas parseadas del Excel
-let modoEditGrupo = null; // null = crear, id = editar
-let seleccionados = {};   // { [idGrupo]: Set<boleta> }
+let excelFilas    = [];
+let modoEditGrupo = null;
+let seleccionados = {};
 
-// ── Helpers ────────────────────────────────────────────────────
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const $ = id => document.getElementById(id);
 
@@ -612,7 +634,6 @@ function toast(msg, tipo = 'ok') {
     await Promise.all([ cargarGrupos(), cargarTurnos(), cargarEstados() ]);
 })();
 
-// ── Cargar datos del servidor ──────────────────────────────────
 async function cargarGrupos() {
     try {
         const r    = await fetch('/api/grupos', { credentials: 'include' });
@@ -649,6 +670,25 @@ async function cargarEstados() {
         const data = await r.json();
         if (data.success) estadosData = data.estados;
     } catch {}
+}
+
+// ── Validación del nombre del grupo ───────────────────────────
+// Solo letras, números, espacios y guiones. Sin caracteres especiales.
+const REGEX_GRUPO = /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s\-]+$/;
+
+const mgNombre = $('mg-nombre');
+const mgCounter = $('mg-nombre-counter');
+
+if (mgNombre) {
+    mgNombre.addEventListener('input', () => {
+        // Eliminar caracteres no permitidos en tiempo real
+        mgNombre.value = mgNombre.value.replace(/[^a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s\-]/g, '');
+        const len = mgNombre.value.length;
+        mgCounter.textContent = `${len} / 20`;
+        if (len >= 18) mgCounter.className = 'char-counter err';
+        else if (len >= 14) mgCounter.className = 'char-counter warn';
+        else mgCounter.className = 'char-counter';
+    });
 }
 
 // ── Render grupos ──────────────────────────────────────────────
@@ -689,7 +729,6 @@ function crearTarjetaGrupo(g) {
         </div>
 
         <div class="grupo-body" data-gid="${g.id_grupo}">
-            <!-- Barra de acciones masivas -->
             <div class="grupo-acciones-bar" id="accBar-${g.id_grupo}">
                 <span class="acc-label" id="accLabel-${g.id_grupo}">0 seleccionados</span>
 
@@ -711,7 +750,6 @@ function crearTarjetaGrupo(g) {
                 <button class="acc-btn" onclick="aplicarAccion(${g.id_grupo},'desbloquear')">✅ Desbloquear</button>
             </div>
 
-            <!-- Tabla de alumnos -->
             <div class="alumnos-tabla-wrap">
                 <table class="alumnos-tabla">
                     <thead>
@@ -762,7 +800,6 @@ function crearTarjetaGrupo(g) {
         </div>
     `;
 
-    // Toggle abrir/cerrar
     card.querySelector('.grupo-header').addEventListener('click', function(e) {
         if (e.target.classList.contains('btn-edit-grupo')) return;
         const body = card.querySelector('.grupo-body');
@@ -774,7 +811,7 @@ function crearTarjetaGrupo(g) {
     return card;
 }
 
-// ── Selección de alumnos ──────────────────────────────────────
+// ── Selección ──────────────────────────────────────────────────
 function toggleAlumno(gid, boleta, checked) {
     if (!seleccionados[gid]) seleccionados[gid] = new Set();
     if (checked) seleccionados[gid].add(boleta);
@@ -792,7 +829,6 @@ function toggleTodos(gid, checked) {
         else         seleccionados[gid].delete(a.boleta);
     });
 
-    // Sincronizar checkboxes individuales
     document.querySelectorAll(`.chk-alumno[data-gid="${gid}"]`).forEach(cb => {
         cb.checked = checked;
         const row = document.getElementById(`row-${gid}-${cb.dataset.boleta}`);
@@ -810,7 +846,7 @@ function actualizarBarraAcciones(gid) {
     if (lbl) lbl.textContent = `${n} alumno${n !== 1 ? 's' : ''} seleccionado${n !== 1 ? 's' : ''}`;
 }
 
-// ── Acciones masivas ──────────────────────────────────────────
+// ── Acciones masivas ───────────────────────────────────────────
 async function aplicarAccion(gid, tipo) {
     const boletas = [...(seleccionados[gid] || [])];
     if (!boletas.length) { toast('Selecciona al menos un alumno', 'err'); return; }
@@ -840,7 +876,7 @@ async function aplicarAccion(gid, tipo) {
             seleccionados[gid] = new Set();
             await cargarGrupos();
         } else {
-            toast(data.message, 'err');
+            toast(data.message || 'Error al aplicar acción', 'err');
         }
     } catch { toast('Error de conexión', 'err'); }
 }
@@ -859,7 +895,10 @@ function abrirModalGrupo(id = null) {
     $('btn-guardar-grupo').textContent   = grupo ? 'Guardar cambios' : 'Crear grupo';
     $('mg-nombre').value = grupo?.nombre || '';
 
-    // Seleccionar turno si es edición
+    // Actualizar contador
+    const len = (grupo?.nombre || '').length;
+    if (mgCounter) mgCounter.textContent = `${len} / 20`;
+
     if (grupo) {
         const turno = turnosData.find(t => t.nombre_turno === grupo.turno);
         $('mg-turno').value = turno?.id_turno || '';
@@ -877,10 +916,25 @@ $('btn-nuevo-grupo').addEventListener('click', () => abrirModalGrupo());
 $('btn-cancelar-grupo').addEventListener('click', () => $('modal-grupo').classList.remove('visible'));
 $('modal-grupo').addEventListener('click', e => { if (e.target === $('modal-grupo')) $('modal-grupo').classList.remove('visible'); });
 
+// Toggle detalle de errores
+$('errores-detalle-toggle').addEventListener('click', () => {
+    const body    = $('errores-detalle-body');
+    const chevron = $('errores-chevron');
+    const isOpen  = body.style.display !== 'none';
+    body.style.display    = isOpen ? 'none' : 'block';
+    chevron.textContent   = isOpen ? '▼' : '▲';
+});
+
 $('btn-guardar-grupo').addEventListener('click', async () => {
     const nombre = $('mg-nombre').value.trim();
     const turno  = $('mg-turno').value;
-    if (!nombre || !turno) { toast('Nombre y turno son obligatorios', 'err'); return; }
+
+    if (!nombre) { toast('El nombre del grupo es obligatorio', 'err'); return; }
+    if (nombre.length < 2) { toast('El nombre debe tener al menos 2 caracteres', 'err'); return; }
+    if (!REGEX_GRUPO.test(nombre)) {
+        toast('El nombre solo puede contener letras, números, espacios y guiones', 'err'); return;
+    }
+    if (!turno) { toast('Selecciona un turno', 'err'); return; }
 
     const btn = $('btn-guardar-grupo');
     btn.disabled = true; btn.textContent = 'Guardando…';
@@ -901,7 +955,7 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
             $('modal-grupo').classList.remove('visible');
             await cargarGrupos();
         } else {
-            toast(data.message, 'err');
+            toast(data.message || 'No se pudo guardar el grupo', 'err');
         }
     } catch { toast('Error de conexión', 'err'); }
     finally {
@@ -911,10 +965,10 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
 });
 
 // ── Excel: parseo con SheetJS ──────────────────────────────────
-const dropZone    = $('drop-zone');
-const excelInput  = $('excel-input');
-const btnCargar   = $('btn-cargar');
-const btnLimpiar  = $('btn-limpiar-excel');
+const dropZone   = $('drop-zone');
+const excelInput = $('excel-input');
+const btnCargar  = $('btn-cargar');
+const btnLimpiar = $('btn-limpiar-excel');
 
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
@@ -939,7 +993,6 @@ function procesarExcel(file) {
 
             if (!json.length) { toast('El archivo está vacío', 'err'); return; }
 
-            // Normalizar nombres de columnas (lowercase, sin espacios)
             excelFilas = json.map((row, i) => {
                 const norm = {};
                 for (const k in row) norm[k.toLowerCase().trim().replace(/\s+/g,'_')] = row[k];
@@ -951,12 +1004,13 @@ function procesarExcel(file) {
                     estado_academico: String(norm.estado_academico || norm.estado || 'Regular').trim(),
                     puertas_abiertas: String(norm.puertas_abiertas || norm.puertas || 'NO').trim(),
                 };
-            }).filter(r => r.boleta);  // ignorar filas sin boleta
+            }).filter(r => r.boleta);
 
             mostrarPreview();
             btnCargar.disabled         = false;
             btnLimpiar.style.display   = '';
             $('resultado-wrap').style.display = 'none';
+            $('errores-detalle').style.display = 'none';
 
         } catch (e) {
             toast('Error al leer el archivo: ' + e.message, 'err');
@@ -1003,6 +1057,7 @@ btnCargar.addEventListener('click', async () => {
     btnCargar.textContent  = '⏳ Enviando…';
     $('progress-wrap').style.display   = 'block';
     $('resultado-wrap').style.display  = 'none';
+    $('errores-detalle').style.display = 'none';
     $('progress-bar').style.width      = '30%';
     $('progress-label').textContent    = `Enviando ${excelFilas.length} registros…`;
 
@@ -1019,23 +1074,24 @@ btnCargar.addEventListener('click', async () => {
         const data = await r.json();
 
         if (data.success) {
-            $('res-insertados').textContent    = `✓ ${data.insertados} insertados`;
-            $('res-actualizados').textContent  = `↺ ${data.actualizados} actualizados`;
-            $('res-errores').textContent       = `✗ ${data.errores?.length || 0} errores`;
-            $('resultado-wrap').style.display  = 'flex';
-            $('progress-label').textContent    = '¡Completado!';
+            $('res-insertados').textContent   = `✓ ${data.insertados} insertados`;
+            $('res-actualizados').textContent = `↺ ${data.actualizados} actualizados`;
+            $('res-errores').textContent      = `✗ ${data.errores?.length || 0} errores`;
+            $('resultado-wrap').style.display = 'flex';
+            $('progress-label').textContent   = '¡Completado!';
 
+            // Mostrar detalle de errores si los hay
             if (data.errores?.length) {
-                console.table(data.errores);
-                toast(`${data.errores.length} error(es) — revisa la consola (F12)`, 'err');
+                mostrarDetalleErrores(data.errores);
+                toast(`Carga completada con ${data.errores.length} error(es). Revisa el detalle abajo.`, 'err');
             } else {
                 toast(data.message, 'ok');
             }
 
-            await cargarGrupos(); // refrescar lista
+            await cargarGrupos();
 
         } else {
-            toast(data.message, 'err');
+            toast(data.message || 'Error en la carga', 'err');
             $('progress-label').textContent = 'Error';
         }
 
@@ -1048,12 +1104,32 @@ btnCargar.addEventListener('click', async () => {
     }
 });
 
+// ── Mostrar detalle de errores ─────────────────────────────────
+function mostrarDetalleErrores(errores) {
+    const wrap  = $('errores-detalle');
+    const body  = $('errores-detalle-body');
+    const chev  = $('errores-chevron');
+
+    body.innerHTML = errores.map(e => `
+        <div class="error-row">
+            <span class="error-fila">Fila ${e.fila}</span>
+            <span class="error-boleta">Boleta: ${esc(String(e.boleta || '—'))}</span>
+            <span class="error-msg">${esc(e.error || 'Error desconocido')}</span>
+        </div>`).join('');
+
+    body.style.display = 'block';
+    chev.textContent   = '▲';
+    wrap.style.display = 'block';
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 btnLimpiar.addEventListener('click', () => {
     excelFilas                         = [];
     excelInput.value                   = '';
     $('preview-wrap').style.display    = 'none';
     $('progress-wrap').style.display   = 'none';
     $('resultado-wrap').style.display  = 'none';
+    $('errores-detalle').style.display = 'none';
     btnCargar.disabled                 = true;
     btnLimpiar.style.display           = 'none';
     $('progress-bar').style.width      = '0%';

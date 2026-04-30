@@ -1,12 +1,11 @@
 // frontend/public/JS/gestionUsuarios.js
 // ============================================================
 // FIXES:
-//   · new GestionUsuarios() envuelto en DOMContentLoaded
-//     → elimina race condition con el select#f-rol
-//   · init() ya no duplica el check de auth con navigation.js
-//     porque navigation.js corre primero y redirige si no hay sesión.
-//     init() solo verifica que el rol sea Administrador.
-//   · cargarRoles() ahora tiene manejo de error visible
+//   · Confirmación de contraseña al CREAR usuario
+//   · Límite de caracteres en campos (nombre 100, usuario 30, email 150)
+//   · Validación: nombre solo letras y espacios
+//   · Validación: usuario solo letras, números y _ (sin espacios ni especiales)
+//   · Feedback visual en tiempo real de validaciones
 // ============================================================
 
 class GestionUsuarios {
@@ -16,34 +15,107 @@ class GestionUsuarios {
         this.modoEdicion   = false;
         this.idEditando    = null;
         this.idPassword    = null;
-
-        // init() se llama tras DOMContentLoaded (ver abajo)
         this.init();
     }
 
     async init() {
-        // ── Verificar sesión y rol ─────────────────────────
         try {
             const r    = await fetch('/api/auth/check', { credentials: 'include' });
             const data = await r.json();
-
             if (!data.isAuthenticated) { location.href = '/login.html'; return; }
             if (data.tipo !== 'Administrador') { location.href = '/Entrada_Salida.html'; return; }
-
             this.usuarioSesion      = data.user;
             this.usuarioSesion.tipo = data.tipo;
             this.usuarioSesion.id   = data.user?.id;
-
         } catch { location.href = '/login.html'; return; }
 
-        // ── Cargar datos y eventos ─────────────────────────
-        // Paralelo: roles y usuarios al mismo tiempo
-        await Promise.all([
-            this.cargarRoles(),
-            this.cargarUsuarios(),
-        ]);
-
+        await Promise.all([ this.cargarRoles(), this.cargarUsuarios() ]);
         this.bindEvents();
+        this.bindValidaciones();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // VALIDACIONES EN TIEMPO REAL
+    // ─────────────────────────────────────────────────────────
+    bindValidaciones() {
+        // Nombre: solo letras, espacios y acentos. Máx 100 chars.
+        const fNombre = document.getElementById('f-nombre');
+        if (fNombre) {
+            fNombre.maxLength = 100;
+            fNombre.addEventListener('input', () => {
+                // Eliminar caracteres no permitidos
+                fNombre.value = fNombre.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
+                this.validarCampo(fNombre,
+                    fNombre.value.trim().length >= 2,
+                    'Mínimo 2 caracteres, solo letras');
+            });
+        }
+
+        // Usuario: solo letras, números y guión bajo. Sin espacios. Máx 30 chars.
+        const fUsuario = document.getElementById('f-usuario');
+        if (fUsuario) {
+            fUsuario.maxLength = 30;
+            fUsuario.addEventListener('input', () => {
+                fUsuario.value = fUsuario.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                this.validarCampo(fUsuario,
+                    /^[a-zA-Z0-9_]{3,30}$/.test(fUsuario.value),
+                    'Solo letras, números y _ (3-30 caracteres)');
+            });
+        }
+
+        // Email: máx 150 chars
+        const fEmail = document.getElementById('f-email');
+        if (fEmail) fEmail.maxLength = 150;
+
+        // Contraseña: mín 6, máx 50 chars
+        const fPass = document.getElementById('f-password');
+        if (fPass) {
+            fPass.maxLength = 50;
+            fPass.addEventListener('input', () => {
+                this.validarCampo(fPass,
+                    fPass.value.length === 0 || fPass.value.length >= 6,
+                    'Mínimo 6 caracteres');
+                // Re-validar confirmación si ya tiene texto
+                const fConf = document.getElementById('f-password-confirm');
+                if (fConf?.value) {
+                    this.validarCampo(fConf,
+                        fConf.value === fPass.value,
+                        'Las contraseñas no coinciden');
+                }
+            });
+        }
+
+        // Confirmación de contraseña (campo nuevo)
+        const fConf = document.getElementById('f-password-confirm');
+        if (fConf) {
+            fConf.maxLength = 50;
+            fConf.addEventListener('input', () => {
+                const pass = document.getElementById('f-password')?.value || '';
+                this.validarCampo(fConf,
+                    fConf.value === pass,
+                    'Las contraseñas no coinciden');
+            });
+        }
+    }
+
+    // Muestra/oculta mensaje de validación bajo el campo
+    validarCampo(input, esValido, mensajeError) {
+        let hint = input.nextElementSibling;
+        if (!hint || !hint.classList.contains('field-hint')) {
+            hint = document.createElement('small');
+            hint.className = 'field-hint';
+            hint.style.cssText = 'display:block;font-size:.72rem;margin-top:2px;';
+            input.insertAdjacentElement('afterend', hint);
+        }
+        if (esValido) {
+            input.style.borderColor = '#4caf50';
+            hint.textContent = '';
+            hint.style.color = '';
+        } else {
+            input.style.borderColor = '#f44336';
+            hint.textContent = mensajeError;
+            hint.style.color = '#d32f2f';
+        }
     }
 
     // ─────────────────────────────────────────────────────────
@@ -60,21 +132,18 @@ class GestionUsuarios {
 
     async cargarRoles() {
         const sel = document.getElementById('f-rol');
-        if (!sel) return;   // por si acaso el DOM aún no tiene el elemento
-
+        if (!sel) return;
         try {
             const r    = await fetch(`${this.api}/roles`, { credentials: 'include' });
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
-
             const data = await r.json();
             if (!data.success || !data.roles?.length) {
                 sel.innerHTML = '<option value="">Sin roles disponibles</option>';
                 return;
             }
-
             sel.innerHTML = '<option value="">— Selecciona rol —</option>';
             data.roles.forEach(rol => {
-                const opt       = document.createElement('option');
+                const opt = document.createElement('option');
                 opt.value       = rol.id_rol;
                 opt.textContent = rol.nombre_rol;
                 sel.appendChild(opt);
@@ -161,6 +230,16 @@ class GestionUsuarios {
         });
     }
 
+    limpiarHints() {
+        document.querySelectorAll('.field-hint').forEach(h => {
+            h.textContent = '';
+        });
+        ['f-nombre','f-usuario','f-email','f-rol','f-password','f-password-confirm'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.borderColor = '';
+        });
+    }
+
     abrirCreacion() {
         this.modoEdicion = false;
         this.idEditando  = null;
@@ -173,10 +252,20 @@ class GestionUsuarios {
         document.getElementById('f-email').value    = '';
         document.getElementById('f-rol').value      = '';
         document.getElementById('f-password').value = '';
-        document.getElementById('f-usuario').readOnly              = false;
-        document.getElementById('seccion-password').style.display  = '';
-        document.getElementById('seccion-activo').style.display    = 'none';
-        document.getElementById('f-password').required             = true;
+
+        // Limpiar y mostrar confirmación de contraseña
+        const confWrap = document.getElementById('seccion-password-confirm');
+        if (confWrap) {
+            confWrap.style.display = '';
+            document.getElementById('f-password-confirm').value = '';
+        }
+
+        document.getElementById('f-usuario').readOnly             = false;
+        document.getElementById('seccion-password').style.display = '';
+        document.getElementById('seccion-activo').style.display   = 'none';
+        document.getElementById('f-password').required            = true;
+
+        this.limpiarHints();
     }
 
     async abrirEdicion(id) {
@@ -198,12 +287,16 @@ class GestionUsuarios {
             document.getElementById('f-rol').value     = u.id_rol;
             document.getElementById('f-activo').value  = String(u.activo);
 
+            // Ocultar confirmación al editar (no se cambia contraseña aquí)
+            const confWrap = document.getElementById('seccion-password-confirm');
+            if (confWrap) confWrap.style.display = 'none';
+
             document.getElementById('f-usuario').readOnly             = true;
             document.getElementById('seccion-password').style.display = 'none';
             document.getElementById('seccion-activo').style.display   = '';
             document.getElementById('f-password').required            = false;
 
-            document.querySelector('.panel')?.scrollIntoView({ behavior: 'smooth' });
+            this.limpiarHints();
         } catch { this.toast('Error cargando usuario', 'err'); }
     }
 
@@ -213,9 +306,30 @@ class GestionUsuarios {
         const email    = document.getElementById('f-email').value.trim();
         const idRol    = document.getElementById('f-rol').value;
         const password = document.getElementById('f-password').value;
+        const confirm  = document.getElementById('f-password-confirm')?.value || '';
         const activo   = document.getElementById('f-activo').value;
 
-        if (!nombre || !idRol) { this.toast('Nombre y rol son obligatorios', 'err'); return; }
+        // Validaciones
+        if (!nombre || nombre.length < 2) {
+            this.toast('El nombre debe tener al menos 2 caracteres', 'err'); return;
+        }
+        if (!/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{2,100}$/.test(nombre)) {
+            this.toast('El nombre solo puede contener letras y espacios', 'err'); return;
+        }
+        if (!idRol) { this.toast('Selecciona un rol', 'err'); return; }
+
+        if (!this.modoEdicion) {
+            if (!usuario) { this.toast('El nombre de usuario es obligatorio', 'err'); return; }
+            if (!/^[a-zA-Z0-9_]{3,30}$/.test(usuario)) {
+                this.toast('Usuario: solo letras, números y _ (3-30 caracteres)', 'err'); return;
+            }
+            if (!password || password.length < 6) {
+                this.toast('La contraseña debe tener al menos 6 caracteres', 'err'); return;
+            }
+            if (password !== confirm) {
+                this.toast('Las contraseñas no coinciden', 'err'); return;
+            }
+        }
 
         const btn = document.getElementById('btn-guardar-usuario');
         btn.disabled = true; btn.textContent = 'Guardando…';
@@ -224,10 +338,7 @@ class GestionUsuarios {
             let r, data;
 
             if (!this.modoEdicion) {
-                if (!usuario)            { this.toast('El nombre de usuario es obligatorio', 'err'); return; }
-                if (password.length < 6) { this.toast('Mínimo 6 caracteres en la contraseña', 'err'); return; }
-
-                r    = await fetch(this.api, {
+                r = await fetch(this.api, {
                     method:      'POST',
                     headers:     { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -235,7 +346,7 @@ class GestionUsuarios {
                 });
                 data = await r.json();
             } else {
-                r    = await fetch(`${this.api}/${this.idEditando}`, {
+                r = await fetch(`${this.api}/${this.idEditando}`, {
                     method:      'PUT',
                     headers:     { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -268,7 +379,6 @@ class GestionUsuarios {
     async toggleActivo(id, estaActivo) {
         const accion = estaActivo ? 'desactivar' : 'reactivar';
         if (!confirm(`¿Seguro que deseas ${accion} este usuario?`)) return;
-
         try {
             const r    = await fetch(`${this.api}/${id}/${accion}`, {
                 method: 'PUT', credentials: 'include',
@@ -293,6 +403,10 @@ class GestionUsuarios {
         document.getElementById('m-actual').value    = '';
         document.getElementById('m-nueva').value     = '';
         document.getElementById('m-confirmar').value = '';
+
+        // Máx chars en modal
+        document.getElementById('m-nueva').maxLength     = 50;
+        document.getElementById('m-confirmar').maxLength = 50;
 
         document.getElementById('modal-password').classList.add('visible');
     }
@@ -348,9 +462,6 @@ class GestionUsuarios {
     }
 }
 
-// ── Instanciar SOLO cuando el DOM esté listo ─────────────────
-// Esto elimina la race condition con el select#f-rol
-// y con los fetch concurrentes de navigation.js
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new GestionUsuarios();
