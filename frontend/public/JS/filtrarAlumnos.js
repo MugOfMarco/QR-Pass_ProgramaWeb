@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const seleccionBar      = document.getElementById('seleccion-bar');
     const seleccionContador = document.getElementById('seleccion-contador');
     const btnDeselectBar    = document.getElementById('btn-deselect-bar');
+    const filtroGrupo       = document.getElementById('filtro-grupo');
 
     // ── Estado ────────────────────────────────────────────────
     let alumnosActuales = [];       // cache de alumnos renderizados
@@ -32,21 +33,52 @@ document.addEventListener('DOMContentLoaded', () => {
     let timeoutId;
     const debounce = (fn, ms) => { clearTimeout(timeoutId); timeoutId = setTimeout(fn, ms); };
 
+    // ── Cargar grupos desde la API ────────────────────────────
+    async function cargarGrupos() {
+        try {
+            const res = await fetch('/api/alumnos/grupos/lista', { credentials: 'include' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success || !filtroGrupo) return;
+
+            (data.grupos || []).forEach(g => {
+                const opt = document.createElement('option');
+                opt.value       = g.nombre_grupo;
+                opt.textContent = g.nombre_grupo;
+                filtroGrupo.appendChild(opt);
+            });
+        } catch (_) { /* silencioso: los filtros siguen funcionando sin grupos */ }
+    }
+
     // ── Construir query params actuales ───────────────────────
     function obtenerParams() {
         const params = new URLSearchParams();
         const q = searchInput?.value.trim();
         if (q) params.append('q', q);
 
-        const turno   = document.querySelector('input[name="turno"]:checked');
-        const puertas = document.querySelector('input[name="puertas"]:checked');
-        const estado  = document.querySelector('input[name="estado"]:checked');
-        if (turno)   params.append('turno',   turno.value);
-        if (puertas) params.append('puertas', puertas.value);
-        if (estado)  params.append('estado',  estado.value);
+        const turno    = document.querySelector('input[name="turno"]:checked');
+        const puertas  = document.querySelector('input[name="puertas"]:checked');
+        const estado   = document.querySelector('input[name="estado"]:checked');
+        const dentro   = document.querySelector('input[name="dentro"]:checked');
+        const bloqueado = document.querySelector('input[name="bloqueado"]:checked');
+        const grupo    = filtroGrupo?.value || '';
 
-        // Guardar filtros activos para el PDF
-        filtrosActivos = { q, turno: turno?.value, puertas: puertas?.value, estado: estado?.value };
+        if (turno)    params.append('turno',    turno.value);
+        if (puertas)  params.append('puertas',  puertas.value);
+        if (estado)   params.append('estado',   estado.value);
+        if (dentro)   params.append('dentro',   dentro.value);
+        if (bloqueado) params.append('bloqueado', bloqueado.value);
+        if (grupo)    params.append('grupo',    grupo);
+
+        filtrosActivos = {
+            q,
+            turno:    turno?.value,
+            puertas:  puertas?.value,
+            estado:   estado?.value,
+            dentro:   dentro?.value,
+            bloqueado: bloqueado?.value,
+            grupo,
+        };
 
         return params;
     }
@@ -281,6 +313,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formFiltros) {
         formFiltros.addEventListener('change', cargarAlumnos);
     }
+    if (filtroGrupo) {
+        filtroGrupo.addEventListener('change', cargarAlumnos);
+    }
     if (btnSelAll) {
         btnSelAll.addEventListener('click', toggleSeleccionarTodos);
     }
@@ -299,5 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Carga inicial ─────────────────────────────────────────
+    cargarGrupos();
     cargarAlumnos();
 });

@@ -101,11 +101,13 @@ export const obtenerAlumno = async (req, res) => {
 export const buscarAlumnos = async (req, res) => {
     try {
         // 1. Extraemos y sanitizamos todos los posibles filtros del frontend
-        const q       = sanitize(req.query.q || '');
-        const puertas = sanitize(req.query.puertas || '');
-        const turno   = sanitize(req.query.turno || '');
-        const estado  = sanitize(req.query.estado || '');
-        const espa    = sanitize(req.query.espa || '');
+        const q        = sanitize(req.query.q        || '');
+        const puertas  = sanitize(req.query.puertas  || '');
+        const turno    = sanitize(req.query.turno    || '');
+        const estado   = sanitize(req.query.estado   || '');
+        const grupo    = sanitize(req.query.grupo    || '');
+        const dentro   = sanitize(req.query.dentro   || '');
+        const bloqueado = sanitize(req.query.bloqueado || '');
 
         // 2. Iniciamos la consulta base a Supabase uniendo las tablas necesarias
         // Usamos inner joins y left joins explícitos para traer nombres y no solo IDs
@@ -158,17 +160,52 @@ export const buscarAlumnos = async (req, res) => {
         }));
 
         // Filtrado en memoria de las relaciones complejas
-        if (turno) {
-            alumnosMapeados = alumnosMapeados.filter(al => al.turno === turno);
+        if (turno)  alumnosMapeados = alumnosMapeados.filter(al => al.turno === turno);
+        if (estado) alumnosMapeados = alumnosMapeados.filter(al => al.estado_academico === estado);
+        if (grupo)  alumnosMapeados = alumnosMapeados.filter(al => al.grupo === grupo);
+
+        // Filtro: alumnos con credencial bloqueada
+        if (bloqueado === 'true') {
+            const { data: bloqueadosData } = await supabaseAdmin
+                .from('info_alumno')
+                .select('boleta')
+                .or('bloqueado_manual.eq.true,bloqueado_sistema.eq.true');
+            const bloqueadosSet = new Set((bloqueadosData || []).map(b => b.boleta));
+            alumnosMapeados = alumnosMapeados.filter(al => bloqueadosSet.has(al.boleta));
         }
-        if (estado) {
-            alumnosMapeados = alumnosMapeados.filter(al => al.estado_academico === estado);
+
+        // Filtro: alumnos actualmente dentro del plantel (última entrada hoy sin salida)
+        if (dentro === 'true' || dentro === 'false') {
+            const diaMX = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+            const { data: registrosHoy } = await supabaseAdmin
+                .from('registros_acceso')
+                .select('boleta, id_tipo_registro')
+                .gte('fecha_hora', `${diaMX}T00:00:00-06:00`)
+                .lte('fecha_hora', `${diaMX}T23:59:59-06:00`)
+                .order('fecha_hora', { ascending: true });
+
+            const ultimoPorBoleta = {};
+            for (const r of (registrosHoy || [])) {
+                ultimoPorBoleta[r.boleta] = r.id_tipo_registro;
+            }
+            const TIPOS_ENTRADA = new Set([1, 3, 4]);
+            const boletasDentro = new Set(
+                Object.entries(ultimoPorBoleta)
+                    .filter(([, t]) => TIPOS_ENTRADA.has(t))
+                    .map(([b]) => parseInt(b))
+            );
+
+            if (dentro === 'true') {
+                alumnosMapeados = alumnosMapeados.filter(al => boletasDentro.has(al.boleta));
+            } else {
+                alumnosMapeados = alumnosMapeados.filter(al => !boletasDentro.has(al.boleta));
+            }
         }
 
         // 7. Responder al Frontend
-        return res.json({ 
-            success: true, 
-            data: alumnosMapeados 
+        return res.json({
+            success: true,
+            data: alumnosMapeados
         });
 
     } catch (err) {

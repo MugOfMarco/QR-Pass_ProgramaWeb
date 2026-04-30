@@ -41,16 +41,15 @@ const TIPOS_ENTRADA = new Set([
 // Devuelve null si no hay ninguno.
 // ─────────────────────────────────────────────────────────────
 async function ultimoRegistroHoy(boleta) {
-    const ahora  = new Date();
-    const inicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(),  0,  0,  0);
-    const fin    = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59);
+    // Mexico City usa UTC-6 permanentemente desde noviembre 2022 (sin horario de verano)
+    const diaMX = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
 
     const { data, error } = await supabaseAdmin
         .from('registros_acceso')
         .select('id_registro, id_tipo_registro, fecha_hora')
         .eq('boleta', parseInt(boleta))
-        .gte('fecha_hora', inicio.toISOString())
-        .lte('fecha_hora', fin.toISOString())
+        .gte('fecha_hora', `${diaMX}T00:00:00-06:00`)
+        .lte('fecha_hora', `${diaMX}T23:59:59-06:00`)
         .order('fecha_hora', { ascending: false })
         .limit(1)
         .maybeSingle();

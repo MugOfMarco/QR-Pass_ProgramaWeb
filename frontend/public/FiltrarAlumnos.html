@@ -227,6 +227,20 @@
             accent-color: #5c1f33;
         }
 
+        .filter-select {
+            width: 100%;
+            padding: 5px 8px;
+            font-size: .86rem;
+            border: 1.5px solid #ccc;
+            border-radius: 6px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .filter-select:focus { border-color: #5c1f33; }
+
         #btn-clear-filters {
             width: 100%;
             background-color: #f5f5f5;
@@ -334,12 +348,32 @@
                         </div>
 
                         <div class="filter-section">
+                            <h4>Grupo</h4>
+                            <select id="filtro-grupo" name="grupo" class="filter-select">
+                                <option value="">Todos los grupos</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-section">
                             <h4>Turno</h4>
                             <label class="filter-label">
                                 <input type="radio" name="turno" value="Matutino"> Matutino
                             </label>
                             <label class="filter-label">
                                 <input type="radio" name="turno" value="Vespertino"> Vespertino
+                            </label>
+                        </div>
+
+                        <div class="filter-section">
+                            <h4>Situación académica</h4>
+                            <label class="filter-label">
+                                <input type="radio" name="estado" value="Regular"> Regular
+                            </label>
+                            <label class="filter-label">
+                                <input type="radio" name="estado" value="Créditos"> Créditos
+                            </label>
+                            <label class="filter-label">
+                                <input type="radio" name="estado" value="Dictamen"> Dictamen
                             </label>
                         </div>
 
@@ -354,15 +388,19 @@
                         </div>
 
                         <div class="filter-section">
-                            <h4>Situación académica</h4>
+                            <h4>Presencia hoy</h4>
                             <label class="filter-label">
-                                <input type="radio" name="estado" value="Regular"> Regular
+                                <input type="radio" name="dentro" value="true"> Dentro del plantel
                             </label>
                             <label class="filter-label">
-                                <input type="radio" name="estado" value="Creditos"> Créditos
+                                <input type="radio" name="dentro" value="false"> Fuera del plantel
                             </label>
+                        </div>
+
+                        <div class="filter-section">
+                            <h4>Credencial</h4>
                             <label class="filter-label">
-                                <input type="radio" name="estado" value="Dictamen"> Dictamen
+                                <input type="radio" name="bloqueado" value="true"> Bloqueados
                             </label>
                         </div>
                     </div>
