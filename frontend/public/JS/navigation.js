@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
             { href: '/GestionGrupos.html',         label: 'Gestión de grupos' },
             { href: '/GestionUsuarios.html',       label: 'Gestión de usuarios' },
-            { href: '/DescargasBD.html',           label: 'Descargar respaldo' },
+            { href: '/Descargasbd.html',           label: 'Descargar respaldo' },
             { href: '/Soporte.html',               label: 'Soporte QRPASS' },
 
         ];
