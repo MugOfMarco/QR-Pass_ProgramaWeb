@@ -37,12 +37,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             { href: '/GestionGrupos.html',         label: 'Gestión de grupos' },
             { href: '/GestionUsuarios.html',       label: 'Gestión de usuarios' },
             { href: '/DescargasBD.html',           label: 'Descargar respaldo' },
+            { href: '/Soporte.html',               label: 'Soporte QRPASS' },
+
         ];
 
         const menuVigilante = [
             { href: '/Entrada_Salida.html',        label: 'Entrada / Salida' },
             { href: '/BuscarAlumnoVigilante.html', label: 'Buscar alumno' },
             { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
+            { href: '/Soporte.html',               label: 'Soporte QRPASS' },
+
         ];
 
         const items = userTipo === 'Administrador' ? menuAdmin : menuVigilante;

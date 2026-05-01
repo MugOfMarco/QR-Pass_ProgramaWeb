@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soporte de QR PASS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/soporte.css">
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="header-container">
+            <div class="Boton-nav">
+                <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                    <img src="../imgs/menu.png" alt="">
+                </button>
+            </div>
+
+            <div class="header-title">
+                <h1 style="color: white;">Soporte de QR PASS</h1>
+            </div>
+            
+            <div class="logo">
+                <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+            </div>
+        </div>
+    </header>
+
+    <nav class="menu-navegacion" aria-label="Menú principal">
+        <ul id="lista-opciones" class="menu-lista">
+            </ul>
+    </nav>
+    <div id="menu-overlay" class="menu-overlay"></div>
+
+    <main class="dashboard-main container" style="margin-top: 2rem;">
+        <div class="faq-title">Preguntas frecuentes</div>
+        <div class="faq-subtitle">Nuestro catálogo de opciones de autoservicio te permitirá<br>actuar inmediatamente.</div>
+        <div class="divider"></div>
+
+        <div class="faq-grid">
+            
+            <div class="column">
+                <div class="category-title">Acceso al Sistema</div>
+                
+                <div class="accordion-item">
+                    <button class="accordion-header">¿Qué hacer si olvido mi contraseña? <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            En caso de ser vigilante, ir con tu administrador y pedirle que cambie tu contraseña. En caso de ser administrador, presionar en “Olvidé mi contraseña”; se te pedirá ingresar el correo que registraste con el usuario de administrador. Al mismo le llegará un correo para que pueda cambiar su contraseña.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header">¿Qué hacer si hay un error al iniciar sesión? <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            Verificar que las credenciales estén escritas correctamente. Si el sistema sigue denegando el acceso, contactar al administrador principal para revisar el estado de la cuenta en la base de datos.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="category-title" style="margin-top: 30px;">Gestión de Usuarios (Solo Administradores)</div>
+                
+                <div class="accordion-item">
+                    <button class="accordion-header">¿Cómo registrar a un nuevo alumno o vigilante? <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            Desde el módulo de gestión de usuarios, seleccionar la opción para agregar un nuevo registro. Deberás ingresar los datos requeridos (como nombre y número de boleta) y asignar el rol correspondiente para que el sistema lo guarde en la base de datos.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header">¿Es posible modificar o eliminar el registro de un alumno? <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            Sí. En la tabla de usuarios registrados, los administradores tienen las opciones de editar la información de un usuario existente o eliminarlo definitivamente del sistema en caso de que ya no requiera acceso.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="category-title">Control de Entradas y Salidas (Vigilantes)</div>
+                
+                <div class="accordion-item">
+                    <button class="accordion-header">¿Cómo funciona el escaneo para registrar una entrada o salida? <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            El alumno debe mostrar su código QR en la pantalla de su dispositivo. Como vigilante, asegurarse de que el lector escanee el código; el sistema validará la información automáticamente en la base de datos y registrará la hora exacta del movimiento.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header">El sistema marca el código QR como "Inválido" o deniega el acceso <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            Esto ocurre si el código no pertenece a un usuario registrado en la base de datos o si hay un problema con la lectura. Pedir al alumno que muestre el QR claramente; si el error persiste, el alumno deberá revisar su registro con la administración.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="category-title" style="margin-top: 30px;">Consulta de Historial y Reportes</div>
+                
+                <div class="accordion-item">
+                    <button class="accordion-header">¿Cómo revisar a qué hora entró o salió un alumno? <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            Ingresar al módulo de historial o registros. Allí podrás visualizar la tabla con los datos de las entradas y salidas de los alumnos, incluyendo la fecha y hora exacta en la que el sistema escaneó su código QR.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header">¿Se pueden buscar los registros de una boleta en específico? <i class="arrow"></i></button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            Sí, en la sección del historial de accesos se puede utilizar la función de búsqueda ingresando el número de boleta del alumno para filtrar la tabla y ver únicamente sus movimientos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-title">
+                <span>¿Necesitas ayuda? Ponte en contacto</span>
+                <span>con nosotros</span>
+            </div>
+            <div class="contact-form">
+                <div class="input-container">
+                    <input type="text" class="contact-input" placeholder="Fr...">
+                </div>
+                <button class="submit-btn">Enviar solicitud</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="./JS/navigation.js"></script>
+    <script src="./JS/soporte.js"></script>
+</body>
+</html>
