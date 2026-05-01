@@ -39,9 +39,6 @@
             --mono: 'DM Mono', monospace;
         }
 
-        /* ═══════════════════════════════════════════════════
-           RESET & BASE
-        ═══════════════════════════════════════════════════ */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -85,59 +82,28 @@
             transition: background .2s;
             flex-shrink: 0;
         }
-
-        .Boton-nav button:hover, #menu-toggle-btn:hover {
-            background: rgba(255,255,255,.28);
-        }
-
+        .Boton-nav button:hover, #menu-toggle-btn:hover { background: rgba(255,255,255,.28); }
         .Boton-nav img { width: 22px; height: 22px; filter: brightness(0) invert(1); }
 
-        .header-title {
-            flex: 1;
-        }
+        .header-title { flex: 1; }
+        .header-title h1 { color: white; font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; }
+        .header-title p  { color: rgba(255,255,255,.65); font-size: .78rem; margin-top: 1px; }
 
-        .header-title h1 {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: -.01em;
-        }
-
-        .header-title p {
-            color: rgba(255,255,255,.65);
-            font-size: .78rem;
-            font-weight: 400;
-            margin-top: 1px;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
-        }
+        .header-right { display: flex; align-items: center; gap: .75rem; }
 
         .refresh-btn {
-            display: flex;
-            align-items: center;
-            gap: .4rem;
+            display: flex; align-items: center; gap: .4rem;
             background: rgba(255,255,255,.12);
             border: 1px solid rgba(255,255,255,.22);
-            color: white;
-            border-radius: 8px;
-            padding: .4rem .85rem;
-            font-size: .78rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: var(--font);
-            transition: background .2s;
+            color: white; border-radius: 8px;
+            padding: .4rem .85rem; font-size: .78rem; font-weight: 600;
+            cursor: pointer; font-family: var(--font); transition: background .2s;
         }
-
         .refresh-btn:hover { background: rgba(255,255,255,.25); }
         .refresh-btn svg { width: 14px; height: 14px; }
 
         .logo img { width: 42px; height: 42px; object-fit: contain; }
 
-        /* Hora en vivo */
         #reloj-header {
             color: rgba(255,255,255,.8);
             font-family: var(--mono);
@@ -149,61 +115,38 @@
            NAV LATERAL
         ═══════════════════════════════════════════════════ */
         .menu-navegacion {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 280px; height: 100%;
             background: var(--surface);
             box-shadow: 4px 0 24px rgba(0,0,0,.12);
             z-index: 1100;
             transform: translateX(-100%);
             transition: transform .35s cubic-bezier(.4,0,.2,1);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
+            display: flex; flex-direction: column; overflow-y: auto;
         }
-
         .menu-navegacion::before {
             content: "QR Pass";
             display: block;
             background: linear-gradient(135deg, var(--ipn), var(--ipn-dark));
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            padding: 1.2rem 1.5rem;
-            letter-spacing: .02em;
+            color: white; font-size: 1.1rem; font-weight: 700;
+            padding: 1.2rem 1.5rem; letter-spacing: .02em;
         }
-
         .menu-navegacion.nav-open { transform: translateX(0); }
 
         .menu-lista { list-style: none; padding: .4rem 0; }
-
         .menu-lista li { border-bottom: 1px solid var(--border); }
         .menu-lista li:last-child { border-bottom: none; }
-
         .menu-lista a {
-            display: flex;
-            align-items: center;
-            gap: .65rem;
-            padding: .85rem 1.4rem;
-            text-decoration: none;
-            color: var(--text);
-            font-size: .92rem;
-            font-weight: 500;
-            transition: all .2s;
-            position: relative;
+            display: flex; align-items: center; gap: .65rem;
+            padding: .85rem 1.4rem; text-decoration: none;
+            color: var(--text); font-size: .92rem; font-weight: 500;
+            transition: all .2s; position: relative;
         }
-
         .menu-lista a::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 3px;
-            background: var(--ipn);
-            border-radius: 0 3px 3px 0;
-            opacity: 0;
-            transition: opacity .2s;
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--ipn);
+            border-radius: 0 3px 3px 0; opacity: 0; transition: opacity .2s;
         }
-
         .menu-lista a:hover { background: var(--ipn-ghost); color: var(--ipn); }
         .menu-lista a:hover::before { opacity: 1; }
         .menu-lista a.active { background: var(--ipn-ghost); color: var(--ipn); font-weight: 600; }
@@ -211,549 +154,262 @@
 
         .menu-overlay {
             position: fixed; inset: 0;
-            background: rgba(0,0,0,.4);
-            z-index: 1050;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .35s;
+            background: rgba(0,0,0,.4); z-index: 1050;
+            opacity: 0; pointer-events: none; transition: opacity .35s;
         }
-
         .menu-overlay.nav-open { opacity: 1; pointer-events: all; }
 
         /* ═══════════════════════════════════════════════════
            MAIN LAYOUT
         ═══════════════════════════════════════════════════ */
         .dashboard-main {
-            flex: 1;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-            padding: 1.5rem 1.5rem 2rem;
+            flex: 1; max-width: 1400px; margin: 0 auto;
+            width: 100%; padding: 1.5rem 1.5rem 2rem;
         }
 
-        /* ─── Saludo ─────────────────────────────────────── */
-        .saludo {
-            margin-bottom: 1.5rem;
-        }
+        .saludo { margin-bottom: 1.5rem; }
+        .saludo h2 { font-size: 1.35rem; font-weight: 700; color: var(--text); letter-spacing: -.02em; }
+        .saludo p  { font-size: .88rem; color: var(--muted); margin-top: 2px; }
 
-        .saludo h2 {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -.02em;
-        }
-
-        .saludo p {
-            font-size: .88rem;
-            color: var(--muted);
-            margin-top: 2px;
-        }
-
-        /* ─── KPI Grid ───────────────────────────────────── */
+        /* ── KPI Grid ─────────────────────────────────────── */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            gap: 1rem; margin-bottom: 1.5rem;
         }
-
         .kpi-card {
-            background: var(--surface);
-            border-radius: var(--radius);
+            background: var(--surface); border-radius: var(--radius);
             padding: 1.1rem 1.3rem;
-            box-shadow: var(--shadow-card);
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
+            box-shadow: var(--shadow-card); border: 1px solid var(--border);
+            position: relative; overflow: hidden;
             transition: transform .2s, box-shadow .2s;
         }
-
         .kpi-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 20px rgba(92,31,51,.12), 0 12px 40px rgba(0,0,0,.1);
         }
-
-        /* Barra de color lateral */
         .kpi-card::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 4px;
-            border-radius: var(--radius) 0 0 var(--radius);
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; border-radius: var(--radius) 0 0 var(--radius);
         }
-
         .kpi-card.entrada::before  { background: var(--ok); }
         .kpi-card.salida::before   { background: var(--info); }
         .kpi-card.retardo::before  { background: var(--warn); }
         .kpi-card.sin-cred::before { background: var(--err); }
 
         .kpi-label {
-            font-size: .73rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: .07em;
-            color: var(--muted);
-            margin-bottom: .4rem;
+            font-size: .73rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: .07em; color: var(--muted); margin-bottom: .4rem;
         }
-
         .kpi-value {
-            font-size: 2.4rem;
-            font-weight: 700;
-            line-height: 1;
-            font-family: var(--mono);
-            letter-spacing: -.03em;
+            font-size: 2.4rem; font-weight: 700; line-height: 1;
+            font-family: var(--mono); letter-spacing: -.03em;
         }
-
         .kpi-card.entrada .kpi-value  { color: var(--ok); }
         .kpi-card.salida .kpi-value   { color: var(--info); }
         .kpi-card.retardo .kpi-value  { color: var(--warn); }
         .kpi-card.sin-cred .kpi-value { color: var(--err); }
+        .kpi-sub { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
 
-        .kpi-sub {
-            font-size: .75rem;
-            color: var(--muted);
-            margin-top: .3rem;
-        }
-
-        /* ─── Grid principal ─────────────────────────────── */
+        /* ── Grid principal ───────────────────────────────── */
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 360px;
             gap: 1.2rem;
         }
-
         .col-left  { display: flex; flex-direction: column; gap: 1.2rem; }
         .col-right { display: flex; flex-direction: column; gap: 1.2rem; }
 
-        /* ─── Card genérica ──────────────────────────────── */
+        /* ── Card genérica ────────────────────────────────── */
         .card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-card);
-            border: 1px solid var(--border);
+            background: var(--surface); border-radius: var(--radius);
+            box-shadow: var(--shadow-card); border: 1px solid var(--border);
             overflow: hidden;
         }
-
         .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: .9rem 1.2rem;
-            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .9rem 1.2rem; border-bottom: 1px solid var(--border);
         }
-
         .card-title {
-            font-size: .88rem;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -.01em;
-            display: flex;
-            align-items: center;
-            gap: .5rem;
+            font-size: .88rem; font-weight: 700; color: var(--text);
+            letter-spacing: -.01em; display: flex; align-items: center; gap: .5rem;
         }
-
         .card-title svg { width: 15px; height: 15px; color: var(--ipn); flex-shrink: 0; }
-
         .card-action {
-            font-size: .75rem;
-            font-weight: 600;
-            color: var(--ipn);
-            text-decoration: none;
-            background: var(--ipn-ghost);
-            padding: .25rem .65rem;
-            border-radius: 6px;
-            transition: background .2s;
+            font-size: .75rem; font-weight: 600; color: var(--ipn);
+            text-decoration: none; background: var(--ipn-ghost);
+            padding: .25rem .65rem; border-radius: 6px; transition: background .2s;
         }
-
         .card-action:hover { background: var(--ipn-border); }
-
         .card-body { padding: 1rem 1.2rem; }
 
-        /* ─── Gráfico de actividad por hora ─────────────── */
-        .chart-wrap {
-            padding: 1rem 1.2rem 1.2rem;
-        }
+        /* ═══════════════════════════════════════════════════
+           GRÁFICO DE BARRAS — FIX PRINCIPAL
+           Antes: height:X% no funcionaba porque .bar-col era
+           un flex item sin altura fija para porcentajes.
+           Ahora: height en píxeles + align-items:flex-end en
+           el contenedor padre hace el alineado desde el fondo.
+        ═══════════════════════════════════════════════════ */
+        .chart-wrap { padding: 1rem 1.2rem 1.2rem; }
 
         .bar-chart {
             display: flex;
-            align-items: flex-end;
+            align-items: flex-end;   /* alinea barras desde el fondo */
             gap: 5px;
-            height: 120px;
+            height: 130px;           /* altura total del área de barras */
         }
 
+        /* bar-col NO tiene height:100% — el padre lo alinea desde abajo */
         .bar-col {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
-            height: 100%;
-            justify-content: flex-end;
+            gap: 3px;
+            min-width: 0;
         }
 
+        /* La barra con altura en píxeles calculada en JS */
         .bar {
             width: 100%;
             background: linear-gradient(180deg, var(--ipn-light), var(--ipn-dark));
             border-radius: 4px 4px 0 0;
-            min-height: 3px;
-            transition: height .6s cubic-bezier(.34,1.56,.64,1);
+            min-height: 2px;
             position: relative;
+            transition: height .5s cubic-bezier(.34,1.2,.64,1);
         }
 
         .bar:hover::after {
             content: attr(data-count);
             position: absolute;
-            top: -22px;
-            left: 50%;
+            top: -22px; left: 50%;
             transform: translateX(-50%);
             background: var(--ipn-dark);
-            color: white;
-            font-size: .68rem;
-            padding: 2px 5px;
-            border-radius: 4px;
-            white-space: nowrap;
+            color: white; font-size: .68rem;
+            padding: 2px 5px; border-radius: 4px;
+            white-space: nowrap; pointer-events: none;
         }
 
         .bar-label {
-            font-size: .62rem;
-            color: var(--muted);
-            font-family: var(--mono);
+            font-size: .6rem; color: var(--muted);
+            font-family: var(--mono); white-space: nowrap;
         }
 
-        /* ─── Actividad por puerta ───────────────────────── */
+        /* ── Actividad por puerta ─────────────────────────── */
         .puerta-row {
-            display: flex;
-            align-items: center;
-            gap: .8rem;
-            padding: .65rem 0;
-            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: .8rem;
+            padding: .65rem 0; border-bottom: 1px solid var(--border);
         }
-
         .puerta-row:last-child { border-bottom: none; }
+        .puerta-nombre { font-size: .82rem; font-weight: 600; color: var(--text); flex: 1; }
+        .puerta-count  { font-family: var(--mono); font-size: .88rem; font-weight: 600; color: var(--ipn); min-width: 36px; text-align: right; }
+        .puerta-bar-wrap { width: 100px; height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
+        .puerta-bar-fill { height: 100%; background: linear-gradient(90deg, var(--ipn-light), var(--ipn)); border-radius: 999px; transition: width .8s cubic-bezier(.34,1.56,.64,1); }
 
-        .puerta-nombre {
-            font-size: .82rem;
-            font-weight: 600;
-            color: var(--text);
-            flex: 1;
-        }
-
-        .puerta-count {
-            font-family: var(--mono);
-            font-size: .88rem;
-            font-weight: 600;
-            color: var(--ipn);
-            min-width: 36px;
-            text-align: right;
-        }
-
-        .puerta-bar-wrap {
-            width: 100px;
-            height: 6px;
-            background: var(--border);
-            border-radius: 999px;
-            overflow: hidden;
-        }
-
-        .puerta-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--ipn-light), var(--ipn));
-            border-radius: 999px;
-            transition: width .8s cubic-bezier(.34,1.56,.64,1);
-        }
-
-        /* ─── Últimos registros ──────────────────────────── */
-        .registro-row {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
-            padding: .6rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-
+        /* ── Últimos registros ────────────────────────────── */
+        .registro-row { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
         .registro-row:last-child { border-bottom: none; }
-
-        .tipo-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
+        .tipo-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .dot-1 { background: var(--ok); }
         .dot-2 { background: var(--info); }
         .dot-3 { background: var(--warn); }
         .dot-4 { background: var(--err); }
-
         .registro-info { flex: 1; min-width: 0; }
+        .registro-nombre { font-size: .82rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .registro-detalle { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+        .registro-hora { font-family: var(--mono); font-size: .72rem; color: var(--muted); flex-shrink: 0; }
 
-        .registro-nombre {
-            font-size: .82rem;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .registro-detalle {
-            font-size: .72rem;
-            color: var(--muted);
-            margin-top: 1px;
-        }
-
-        .registro-hora {
-            font-family: var(--mono);
-            font-size: .72rem;
-            color: var(--muted);
-            flex-shrink: 0;
-        }
-
-        /* ─── Notificaciones ─────────────────────────────── */
-        .notif-tabs {
-            display: flex;
-            gap: 0;
-            border-bottom: 1px solid var(--border);
-        }
-
+        /* ── Notificaciones ───────────────────────────────── */
+        .notif-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
         .notif-tab {
-            flex: 1;
-            padding: .6rem .5rem;
-            font-size: .72rem;
-            font-weight: 600;
-            text-align: center;
-            cursor: pointer;
-            color: var(--muted);
-            border-bottom: 2px solid transparent;
-            transition: all .2s;
-            user-select: none;
+            flex: 1; padding: .6rem .5rem; font-size: .72rem; font-weight: 600;
+            text-align: center; cursor: pointer; color: var(--muted);
+            border-bottom: 2px solid transparent; transition: all .2s; user-select: none;
         }
-
-        .notif-tab.active {
-            color: var(--ipn);
-            border-bottom-color: var(--ipn);
-        }
-
+        .notif-tab.active { color: var(--ipn); border-bottom-color: var(--ipn); }
         .notif-panel { display: none; }
         .notif-panel.active { display: block; }
 
         .notif-item {
-            display: flex;
-            align-items: center;
-            gap: .65rem;
-            padding: .65rem 1.2rem;
-            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: .65rem;
+            padding: .65rem 1.2rem; border-bottom: 1px solid var(--border);
             transition: background .15s;
         }
-
         .notif-item:last-child { border-bottom: none; }
         .notif-item:hover { background: var(--surface2); }
 
-        .notif-icon {
-            width: 30px; height: 30px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            font-size: 14px;
-        }
-
+        .notif-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
         .notif-icon.blq-sis  { background: #fee2e2; }
         .notif-icon.blq-man  { background: #fef3c7; }
         .notif-icon.prox-blq { background: #fffbeb; }
 
         .notif-info { flex: 1; min-width: 0; }
-
-        .notif-nombre {
-            font-size: .8rem;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .notif-sub {
-            font-size: .7rem;
-            color: var(--muted);
-        }
+        .notif-nombre { font-size: .8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .notif-sub    { font-size: .7rem; color: var(--muted); }
 
         .notif-action {
-            background: none;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: .25rem .55rem;
-            font-size: .7rem;
-            font-weight: 600;
-            cursor: pointer;
-            color: var(--ipn);
-            font-family: var(--font);
-            transition: all .2s;
-            flex-shrink: 0;
+            background: none; border: 1px solid var(--border); border-radius: 6px;
+            padding: .25rem .55rem; font-size: .7rem; font-weight: 600;
+            cursor: pointer; color: var(--ipn); font-family: var(--font);
+            transition: all .2s; flex-shrink: 0;
         }
-
-        .notif-action:hover {
-            background: var(--ipn);
-            color: white;
-            border-color: var(--ipn);
-        }
+        .notif-action:hover { background: var(--ipn); color: white; border-color: var(--ipn); }
 
         .badge-count {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--err);
-            color: white;
-            font-size: .62rem;
-            font-weight: 700;
-            min-width: 16px;
-            height: 16px;
-            border-radius: 999px;
-            padding: 0 4px;
-            margin-left: 4px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--err); color: white; font-size: .62rem; font-weight: 700;
+            min-width: 16px; height: 16px; border-radius: 999px; padding: 0 4px; margin-left: 4px;
         }
-
         .badge-count.warn { background: var(--warn); }
         .badge-count.ok   { background: var(--ok); }
 
-        .empty-state {
-            text-align: center;
-            padding: 1.5rem 1rem;
-            color: var(--muted);
-            font-size: .82rem;
-        }
-
+        .empty-state { text-align: center; padding: 1.5rem 1rem; color: var(--muted); font-size: .82rem; }
         .empty-state span { font-size: 1.4rem; display: block; margin-bottom: .4rem; }
 
-        /* ─── Accesos rápidos ────────────────────────────── */
-        .accesos-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: .6rem;
-            padding: .8rem 1rem;
-        }
-
+        /* ── Accesos rápidos ──────────────────────────────── */
+        .accesos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; padding: .8rem 1rem; }
         .acceso-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: .4rem;
-            padding: .85rem .5rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            text-decoration: none;
-            color: var(--text);
-            font-size: .75rem;
-            font-weight: 600;
-            text-align: center;
-            transition: all .2s;
-            cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: .4rem; padding: .85rem .5rem;
+            background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+            text-decoration: none; color: var(--text); font-size: .75rem; font-weight: 600;
+            text-align: center; transition: all .2s; cursor: pointer;
         }
+        .acceso-btn:hover { background: var(--ipn-ghost); border-color: var(--ipn-border); color: var(--ipn); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(92,31,51,.1); }
+        .acceso-btn svg { width: 20px; height: 20px; color: var(--ipn); }
 
-        .acceso-btn:hover {
-            background: var(--ipn-ghost);
-            border-color: var(--ipn-border);
-            color: var(--ipn);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(92,31,51,.1);
-        }
-
-        .acceso-btn svg {
-            width: 20px; height: 20px;
-            color: var(--ipn);
-        }
-
-        /* ─── Usuarios activos ───────────────────────────── */
-        .usuario-row {
-            display: flex;
-            align-items: center;
-            gap: .65rem;
-            padding: .55rem 1.2rem;
-            border-bottom: 1px solid var(--border);
-        }
-
+        /* ── Usuarios activos ─────────────────────────────── */
+        .usuario-row { display: flex; align-items: center; gap: .65rem; padding: .55rem 1.2rem; border-bottom: 1px solid var(--border); }
         .usuario-row:last-child { border-bottom: none; }
-
-        .usuario-avatar {
-            width: 28px; height: 28px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, var(--ipn-light), var(--ipn-dark));
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: .72rem;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .usuario-nombre {
-            flex: 1;
-            font-size: .8rem;
-            font-weight: 600;
-        }
-
-        .usuario-rol {
-            font-size: .68rem;
-            font-weight: 600;
-            padding: .15rem .5rem;
-            border-radius: 999px;
-        }
-
+        .usuario-avatar { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--ipn-light), var(--ipn-dark)); color: white; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700; flex-shrink: 0; }
+        .usuario-nombre { flex: 1; font-size: .8rem; font-weight: 600; }
+        .usuario-rol { font-size: .68rem; font-weight: 600; padding: .15rem .5rem; border-radius: 999px; }
         .rol-admin     { background: #fce8ed; color: #8b1a30; }
         .rol-prefecto  { background: #e8f0fe; color: #1a3a8b; }
         .rol-vigilante { background: #e8f5e9; color: #1a5e20; }
 
-        /* ─── Skeleton loading ───────────────────────────── */
-        .skeleton {
-            background: linear-gradient(90deg, #f0e8eb 25%, #f8f2f4 50%, #f0e8eb 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.4s infinite;
-            border-radius: 6px;
-        }
-
-        @keyframes shimmer {
-            0%   { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* ─── Toast ──────────────────────────────────────── */
+        /* ── Toast ────────────────────────────────────────── */
         .toast {
-            position: fixed;
-            bottom: 1.5rem; right: 1.5rem;
-            padding: .7rem 1.2rem;
-            border-radius: 10px;
-            font-size: .85rem;
-            font-weight: 600;
-            color: white;
-            z-index: 3000;
-            opacity: 0;
-            transform: translateY(8px);
-            transition: opacity .3s, transform .3s;
-            pointer-events: none;
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            padding: .7rem 1.2rem; border-radius: 10px;
+            font-size: .85rem; font-weight: 600; color: white;
+            z-index: 3000; opacity: 0; transform: translateY(8px);
+            transition: opacity .3s, transform .3s; pointer-events: none;
         }
-
-        .toast.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
+        .toast.visible { opacity: 1; transform: translateY(0); }
         .toast.ok  { background: var(--ok); }
         .toast.err { background: var(--err); }
 
-        /* ─── Spinner de refresh ─────────────────────────── */
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinning { animation: spin .7s linear infinite; }
 
-        /* ─── Responsive ─────────────────────────────────── */
+        /* ── Responsive ───────────────────────────────────── */
         @media (max-width: 1100px) {
             .main-grid { grid-template-columns: 1fr; }
             .kpi-grid  { grid-template-columns: repeat(2, 1fr); }
         }
-
         @media (max-width: 600px) {
-            .kpi-grid  { grid-template-columns: 1fr 1fr; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
             .dashboard-main { padding: 1rem; }
         }
     </style>
@@ -768,12 +424,10 @@
                 <img src="../imgs/menu.png" alt="">
             </button>
         </div>
-
         <div class="header-title">
             <h1>Panel de Administración</h1>
             <p id="fecha-header">Cargando…</p>
         </div>
-
         <div class="header-right">
             <span id="reloj-header">--:--:--</span>
             <button class="refresh-btn" id="btn-refresh" title="Actualizar datos">
@@ -783,7 +437,6 @@
                 Actualizar
             </button>
         </div>
-
         <div class="logo">
             <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
         </div>
@@ -828,7 +481,6 @@
 <!-- ════════ MAIN ══════════════════════════════════════════ -->
 <main class="dashboard-main">
 
-    <!-- Saludo -->
     <div class="saludo">
         <h2 id="saludo-texto">Bienvenido</h2>
         <p id="saludo-sub">Cargando datos del sistema…</p>
@@ -861,7 +513,7 @@
     <!-- Grid principal -->
     <div class="main-grid">
 
-        <!-- ── Columna izquierda ─────────────────────────── -->
+        <!-- ── Columna izquierda ──────────────────────────── -->
         <div class="col-left">
 
             <!-- Gráfico de actividad por hora -->
@@ -900,9 +552,8 @@
                 </div>
             </div>
 
-            <!-- Actividad por puerta + Total alumnos -->
+            <!-- Actividad por puerta + Sistema -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem">
-
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">
@@ -934,17 +585,16 @@
                         <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">alumnos registrados</div>
                         <div style="height:1px;background:var(--border);margin:1rem 0"></div>
                         <div style="font-size:1.6rem;font-weight:700;font-family:var(--mono);color:var(--ipn);line-height:1" id="total-usuarios-num">—</div>
-                        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">usuarios activos en el sistema</div>
+                        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">usuarios activos</div>
                     </div>
                 </div>
-
             </div>
         </div>
 
-        <!-- ── Columna derecha ───────────────────────────── -->
+        <!-- ── Columna derecha ─────────────────────────────── -->
         <div class="col-right">
 
-            <!-- Notificaciones / Alertas -->
+            <!-- Notificaciones -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">
@@ -955,8 +605,6 @@
                         <span id="badge-notif" class="badge-count" style="display:none">0</span>
                     </div>
                 </div>
-
-                <!-- Tabs -->
                 <div class="notif-tabs">
                     <div class="notif-tab active" data-tab="blq-sis">
                         🔴 Bloqueados
@@ -971,26 +619,14 @@
                         <span id="cnt-prox" class="badge-count warn" style="display:none">0</span>
                     </div>
                 </div>
-
-                <!-- Panel bloqueados sistema -->
                 <div class="notif-panel active" id="panel-blq-sis">
-                    <div id="lista-blq-sis">
-                        <p class="empty-state"><span>⏳</span>Cargando…</p>
-                    </div>
+                    <div id="lista-blq-sis"><p class="empty-state"><span>⏳</span>Cargando…</p></div>
                 </div>
-
-                <!-- Panel bloqueados manual -->
                 <div class="notif-panel" id="panel-blq-man">
-                    <div id="lista-blq-man">
-                        <p class="empty-state"><span>⏳</span>Cargando…</p>
-                    </div>
+                    <div id="lista-blq-man"><p class="empty-state"><span>⏳</span>Cargando…</p></div>
                 </div>
-
-                <!-- Panel próximos a bloquearse -->
                 <div class="notif-panel" id="panel-prox">
-                    <div id="lista-prox">
-                        <p class="empty-state"><span>⏳</span>Cargando…</p>
-                    </div>
+                    <div id="lista-prox"><p class="empty-state"><span>⏳</span>Cargando…</p></div>
                 </div>
             </div>
 
@@ -1025,7 +661,7 @@
                 </div>
             </div>
 
-            <!-- Usuarios del sistema -->
+            <!-- Usuarios -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">
@@ -1047,25 +683,23 @@
     </div>
 </main>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script src="./JS/navigation.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
-// DASHBOARD.JS — inline para mantener todo en un solo archivo
+// DASHBOARD.JS
 // ═══════════════════════════════════════════════════════════
 
-// ── Reloj en vivo ────────────────────────────────────────────
+// ── Reloj en vivo ─────────────────────────────────────────
 function actualizarReloj() {
-    const ahora = new Date();
     document.getElementById('reloj-header').textContent =
-        ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 actualizarReloj();
 setInterval(actualizarReloj, 1000);
 
-// ── Fecha en header y saludo ──────────────────────────────────
+// ── Fecha + saludo inicial ─────────────────────────────────
 (function() {
     const meses = ['enero','febrero','marzo','abril','mayo','junio',
                    'julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -1073,49 +707,39 @@ setInterval(actualizarReloj, 1000);
     const ahora = new Date();
     document.getElementById('fecha-header').textContent =
         `${dias[ahora.getDay()]}, ${ahora.getDate()} de ${meses[ahora.getMonth()]} de ${ahora.getFullYear()}`;
-
     const hora = ahora.getHours();
-    const saludo = hora < 12 ? '¡Buenos días' : hora < 18 ? '¡Buenas tardes' : '¡Buenas noches';
-    document.getElementById('saludo-texto').textContent = saludo + '!';
+    document.getElementById('saludo-texto').textContent =
+        (hora < 12 ? '¡Buenos días' : hora < 18 ? '¡Buenas tardes' : '¡Buenas noches') + '!';
 })();
 
-// ── Helpers ───────────────────────────────────────────────────
-function esc(s) {
-    if (!s) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+// ── Helpers ────────────────────────────────────────────────
+const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 
 function toast(msg, tipo = 'ok') {
     const el = document.getElementById('toast');
     el.textContent = msg;
-    el.className   = `toast ${tipo} visible`;
+    el.className = `toast ${tipo} visible`;
     clearTimeout(toast._t);
     toast._t = setTimeout(() => el.classList.remove('visible'), 3000);
 }
 
 function formatHora(iso) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' });
 }
 
-// ── Cargar dashboard ──────────────────────────────────────────
+// ── Cargar dashboard ───────────────────────────────────────
 async function cargarDashboard() {
     const icon = document.getElementById('refresh-icon');
     icon.classList.add('spinning');
-
     try {
-        const res  = await fetch('/api/dashboard', { credentials: 'include' });
-
+        const res = await fetch('/api/dashboard', { credentials: 'include' });
         if (res.status === 401) { window.location.href = '/login.html'; return; }
-        if (res.status === 403) { window.location.href = '/menu.html';  return; }
+        if (res.status === 403) { window.location.href = '/menu.html'; return; }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
 
-        // Actualizar nombre en saludo
-        const nombre = data.usuarios?.find(u => u.usuario === window._adminUsuario)?.nombre
-                     || 'Administrador';
         document.getElementById('saludo-sub').textContent =
             `Sistema QR Pass · CECyT 9 · Total alumnos: ${data.totalAlumnos}`;
 
@@ -1137,7 +761,7 @@ async function cargarDashboard() {
     }
 }
 
-// ── KPIs ──────────────────────────────────────────────────────
+// ── KPIs ───────────────────────────────────────────────────
 function renderKPIs(kpis) {
     document.getElementById('kpi-entradas').textContent = kpis.entradas;
     document.getElementById('kpi-salidas').textContent  = kpis.salidas;
@@ -1145,46 +769,53 @@ function renderKPIs(kpis) {
     document.getElementById('kpi-sincred').textContent  = kpis.sinCredencial;
 }
 
-// ── Gráfico de barras ─────────────────────────────────────────
+// ── Gráfico de barras ──────────────────────────────────────
+// FIX: usamos píxeles en lugar de porcentajes.
+// Los porcentajes (height: X%) en hijos flex no funcionan
+// correctamente cuando el padre es flex-end. Con píxeles
+// y align-items:flex-end en .bar-chart, las barras crecen
+// desde el fondo de forma confiable.
 function renderGrafico(datos, totalHoy) {
     const container = document.getElementById('bar-chart');
-    document.getElementById('total-hoy-label').textContent =
-        `${totalHoy} movimientos hoy`;
+    document.getElementById('total-hoy-label').textContent = `${totalHoy} movimientos hoy`;
 
     if (!datos || !datos.length) {
         container.innerHTML = '<p style="color:var(--muted);font-size:.82rem;margin:auto">Sin actividad registrada hoy.</p>';
         return;
     }
 
-    const maxVal = Math.max(...datos.map(d => d.count), 1);
+    const maxVal    = Math.max(...datos.map(d => d.count), 1);
+    const BAR_MAX_PX = 100; // altura máxima de barra en píxeles
+
     container.innerHTML = '';
 
     datos.forEach(d => {
-        const pct    = Math.round((d.count / maxVal) * 100);
-        const hStr   = String(d.hora).padStart(2, '0') + 'h';
-        const col    = document.createElement('div');
+        // Calcular altura proporcional en píxeles
+        const barH = d.count > 0
+            ? Math.max(Math.round((d.count / maxVal) * BAR_MAX_PX), 4)
+            : 2;
+
+        const hStr = String(d.hora).padStart(2, '0') + 'h';
+        const col  = document.createElement('div');
         col.className = 'bar-col';
         col.innerHTML = `
             <div class="bar"
                  data-count="${d.count}"
-                 style="height:${Math.max(pct, 3)}%;width:100%">
+                 style="height:${barH}px">
             </div>
             <span class="bar-label">${hStr}</span>`;
         container.appendChild(col);
     });
 }
 
-// ── Últimos registros ─────────────────────────────────────────
+// ── Últimos registros ──────────────────────────────────────
 function renderUltimosRegistros(registros) {
     const container = document.getElementById('ultimos-registros');
-
     if (!registros.length) {
         container.innerHTML = '<div class="empty-state"><span>📋</span>Sin registros hoy</div>';
         return;
     }
-
     const dotClass = { 1:'dot-1', 2:'dot-2', 3:'dot-3', 4:'dot-4' };
-
     container.innerHTML = registros.map(r => `
         <div class="registro-row">
             <span class="tipo-dot ${dotClass[r.id_tipo] || 'dot-1'}"></span>
@@ -1196,7 +827,7 @@ function renderUltimosRegistros(registros) {
         </div>`).join('');
 }
 
-// ── Actividad por puerta ──────────────────────────────────────
+// ── Actividad por puerta ───────────────────────────────────
 function renderPuertas(puertas) {
     const body  = document.getElementById('puertas-body');
     const total = Object.values(puertas).reduce((a, b) => a + b, 0) || 1;
@@ -1205,7 +836,6 @@ function renderPuertas(puertas) {
         body.innerHTML = '<div class="empty-state"><span>🚪</span>Sin accesos hoy</div>';
         return;
     }
-
     body.innerHTML = Object.entries(puertas)
         .sort((a, b) => b[1] - a[1])
         .map(([nombre, count]) => {
@@ -1221,22 +851,19 @@ function renderPuertas(puertas) {
         }).join('');
 }
 
-// ── Notificaciones ────────────────────────────────────────────
+// ── Notificaciones ─────────────────────────────────────────
 function renderNotificaciones(notif) {
     const { bloqueadosSistema, bloqueadosManuales, proximosBloqueo } = notif;
     const total = bloqueadosSistema.length + bloqueadosManuales.length;
 
-    // Badge total
     const badgeN = document.getElementById('badge-notif');
     if (total > 0) { badgeN.textContent = total; badgeN.style.display = ''; }
     else { badgeN.style.display = 'none'; }
 
-    // Badges por tab
     actualizarBadgeTab('cnt-blq-sis', bloqueadosSistema.length, 'err');
     actualizarBadgeTab('cnt-blq-man', bloqueadosManuales.length, 'warn');
     actualizarBadgeTab('cnt-prox',    proximosBloqueo.length,    'warn');
 
-    // Listas
     renderListaBloqueados('lista-blq-sis', bloqueadosSistema, 'sistema');
     renderListaBloqueados('lista-blq-man', bloqueadosManuales, 'manual');
     renderListaProximos('lista-prox', proximosBloqueo);
@@ -1250,18 +877,14 @@ function actualizarBadgeTab(id, count, tipo) {
 
 function renderListaBloqueados(containerId, lista, tipo) {
     const container = document.getElementById(containerId);
-
     if (!lista.length) {
         container.innerHTML = `<div class="empty-state">
-            <span>${tipo === 'sistema' ? '✅' : '✅'}</span>
-            Sin alumnos ${tipo === 'sistema' ? 'bloqueados automáticamente' : 'bloqueados manualmente'}
+            <span>✅</span>Sin alumnos ${tipo === 'sistema' ? 'bloqueados automáticamente' : 'bloqueados manualmente'}
         </div>`;
         return;
     }
-
     const iconClass = tipo === 'sistema' ? 'blq-sis' : 'blq-man';
     const emoji     = tipo === 'sistema' ? '🔴' : '🟡';
-
     container.innerHTML = lista.map(a => `
         <div class="notif-item">
             <div class="notif-icon ${iconClass}">${emoji}</div>
@@ -1269,8 +892,7 @@ function renderListaBloqueados(containerId, lista, tipo) {
                 <div class="notif-nombre">${esc(a.nombre)}</div>
                 <div class="notif-sub">Boleta ${a.boleta} · ${esc(a.grupo)}</div>
             </div>
-            <button class="notif-action"
-                    onclick="desbloquearAlumno(${a.boleta}, this)">
+            <button class="notif-action" onclick="desbloquearAlumno(${a.boleta}, this)">
                 Desbloquear
             </button>
         </div>`).join('');
@@ -1278,14 +900,10 @@ function renderListaBloqueados(containerId, lista, tipo) {
 
 function renderListaProximos(containerId, lista) {
     const container = document.getElementById(containerId);
-
     if (!lista.length) {
-        container.innerHTML = `<div class="empty-state">
-            <span>✅</span>Sin alumnos en riesgo de bloqueo
-        </div>`;
+        container.innerHTML = `<div class="empty-state"><span>✅</span>Sin alumnos en riesgo de bloqueo</div>`;
         return;
     }
-
     container.innerHTML = lista.map(a => `
         <div class="notif-item">
             <div class="notif-icon prox-blq">⚠️</div>
@@ -1293,59 +911,41 @@ function renderListaProximos(containerId, lista) {
                 <div class="notif-nombre">${esc(a.nombre)}</div>
                 <div class="notif-sub">Boleta ${a.boleta} · Sin credencial: ${a.sinCredencial}/3</div>
             </div>
-            <a class="notif-action" href="/BuscarAlumno.html?boleta=${a.boleta}">
-                Ver
-            </a>
+            <a class="notif-action" href="/BuscarAlumno.html?boleta=${a.boleta}">Ver</a>
         </div>`).join('');
 }
 
-// ── Desbloquear desde dashboard ───────────────────────────────
+// ── Desbloquear desde dashboard ────────────────────────────
 async function desbloquearAlumno(boleta, btn) {
     if (!confirm(`¿Desbloquear al alumno con boleta ${boleta}?`)) return;
-
-    btn.disabled    = true;
-    btn.textContent = '…';
-
+    btn.disabled = true; btn.textContent = '…';
     try {
-        const res  = await fetch(`/api/alumnos/desbloquear/${boleta}`, {
-            method: 'PUT', credentials: 'include',
-        });
+        const res  = await fetch(`/api/alumnos/desbloquear/${boleta}`, { method: 'PUT', credentials: 'include' });
         const data = await res.json();
-
         if (data.success) {
             toast(`Alumno ${boleta} desbloqueado`, 'ok');
-            // Quitar el item del DOM inmediatamente
-            btn.closest('.notif-item').style.transition = 'opacity .3s';
             btn.closest('.notif-item').style.opacity = '0';
-            setTimeout(() => {
-                btn.closest('.notif-item').remove();
-                // Recargar datos en 1s para actualizar badges
-                setTimeout(cargarDashboard, 1000);
-            }, 300);
+            btn.closest('.notif-item').style.transition = 'opacity .3s';
+            setTimeout(() => { btn.closest('.notif-item').remove(); setTimeout(cargarDashboard, 1000); }, 300);
         } else {
             toast(data.message, 'err');
-            btn.disabled    = false;
-            btn.textContent = 'Desbloquear';
+            btn.disabled = false; btn.textContent = 'Desbloquear';
         }
     } catch {
         toast('Error de conexión', 'err');
-        btn.disabled    = false;
-        btn.textContent = 'Desbloquear';
+        btn.disabled = false; btn.textContent = 'Desbloquear';
     }
 }
 window.desbloquearAlumno = desbloquearAlumno;
 
-// ── Usuarios ──────────────────────────────────────────────────
+// ── Usuarios ───────────────────────────────────────────────
 function renderUsuarios(usuarios) {
     const container = document.getElementById('lista-usuarios');
-
     if (!usuarios.length) {
         container.innerHTML = '<div class="empty-state"><span>👤</span>Sin usuarios activos</div>';
         return;
     }
-
     const rolClass = { 'Administrador': 'rol-admin', 'Prefecto': 'rol-prefecto', 'Vigilante': 'rol-vigilante' };
-
     container.innerHTML = usuarios.map(u => `
         <div class="usuario-row">
             <div class="usuario-avatar">${esc(u.nombre).charAt(0).toUpperCase()}</div>
@@ -1354,44 +954,37 @@ function renderUsuarios(usuarios) {
         </div>`).join('');
 }
 
-// ── Tabs de notificaciones ────────────────────────────────────
+// ── Tabs de notificaciones ─────────────────────────────────
 document.querySelectorAll('.notif-tab').forEach(tab => {
     tab.addEventListener('click', () => {
         const key = tab.dataset.tab;
-
         document.querySelectorAll('.notif-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.notif-panel').forEach(p => p.classList.remove('active'));
-
         tab.classList.add('active');
-
         const panelMap = { 'blq-sis': 'panel-blq-sis', 'blq-man': 'panel-blq-man', 'prox': 'panel-prox' };
         document.getElementById(panelMap[key])?.classList.add('active');
     });
 });
 
-// ── Botón refresh ─────────────────────────────────────────────
+// ── Botón refresh ──────────────────────────────────────────
 document.getElementById('btn-refresh').addEventListener('click', () => {
     cargarDashboard();
     toast('Actualizando datos…', 'ok');
 });
 
-// ── Auto-refresh cada 60 segundos ────────────────────────────
+// Auto-refresh cada 60 seg
 setInterval(cargarDashboard, 60_000);
 
-// ── Verificar sesión y cargar ─────────────────────────────────
+// ── Verificar sesión y arrancar ────────────────────────────
 (async function() {
     try {
         const r    = await fetch('/api/auth/check', { credentials: 'include' });
         const data = await r.json();
-
         if (!data.isAuthenticated) { window.location.href = '/login.html'; return; }
         if (data.tipo !== 'Administrador') { window.location.href = '/Entrada_Salida.html'; return; }
-
-        // Guardar usuario para el saludo
         window._adminUsuario = data.user?.usuario;
         document.getElementById('saludo-texto').textContent =
             `¡Bienvenido, ${data.user?.nombre?.split(' ')[0] || 'Admin'}!`;
-
     } catch { window.location.href = '/login.html'; return; }
 
     await cargarDashboard();
