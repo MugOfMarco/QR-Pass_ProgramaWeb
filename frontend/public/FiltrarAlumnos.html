@@ -273,6 +273,29 @@
 
         .btn-pdf:hover { background-color: #c62828; }
 
+        .btn-pdf-inc {
+            width: 100%;
+            background-color: #5c1f33;
+            color: white;
+            font-weight: 800;
+            font-size: .97rem;
+            padding: 10px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background-color .3s;
+        }
+
+        .btn-pdf-inc:hover { background-color: #3e1020; }
+
+        #refresh-indicador {
+            font-size: .75rem;
+            color: #888;
+            text-align: right;
+            margin-top: 5px;
+        }
+
         @media (max-width: 1024px) { .layout-grid { grid-template-columns: 1fr; } }
         @media (max-width: 600px)  { .student-data { grid-template-columns: 1fr; } }
     </style>
@@ -408,6 +431,8 @@
 
                 <button type="button" id="btn-clear-filters">✕ Limpiar filtros</button>
                 <button class="btn-pdf" type="button">Descargar PDF</button>
+                <button class="btn-pdf-inc" type="button">PDF Incidencias</button>
+                <div id="refresh-indicador"></div>
             </div>
         </div>
     </div>

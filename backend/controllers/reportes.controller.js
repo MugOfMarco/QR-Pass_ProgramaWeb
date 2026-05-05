@@ -17,6 +17,15 @@ const sanitize = (v) => typeof v === 'string'
     ? sanitizeHtml(v, { allowedTags: [], allowedAttributes: {} })
     : v;
 
+function normalizarPuerta(nombre) {
+    if (!nombre) return '—';
+    const n = String(nombre).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (n.includes('mexico') || n.includes('tacuba') || n.includes('norte') || n === '1') return 'México-Tacuba';
+    if (n.includes('mar') || n.includes('mediterraneo') || n.includes('sur') || n === '2') return 'Mar-Mediterráneo';
+    return nombre;
+}
+
 const TZ             = 'America/Mexico_City';
 const TIPOS_ENTRADA  = new Set([1, 3, 4]);
 const COLOR_GUINDA   = '#5c1f33';
@@ -135,6 +144,7 @@ export const generarReporteAlumnos = async (req, res) => {
         const grupo    = sanitize(req.query.grupo    || '');
         const dentro   = sanitize(req.query.dentro   || '');
         const bloqueado = sanitize(req.query.bloqueado || '');
+        const boletas  = sanitize(req.query.boletas  || '');
 
         // ── 2. Consultar Supabase ─────────────────────────────
         let query = supabaseAdmin
@@ -183,6 +193,11 @@ export const generarReporteAlumnos = async (req, res) => {
             const set = await boletasDentro();
             if (dentro === 'true')  alumnos = alumnos.filter(a => set.has(a.boleta));
             else                    alumnos = alumnos.filter(a => !set.has(a.boleta));
+        }
+
+        if (boletas) {
+            const set = new Set(boletas.split(',').map(b => parseInt(b.trim())).filter(n => !isNaN(n)));
+            alumnos = alumnos.filter(a => set.has(a.boleta));
         }
 
         // ── 4. Generar PDF con pdfkit ─────────────────────────
@@ -289,6 +304,242 @@ export const generarReporteAlumnos = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Error al generar el reporte PDF: ' + err.message,
+        });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/reportes/incidencias-pdf
+// ─────────────────────────────────────────────────────────────
+export const generarReporteIncidencias = async (req, res) => {
+    try {
+        // ── 1. Leer y sanitizar filtros ───────────────────────
+        const q        = sanitize(req.query.q        || '');
+        const puertas  = sanitize(req.query.puertas  || '');
+        const turno    = sanitize(req.query.turno    || '');
+        const estado   = sanitize(req.query.estado   || '');
+        const grupo    = sanitize(req.query.grupo    || '');
+        const dentro   = sanitize(req.query.dentro   || '');
+        const bloqueado = sanitize(req.query.bloqueado || '');
+        const boletas  = sanitize(req.query.boletas  || '');
+
+        // ── 2. Obtener alumnos filtrados (mismo flujo que alumnos-pdf) ──
+        let query = supabaseAdmin
+            .from('alumnos')
+            .select(`
+                boleta,
+                nombre_completo,
+                estado_academico:id_estado_academico (estado),
+                grupos:id_grupo_base (
+                    nombre_grupo,
+                    turnos:id_turno (nombre_turno)
+                )
+            `);
+
+        if (q) {
+            if (!isNaN(q)) query = query.eq('boleta', parseInt(q));
+            else           query = query.ilike('nombre_completo', `%${q}%`);
+        }
+        if (puertas === 'true')  query = query.eq('puertas_abiertas', true);
+        if (puertas === 'false') query = query.eq('puertas_abiertas', false);
+
+        const { data: raw, error } = await query;
+        if (error) throw error;
+
+        let alumnos = raw.map(al => ({
+            boleta:           al.boleta,
+            nombre_completo:  al.nombre_completo,
+            estado_academico: al.estado_academico?.estado    || 'Desconocido',
+            grupo:            al.grupos?.nombre_grupo         || 'Sin Grupo',
+            turno:            al.grupos?.turnos?.nombre_turno || 'Sin Turno',
+        }));
+
+        if (turno)  alumnos = alumnos.filter(a => a.turno  === turno);
+        if (estado) alumnos = alumnos.filter(a => a.estado_academico === estado);
+        if (grupo)  alumnos = alumnos.filter(a => a.grupo  === grupo);
+
+        if (bloqueado === 'true') {
+            const set = await boletasBloqueadas();
+            alumnos = alumnos.filter(a => set.has(a.boleta));
+        }
+
+        if (dentro === 'true' || dentro === 'false') {
+            const set = await boletasDentro();
+            if (dentro === 'true')  alumnos = alumnos.filter(a => set.has(a.boleta));
+            else                    alumnos = alumnos.filter(a => !set.has(a.boleta));
+        }
+
+        if (boletas) {
+            const set = new Set(boletas.split(',').map(b => parseInt(b.trim())).filter(n => !isNaN(n)));
+            alumnos = alumnos.filter(a => set.has(a.boleta));
+        }
+
+        if (!alumnos.length) {
+            return res.status(404).json({ success: false, message: 'No se encontraron alumnos con los filtros aplicados.' });
+        }
+
+        // ── 3. Obtener todos los registros de los alumnos filtrados ──
+        const boletasArray = alumnos.map(a => a.boleta);
+
+        const { data: registrosRaw, error: regErr } = await supabaseAdmin
+            .from('registros_acceso')
+            .select(`
+                id_registro,
+                boleta,
+                fecha_hora,
+                tipos_registro (descripcion),
+                puntos_acceso  (nombre_punto),
+                justificaciones (motivo)
+            `)
+            .in('boleta', boletasArray)
+            .order('fecha_hora', { ascending: false });
+
+        if (regErr) throw regErr;
+
+        const registrosPorBoleta = {};
+        for (const r of (registrosRaw || [])) {
+            if (!registrosPorBoleta[r.boleta]) registrosPorBoleta[r.boleta] = [];
+            registrosPorBoleta[r.boleta].push({
+                fecha_hora:    r.fecha_hora,
+                tipo:          r.tipos_registro?.descripcion || '—',
+                punto_acceso:  normalizarPuerta(r.puntos_acceso?.nombre_punto),
+                justificacion: r.justificaciones?.motivo || null,
+            });
+        }
+
+        // ── 4. Generar PDF ────────────────────────────────────
+        const ahora   = new Date();
+        const fechaMX = ahora.toLocaleDateString('es-MX', {
+            timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric',
+        });
+        const horaMX  = ahora.toLocaleTimeString('es-MX', {
+            timeZone: TZ, hour: '2-digit', minute: '2-digit',
+        });
+        const fechaStr = ahora.toLocaleDateString('sv-SE', { timeZone: TZ }).replace(/-/g, '');
+
+        const doc = new PDFDocument({
+            size:    'LETTER',
+            margins: { top: 70, bottom: 70, left: 85, right: 85 },
+            info:    {
+                Title:  'Reporte de Incidencias — QR Pass',
+                Author: 'CECyT 9 — IPN',
+            },
+        });
+
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        const pdfFin = new Promise((resolve, reject) => {
+            doc.on('end',   resolve);
+            doc.on('error', reject);
+        });
+
+        const x0    = doc.page.margins.left;
+        const pageW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+        // ── Encabezado institucional ──────────────────────────
+        doc.fontSize(16).font('Helvetica-Bold').fillColor(COLOR_GUINDA)
+           .text('INSTITUTO POLITÉCNICO NACIONAL', { align: 'center' });
+        doc.fontSize(14).font('Helvetica').fillColor('black')
+           .text('CECyT 9 "JUAN DE DIOS BÁTIZ"', { align: 'center' });
+        doc.fontSize(12)
+           .text('SISTEMA DE CONTROL DE ACCESO — QR PASS', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(12).font('Helvetica')
+           .text('REPORTE DE INCIDENCIAS Y JUSTIFICACIONES', { align: 'center', underline: true });
+        doc.moveDown(0.4);
+
+        doc.save()
+           .moveTo(x0, doc.y).lineTo(x0 + pageW, doc.y)
+           .strokeColor(COLOR_GUINDA).lineWidth(1).stroke()
+           .restore();
+        doc.moveDown(0.6);
+
+        doc.fontSize(11).font('Helvetica').fillColor('black')
+           .text(`Emitido el: ${fechaMX}, ${horaMX} hrs`);
+        doc.fontSize(9).fillColor('#666666')
+           .text(describir_filtros({ q, turno, estado, grupo, puertas, dentro, bloqueado }));
+        doc.moveDown(0.8);
+
+        // ── Columnas de la tabla de registros ────────────────
+        const colWidths = [
+            pageW * 0.14,   // Fecha
+            pageW * 0.11,   // Hora
+            pageW * 0.22,   // Puerta
+            pageW * 0.23,   // Tipo
+            pageW * 0.30,   // Justificación
+        ];
+        const alignments = ['center', 'center', 'left', 'left', 'left'];
+        const headers    = ['Fecha', 'Hora', 'Puerta', 'Tipo', 'Justificación'];
+        const bottomLimit = doc.page.height - doc.page.margins.bottom;
+
+        // ── Sección por alumno ────────────────────────────────
+        for (const alumno of alumnos) {
+            const registros = registrosPorBoleta[alumno.boleta] || [];
+
+            if (doc.y + 60 > bottomLimit) {
+                doc.addPage();
+            }
+
+            // Barra de encabezado del alumno
+            const barY = doc.y;
+            doc.save().rect(x0, barY, pageW, 22).fill(COLOR_GUINDA).restore();
+            doc.fontSize(9.5).font('Helvetica-Bold').fillColor('white')
+               .text(
+                   `${alumno.boleta}  ·  ${alumno.nombre_completo}  ·  ${alumno.grupo}  ·  ${alumno.turno}  ·  ${alumno.estado_academico}`,
+                   x0 + 5, barY + 6,
+                   { width: pageW - 10, align: 'left', lineBreak: false }
+               );
+            doc.y = barY + 26;
+
+            if (!registros.length) {
+                doc.fontSize(9).font('Helvetica').fillColor('#888888')
+                   .text('Sin registros de acceso.', x0 + 5, doc.y);
+                doc.moveDown(0.9);
+                continue;
+            }
+
+            const filas = registros.map(r => {
+                const d   = new Date(r.fecha_hora);
+                const dMX = new Date(d.getTime() - 6 * 60 * 60 * 1000);
+                return [
+                    `${String(dMX.getUTCDate()).padStart(2,'0')}/${String(dMX.getUTCMonth()+1).padStart(2,'0')}/${dMX.getUTCFullYear()}`,
+                    `${String(dMX.getUTCHours()).padStart(2,'0')}:${String(dMX.getUTCMinutes()).padStart(2,'0')}`,
+                    r.punto_acceso,
+                    r.tipo,
+                    r.justificacion || '—',
+                ];
+            });
+
+            dibujarTabla(doc, headers, filas, colWidths, alignments);
+            doc.moveDown(0.9);
+        }
+
+        // ── Total ─────────────────────────────────────────────
+        if (doc.y + 30 > bottomLimit) doc.addPage();
+        doc.moveDown(0.3)
+           .fontSize(11).font('Helvetica').fillColor('black')
+           .text(`Total de alumnos en el reporte: `, { continued: true })
+           .font('Helvetica-Bold').text(String(alumnos.length));
+
+        doc.end();
+        await pdfFin;
+
+        // ── 5. Enviar respuesta ───────────────────────────────
+        const pdfBuffer = Buffer.concat(chunks);
+        const filename  = `incidencias_alumnos_${fechaStr}.pdf`;
+
+        res.set({
+            'Content-Type':        'application/pdf',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+            'Content-Length':      pdfBuffer.length,
+        });
+        return res.send(pdfBuffer);
+
+    } catch (err) {
+        console.error('Error generando reporte incidencias:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error al generar el reporte de incidencias: ' + err.message,
         });
     }
 };

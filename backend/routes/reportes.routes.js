@@ -10,16 +10,20 @@
 // ============================================================
 import express from 'express';
 import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
-import { generarReporteAlumnos } from '../controllers/reportes.controller.js';
+import { generarReporteAlumnos, generarReporteIncidencias } from '../controllers/reportes.controller.js';
 
 const router = express.Router();
 
 router.use(requireAuth);
 
-// Solo administrador puede descargar reportes
 router.get('/alumnos-pdf',
     requireRole('Administrador'),
     generarReporteAlumnos
+);
+
+router.get('/incidencias-pdf',
+    requireRole('Administrador'),
+    generarReporteIncidencias
 );
 
 export default router;

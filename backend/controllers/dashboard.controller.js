@@ -20,9 +20,9 @@ function normalizarPuerta(nombre) {
 export const obtenerDashboard = async (req, res) => {
     try {
         const ahora     = new Date();
-        const hoyStr    = ahora.toISOString().split('T')[0];
-        const inicioHoy = `${hoyStr}T00:00:00`;
-        const finHoy    = `${hoyStr}T23:59:59`;
+        const hoyMX     = ahora.toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+        const inicioHoy = `${hoyMX}T00:00:00-06:00`;
+        const finHoy    = `${hoyMX}T23:59:59-06:00`;
 
         const [
             resRegistros,
@@ -126,11 +126,12 @@ export const obtenerDashboard = async (req, res) => {
         // ── Actividad por hora ─────────────────────────────────
         const porHora = Array(24).fill(0);
         registrosHoy.forEach(r => {
-            const h = new Date(r.fecha_hora).getHours();
+            const d = new Date(r.fecha_hora);
+            const h = new Date(d.getTime() - 6 * 60 * 60 * 1000).getUTCHours();
             porHora[h]++;
         });
 
-        const horaActual = ahora.getHours();
+        const horaActual = new Date(ahora.getTime() - 6 * 60 * 60 * 1000).getUTCHours();
         const graficoHoras = [];
         for (let h = 6; h <= Math.min(horaActual + 1, 22); h++) {
             graficoHoras.push({ hora: h, count: porHora[h] });
@@ -172,7 +173,7 @@ export const obtenerDashboard = async (req, res) => {
 
         return res.json({
             success: true,
-            fecha:   hoyStr,
+            fecha:   hoyMX,
             hora:    ahora.toISOString(),
             kpis,
             notificaciones: {

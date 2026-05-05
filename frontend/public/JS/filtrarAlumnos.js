@@ -19,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSelAll         = document.getElementById('btn-select-all');
     const btnClearFilters   = document.getElementById('btn-clear-filters');
     const btnPdf            = document.querySelector('.btn-pdf');
+    const btnPdfInc         = document.querySelector('.btn-pdf-inc');
+    const refreshIndicador  = document.getElementById('refresh-indicador');
     const seleccionBar      = document.getElementById('seleccion-bar');
     const seleccionContador = document.getElementById('seleccion-contador');
     const btnDeselectBar    = document.getElementById('btn-deselect-bar');
@@ -242,9 +244,17 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarAlumnos();
     }
 
+    // ── Actualizar indicador de hora de refresco ──────────────
+    function actualizarHoraRefresh() {
+        if (!refreshIndicador) return;
+        const ahora = new Date();
+        const hora  = ahora.toLocaleTimeString('es-MX', {
+            timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', second: '2-digit',
+        });
+        refreshIndicador.textContent = `Actualizado: ${hora}`;
+    }
+
     // ── Descargar PDF ─────────────────────────────────────────
-    // El backend genera el PDF y lo devuelve como blob.
-    // El navegador muestra el diálogo "Guardar como" nativo.
     async function descargarPDF() {
         if (!btnPdf) return;
 
@@ -252,8 +262,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPdf.textContent  = '⏳ Generando PDF…';
 
         try {
-            // Usar los mismos filtros activos de la lista actual
             const params = obtenerParams();
+            if (seleccionados.size > 0) {
+                params.append('boletas', Array.from(seleccionados).join(','));
+            }
             const url    = `/api/reportes/alumnos-pdf?${params}`;
 
             const res = await fetch(url, { credentials: 'include' });
@@ -296,6 +308,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ── Descargar PDF de incidencias ──────────────────────────
+    async function descargarPDFIncidencias() {
+        if (!btnPdfInc) return;
+
+        btnPdfInc.disabled    = true;
+        btnPdfInc.textContent = '⏳ Generando PDF…';
+
+        try {
+            const params = obtenerParams();
+            if (seleccionados.size > 0) {
+                params.append('boletas', Array.from(seleccionados).join(','));
+            }
+            const url = `/api/reportes/incidencias-pdf?${params}`;
+
+            const res = await fetch(url, { credentials: 'include' });
+
+            if (res.status === 401) { window.location.href = '/login.html'; return; }
+            if (res.status === 403) {
+                alert('No tienes permisos para descargar reportes.');
+                return;
+            }
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `Error ${res.status}`);
+            }
+
+            const blob    = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            const ahora    = new Date();
+            const fechaStr = `${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}`;
+            const filename = `incidencias_alumnos_${fechaStr}.pdf`;
+
+            const a      = document.createElement('a');
+            a.href       = blobUrl;
+            a.download   = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+        } catch (err) {
+            console.error('Error descargando PDF incidencias:', err);
+            alert(`Error al generar el PDF: ${err.message}`);
+        } finally {
+            btnPdfInc.disabled    = false;
+            btnPdfInc.textContent = 'PDF Incidencias';
+        }
+    }
+
     // ── Escape HTML ───────────────────────────────────────────
     function esc(s) {
         if (!s) return '';
@@ -332,8 +395,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnPdf) {
         btnPdf.addEventListener('click', descargarPDF);
     }
+    if (btnPdfInc) {
+        btnPdfInc.addEventListener('click', descargarPDFIncidencias);
+    }
 
     // ── Carga inicial ─────────────────────────────────────────
     cargarGrupos();
-    cargarAlumnos();
+    cargarAlumnos().then(actualizarHoraRefresh);
+
+    // Auto-refresco cada 30 segundos
+    setInterval(() => {
+        cargarAlumnos().then(actualizarHoraRefresh);
+    }, 30000);
 });

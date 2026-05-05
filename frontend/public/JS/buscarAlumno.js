@@ -168,10 +168,10 @@ class SistemaAlumnos {
             // FIX: usar fecha_hora (no "fecha") y punto_acceso (no "puerta")
             const fechaObj  = inc.fecha_hora ? new Date(inc.fecha_hora) : null;
             const fechaFmt  = fechaObj
-                ? fechaObj.toLocaleDateString('es-MX')
+                ? fechaObj.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
                 : '—';
             const horaFmt   = fechaObj
-                ? fechaObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                ? fechaObj.toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit' })
                 : '—';
             const puertaFmt = inc.punto_acceso || '—';
             const yaJust    = inc.justificacion
