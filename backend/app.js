@@ -66,7 +66,7 @@ app.use((req, res, next) => {
     const ruta = req.path;
     if (!ruta.endsWith('.html')) return next();
 
-    const publicas = ['/login.html', '/index.html'];
+    const publicas = ['/login.html', '/index.html', '/RecuperarPassword.html'];
     if (publicas.includes(ruta)) return next();
     if (!req.session.user) return res.redirect('/login.html');
 
@@ -95,6 +95,7 @@ app.get('/', (req, res) => {
 
 [
     '/login.html',
+    '/RecuperarPassword.html',
     '/Entrada_Salida.html',
     '/BuscarAlumno.html',
     '/DescargasBD.html',
@@ -105,6 +106,7 @@ app.get('/', (req, res) => {
     '/Dashboard.html',
     '/BuscarAlumnoVigilante.html',
     '/GestionGrupos.html',
+    '/Soporte.html',
     '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>

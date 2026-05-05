@@ -1,6 +1,8 @@
 // backend/controllers/auth.controller.js
 import bcrypt  from 'bcryptjs';
 import Usuario from '../models/Usuario.js';
+import { crearToken, consumirToken, verificarToken } from '../services/passwordReset.service.js';
+import { enviarCorreoRecuperacion } from '../services/email.service.js';
 
 // ── POST /api/auth/login ──────────────────────────────────────
 export const login = async (req, res) => {
@@ -86,4 +88,71 @@ export const checkAuth = (req, res) => {
         });
     }
     return res.json({ success: true, isAuthenticated: false });
+};
+
+// ── POST /api/auth/olvide-password ────────────────────────────
+// Mensaje genérico para no revelar si el correo existe
+const MSG_GENERICO = 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.';
+
+export const olvidePassword = async (req, res) => {
+    try {
+        const email = String(req.body?.email ?? '').trim().toLowerCase();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ success: false, message: 'Correo inválido.' });
+        }
+
+        const usuario = await Usuario.obtenerPorEmail(email);
+
+        if (usuario && usuario.activo) {
+            const token = crearToken(usuario.id_usuario);
+            const base  = process.env.FRONTEND_URL?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
+            const url   = `${base}/RecuperarPassword.html?token=${token}`;
+
+            try {
+                await enviarCorreoRecuperacion(usuario.email, usuario.nombre_completo, url);
+            } catch (e) {
+                console.error('Error enviando correo de recuperación:', e.message);
+            }
+        }
+
+        return res.json({ success: true, message: MSG_GENERICO });
+    } catch (err) {
+        console.error('Error en olvidePassword:', err);
+        return res.json({ success: true, message: MSG_GENERICO });
+    }
+};
+
+// ── GET /api/auth/reset/verificar?token=... ───────────────────
+export const verificarTokenReset = (req, res) => {
+    const token = String(req.query?.token ?? '');
+    const idUsuario = verificarToken(token);
+    if (!idUsuario) {
+        return res.status(400).json({ success: false, message: 'El enlace es inválido o ha caducado.' });
+    }
+    return res.json({ success: true });
+};
+
+// ── POST /api/auth/reset ──────────────────────────────────────
+export const resetearPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body || {};
+        const idUsuario = consumirToken(String(token ?? ''));
+        if (!idUsuario) {
+            return res.status(400).json({ success: false, message: 'El enlace es inválido o ha caducado.' });
+        }
+        if (!password || password.length < 6) {
+            return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 6 caracteres.' });
+        }
+        if (password.length > 50) {
+            return res.status(400).json({ success: false, message: 'La contraseña no puede superar 50 caracteres.' });
+        }
+
+        const result = await Usuario.restablecerPassword(idUsuario, password);
+        return result.success
+            ? res.json({ success: true, message: 'Contraseña restablecida. Ya puedes iniciar sesión.' })
+            : res.status(400).json({ success: false, message: result.message });
+    } catch (err) {
+        console.error('Error reseteando contraseña:', err);
+        return res.status(500).json({ success: false, message: 'Error interno.' });
+    }
 };

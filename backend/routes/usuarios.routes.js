@@ -20,6 +20,9 @@ router.put('/:id', requireRole('Administrador'), ctrl.modificarUsuario);
 router.put('/:id/desactivar', requireRole('Administrador'), ctrl.desactivarUsuario);
 router.put('/:id/reactivar',  requireRole('Administrador'), ctrl.reactivarUsuario);
 
+// Eliminar definitivamente — solo Admin
+router.delete('/:id', requireRole('Administrador'), ctrl.eliminarUsuario);
+
 // Cambiar contraseña — admin cambia cualquiera, usuario cambia la suya
 router.put('/:id/password', ctrl.cambiarPassword);
 

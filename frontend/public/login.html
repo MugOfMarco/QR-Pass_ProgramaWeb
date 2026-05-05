@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - QR Pass</title>
+    <title>Iniciar sesión — QR Pass</title>
     <link rel="stylesheet" href="./css/login.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -14,54 +13,79 @@
         <div class="header-container-main">
             <div class="title-main">
                 <h1>QR Pass</h1>
-                <img src="./imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" class="logo" alt="Logo QR Pass">
+                <div class="logo">
+                    <img src="./imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo QR Pass">
+                </div>
             </div>
         </div>
     </header>
 
-    <div class="main-container">
+    <main class="main-container">
+        <section class="login-box">
+            <h2>Iniciar sesión</h2>
+            <p class="subtitulo">Accede al sistema de control de acceso del CECyT 9</p>
 
-        <div class="login-box">
-            <h2>Iniciar Sesión</h2>
-
-            <form id="login-form">
+            <form id="login-form" autocomplete="off">
 
                 <div class="input-username">
-                    <label for="username">Usuario:</label>
-                    <input type="text" id="username" name="username" placeholder="Escribe tu usuario" required>
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" name="username"
+                           placeholder="Escribe tu usuario" required maxlength="30" autocomplete="username">
                 </div>
 
                 <div class="input-password">
-                    <label for="password">Contraseña:</label>
-
+                    <label for="password">Contraseña</label>
                     <div class="password-wrapper">
-                        <input type="password" id="password" name="password" placeholder="Escribe tu contraseña"
-                            required>
-
-                        <span class="password-toggle" id="togglePassword">
-                            👁️
-                        </span>
+                        <input type="password" id="password" name="password"
+                               placeholder="Escribe tu contraseña" required maxlength="50" autocomplete="current-password">
+                        <span class="password-toggle" id="togglePassword" role="button"
+                              aria-label="Mostrar/ocultar contraseña" tabindex="0">👁️</span>
                     </div>
                 </div>
 
-                <button type="submit" class="btn-login">
-                    Iniciar Sesión
+                <div class="fila-secundaria">
+                    <button type="button" class="link-olvide" id="btn-olvide-password">¿Olvidaste tu contraseña?</button>
+                </div>
+
+                <button type="submit" class="btn-login" id="btn-login-submit">
+                    Iniciar sesión
                 </button>
 
+                <p id="error-message" role="alert"></p>
+            </form>
+        </section>
+    </main>
+
+    <!-- Modal: Olvidé mi contraseña -->
+    <div class="modal-overlay" id="modal-olvide" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+        <div class="modal-box">
+            <h3 id="modal-titulo">Recuperar contraseña</h3>
+            <p class="modal-desc">Ingresa el correo electrónico asociado a tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.</p>
+
+            <form id="form-olvide" autocomplete="off">
+                <div class="field-group">
+                    <label for="email-recuperacion">Correo electrónico</label>
+                    <input type="email" id="email-recuperacion" name="email"
+                           placeholder="tu@correo.com" required maxlength="120">
+                </div>
+
+                <div class="modal-feedback" id="modal-feedback"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal-secondary" id="btn-cerrar-modal">Cancelar</button>
+                    <button type="submit" class="btn-modal-primary" id="btn-enviar-recuperacion">Enviar enlace</button>
+                </div>
             </form>
         </div>
-
     </div>
 
-    <p id="error-message" style="color: red; margin-top: 10px;"></p>
-
-    <footer class="site-header">
+    <footer class="site-header footer-only">
         <div class="footer-container-main">
-            <p>2024 QR Pass. Todos los derechos reservados.</p>
-        </div>  
+            <p>© 2025 QR Pass — Sistema de Control Escolar CECyT 9</p>
+        </div>
     </footer>
-    <script src="./JS/login.js"></script>
 
+    <script src="./JS/login.js"></script>
 </body>
 
 </html>
