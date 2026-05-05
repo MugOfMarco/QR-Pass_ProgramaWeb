@@ -72,15 +72,15 @@ app.use((req, res, next) => {
 
     const tipo = req.session.user.tipo;
     const soloAdmin = [
-        '/ModificarAlumno.html',
-        '/RegistrarAlumno.html',
-        '/DescargasBD.html',
-        '/GestionUsuarios.html',
-        '/Dashboard.html',
-        '/GestionGrupos.html',
+        '/modificaralumno.html',
+        '/registraralumno.html',
+        '/descargasbd.html',
+        '/gestionusuarios.html',
+        '/dashboard.html',
+        '/gestiongrupos.html',
     ];
 
-    if (soloAdmin.includes(ruta) && tipo !== 'Administrador') {
+    if (soloAdmin.includes(ruta.toLowerCase()) && tipo !== 'Administrador') {
         return res.status(403).send('<h1>Acceso Denegado</h1><a href="/">Volver</a>');
     }
     next();
