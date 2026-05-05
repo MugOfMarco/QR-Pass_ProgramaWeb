@@ -26,7 +26,7 @@
     "jsdom": "^27.4.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
-    "nodemailer": "^6.9.16",
+    "nodemailer": "^8.0.7",
     "pdfkit": "^0.18.0",
     "sanitize-html": "^2.17.0",
     "xss-filters": "^1.2.7"
