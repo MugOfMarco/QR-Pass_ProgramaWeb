@@ -79,6 +79,8 @@
 .counter-value { font-weight: 700; color: var(--color-primary); }
 .estado-activa   { color: var(--color-success); }
 .estado-bloqueada{ color: var(--color-error); }
+.estado-pa-si    { color: var(--color-success); }
+.estado-pa-no    { color: var(--color-text-muted); }
 
 /* ── Columna derecha ──────────────────────────────────────── */
 .student-actions-section .container {
@@ -157,9 +159,18 @@
     opacity: .9;
 }
 
-/* ── Incidencias ──────────────────────────────────────────── */
-.incidents-section {
+/* ── Stack de tablas (incidencias + entradas/salidas) ─────── */
+.tablas-stack {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+}
+
+/* ── Incidencias ──────────────────────────────────────────── */
+.incidents-section,
+.accesos-section {
     display: flex;
     flex-direction: column;
 }
@@ -214,6 +225,27 @@
 .tipo-retardo               { color: #e67e22; font-weight: 600; }
 .tipo-entrada_sin_credencial{ color: var(--color-error); font-weight: 600; }
 .tipo-entrada_normal         { color: var(--color-success); font-weight: 600; }
+.tipo-salida                 { color: #1565c0; font-weight: 600; }
+
+/* ── Tabla Entradas / Salidas ─────────────────────────────── */
+.section-title-alt {
+    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+}
+
+.accesos-table tbody tr:nth-child(even) { background: #f4f7fb; }
+.accesos-table tbody tr:hover            { background: #e3edf7; }
+
+.pa-badge {
+    display: inline-block;
+    padding: .15rem .55rem;
+    border-radius: 12px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .3px;
+}
+
+.pa-badge.pa-si { background: #e8f5e9; color: #1a5e20; border: 1px solid #a5d6a7; }
+.pa-badge.pa-no { background: #f5f5f5; color: #555;     border: 1px solid #ddd; }
 
 /* ── Horario ──────────────────────────────────────────────── */
 .horario-container {

@@ -24,13 +24,7 @@
     </header>
 
     <nav class="menu-navegacion" aria-label="Menú principal">
-        <ul id="lista-opciones" class="menu-lista">
-            <li><a href="./Entrada_Salida.html">Registro de entrada y salida</a></li>
-            <li><a href="./BuscarAlumno.html">Buscar alumno</a></li>
-            <li class="admin-only-link"><a href="./ModificarAlumno.html">Modificar alumno</a></li>
-            <li class="admin-only-link"><a href="./GestionUsuarios.html">Gestión de usuarios</a></li>
-            <li class="admin-only-link"><a href="./FiltrarAlumnos.html">Filtro de alumnos</a></li>
-        </ul>
+        <ul id="lista-opciones" class="menu-lista"></ul>
     </nav>
     <div id="menu-overlay" class="menu-overlay"></div>
 
@@ -92,6 +86,10 @@
                         <span class="counter-label">Estado credencial:</span>
                         <span class="counter-value" id="estado-credencial">-</span>
                     </div>
+                    <div class="counter-item">
+                        <span class="counter-label">Puertas abiertas:</span>
+                        <span class="counter-value" id="estado-puerta-abierta">-</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -115,26 +113,54 @@
                         </div>
                     </div>
 
-                    <div class="incidents-section">
-                        <h2 class="section-title">Incidencias</h2>
-                        <div class="table-container">
-                            <table class="incidents-table">
-                                <thead>
-                                    <tr>
-                                        <th width="120">Puerta</th>
-                                        <th width="100">Fecha</th>
-                                        <th width="80">Hora</th>
-                                        <th width="120">Tipo</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="incidents-tbody">
-                                    <tr>
-                                        <td colspan="4" style="text-align:center;padding:2rem;">
-                                            Ingrese una boleta para buscar
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <div class="tablas-stack">
+                        <!-- Tabla de Incidencias -->
+                        <div class="incidents-section">
+                            <h2 class="section-title">Incidencias</h2>
+                            <div class="table-container">
+                                <table class="incidents-table">
+                                    <thead>
+                                        <tr>
+                                            <th width="120">Puerta</th>
+                                            <th width="100">Fecha</th>
+                                            <th width="80">Hora</th>
+                                            <th width="120">Tipo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="incidents-tbody">
+                                        <tr>
+                                            <td colspan="4" style="text-align:center;padding:2rem;">
+                                                Ingrese una boleta para buscar
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Entradas / Salidas -->
+                        <div class="accesos-section">
+                            <h2 class="section-title section-title-alt">Entradas / Salidas</h2>
+                            <div class="table-container">
+                                <table class="incidents-table accesos-table">
+                                    <thead>
+                                        <tr>
+                                            <th width="100">Tipo</th>
+                                            <th width="100">Fecha</th>
+                                            <th width="80">Hora</th>
+                                            <th width="120">Puerta</th>
+                                            <th width="110">Puertas abiertas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="accesos-tbody">
+                                        <tr>
+                                            <td colspan="5" style="text-align:center;padding:2rem;">
+                                                Ingrese una boleta para buscar
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

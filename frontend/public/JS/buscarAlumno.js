@@ -1,9 +1,15 @@
 // frontend/public/JS/buscarAlumno.js
+// Clasificación de registros: cualquier tipo que mencione "retardo"
+// o "sin credencial" se considera INCIDENCIA. El resto (Entrada Normal,
+// Salida, etc.) se considera ENTRADA / SALIDA.
+const REGEX_INCIDENCIA = /retardo|sin credencial/i;
+
 class SistemaAlumnos {
     constructor() {
         this.apiBase      = '/api';
         this.alumnoActual = null;
         this.incidencias  = [];
+        this.accesos      = [];
         this.userType     = null;
         this.userInfo     = null;
         this.initialize();
@@ -141,10 +147,16 @@ class SistemaAlumnos {
             if (!res.ok) return;
 
             const data = await res.json();
-            this.incidencias = data.registros || [];
+            const registros = data.registros || [];
+
+            // Separar incidencias (retardos / sin credencial) de entradas-salidas
+            this.incidencias = registros.filter(r => REGEX_INCIDENCIA.test(r.tipo || ''));
+            this.accesos    = registros.filter(r => !REGEX_INCIDENCIA.test(r.tipo || ''));
+
             this.mostrarIncidencias();
+            this.mostrarAccesos();
         } catch (e) {
-            console.error('Error cargando incidencias:', e);
+            console.error('Error cargando registros:', e);
         }
     }
 
@@ -191,6 +203,54 @@ class SistemaAlumnos {
                 <td class="tipo-${tipoClase}">
                     ${yaJust}${this.esc(inc.tipo || '—')}
                 </td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // ENTRADAS / SALIDAS
+    // ─────────────────────────────────────────────────────────
+    mostrarAccesos() {
+        const tbody = document.getElementById('accesos-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!this.accesos.length) {
+            tbody.innerHTML = `<tr>
+                <td colspan="5" style="text-align:center;padding:2rem">
+                    Sin entradas o salidas registradas
+                </td></tr>`;
+            return;
+        }
+
+        const puertaAbierta = !!this.alumnoActual?.puerta_abierta;
+        const badgePA = puertaAbierta
+            ? '<span class="pa-badge pa-si">Sí</span>'
+            : '<span class="pa-badge pa-no">No</span>';
+
+        this.accesos.forEach(reg => {
+            const tr = document.createElement('tr');
+
+            const fechaObj = reg.fecha_hora ? new Date(reg.fecha_hora) : null;
+            const fechaFmt = fechaObj
+                ? fechaObj.toLocaleDateString('es-MX')
+                : '—';
+            const horaFmt  = fechaObj
+                ? fechaObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                : '—';
+
+            const tipo      = reg.tipo || '—';
+            const tipoLow   = tipo.toLowerCase();
+            const esSalida  = tipoLow.includes('salida');
+            const esEntrada = tipoLow.includes('entrada');
+            const cls       = esSalida ? 'tipo-salida' : (esEntrada ? 'tipo-entrada_normal' : '');
+
+            tr.innerHTML = `
+                <td class="${cls}">${this.esc(tipo)}</td>
+                <td>${fechaFmt}</td>
+                <td>${horaFmt}</td>
+                <td>${this.esc(reg.punto_acceso || '—')}</td>
+                <td>${badgePA}</td>`;
             tbody.appendChild(tr);
         });
     }
@@ -316,6 +376,17 @@ class SistemaAlumnos {
         document.getElementById('total-incidencias').textContent  = a.sin_credencial ?? 0;
         document.getElementById('total-retardos').textContent     = a.retardos        ?? 0;
         this.actualizarEstadoCredencial();
+        this.actualizarEstadoPuertaAbierta();
+    }
+
+    actualizarEstadoPuertaAbierta() {
+        const el = document.getElementById('estado-puerta-abierta');
+        if (!el || !this.alumnoActual) return;
+        const tiene = !!this.alumnoActual.puerta_abierta;
+        el.textContent = tiene ? 'Sí' : 'No';
+        el.className   = tiene
+            ? 'counter-value estado-pa-si'
+            : 'counter-value estado-pa-no';
     }
 
     mostrarHorario(horario) {
@@ -393,14 +464,22 @@ class SistemaAlumnos {
         if (incTbody) incTbody.innerHTML = `<tr>
             <td colspan="4" style="text-align:center;padding:2rem">Ingresa una boleta</td></tr>`;
 
+        const accTbody = document.getElementById('accesos-tbody');
+        if (accTbody) accTbody.innerHTML = `<tr>
+            <td colspan="5" style="text-align:center;padding:2rem">Ingresa una boleta</td></tr>`;
+
         const foto = document.getElementById('student-photo');
         if (foto) { foto.src = ''; foto.style.display = 'none'; }
 
         const ec = document.getElementById('estado-credencial');
         if (ec) { ec.textContent = '—'; ec.className = 'counter-value'; }
 
+        const epa = document.getElementById('estado-puerta-abierta');
+        if (epa) { epa.textContent = '—'; epa.className = 'counter-value'; }
+
         this.alumnoActual = null;
         this.incidencias  = [];
+        this.accesos      = [];
     }
 
     // ─────────────────────────────────────────────────────────
