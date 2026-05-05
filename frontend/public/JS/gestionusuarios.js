@@ -1,12 +1,13 @@
-// frontend/public/JS/gestionUsuarios.js
+// frontend/public/JS/gestionusuarios.js
 // ============================================================
-// FIXES:
-//   · Confirmación de contraseña al CREAR usuario
-//   · Límite de caracteres en campos (nombre 100, usuario 30, email 150)
-//   · Validación: nombre solo letras y espacios
-//   · Validación: usuario solo letras, números y _ (sin espacios ni especiales)
-//   · Feedback visual en tiempo real de validaciones
+// FEATURES:
+//   · Límite de 20 usuarios (UI desactiva creación al alcanzar)
+//   · Validaciones: nombre 60 chars, usuario 20, email 120, pass 6-50
+//   · Acciones: editar, contraseña, activar/desactivar, ELIMINAR
+//   · Contador visual con barra de progreso
 // ============================================================
+
+const LIMITES = { nombre: 60, usuario: 20, email: 120, password: 50 };
 
 class GestionUsuarios {
     constructor() {
@@ -15,6 +16,8 @@ class GestionUsuarios {
         this.modoEdicion   = false;
         this.idEditando    = null;
         this.idPassword    = null;
+        this.totalUsuarios = 0;
+        this.limite        = 20;
         this.init();
     }
 
@@ -38,44 +41,38 @@ class GestionUsuarios {
     // VALIDACIONES EN TIEMPO REAL
     // ─────────────────────────────────────────────────────────
     bindValidaciones() {
-        // Nombre: solo letras, espacios y acentos. Máx 100 chars.
         const fNombre = document.getElementById('f-nombre');
         if (fNombre) {
-            fNombre.maxLength = 100;
+            fNombre.maxLength = LIMITES.nombre;
             fNombre.addEventListener('input', () => {
-                // Eliminar caracteres no permitidos
                 fNombre.value = fNombre.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
                 this.validarCampo(fNombre,
-                    fNombre.value.trim().length >= 2,
-                    'Mínimo 2 caracteres, solo letras');
+                    fNombre.value.trim().length >= 2 && fNombre.value.length <= LIMITES.nombre,
+                    `Mínimo 2 caracteres, máximo ${LIMITES.nombre}`);
             });
         }
 
-        // Usuario: solo letras, números y guión bajo. Sin espacios. Máx 30 chars.
         const fUsuario = document.getElementById('f-usuario');
         if (fUsuario) {
-            fUsuario.maxLength = 30;
+            fUsuario.maxLength = LIMITES.usuario;
             fUsuario.addEventListener('input', () => {
                 fUsuario.value = fUsuario.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
                 this.validarCampo(fUsuario,
-                    /^[a-zA-Z0-9_]{3,30}$/.test(fUsuario.value),
-                    'Solo letras, números y _ (3-30 caracteres)');
+                    new RegExp(`^[a-zA-Z0-9_]{3,${LIMITES.usuario}}$`).test(fUsuario.value),
+                    `Solo letras, números y _ (3-${LIMITES.usuario})`);
             });
         }
 
-        // Email: máx 150 chars
         const fEmail = document.getElementById('f-email');
-        if (fEmail) fEmail.maxLength = 150;
+        if (fEmail) fEmail.maxLength = LIMITES.email;
 
-        // Contraseña: mín 6, máx 50 chars
         const fPass = document.getElementById('f-password');
         if (fPass) {
-            fPass.maxLength = 50;
+            fPass.maxLength = LIMITES.password;
             fPass.addEventListener('input', () => {
                 this.validarCampo(fPass,
                     fPass.value.length === 0 || fPass.value.length >= 6,
-                    'Mínimo 6 caracteres');
-                // Re-validar confirmación si ya tiene texto
+                    `Mínimo 6 caracteres, máximo ${LIMITES.password}`);
                 const fConf = document.getElementById('f-password-confirm');
                 if (fConf?.value) {
                     this.validarCampo(fConf,
@@ -85,10 +82,9 @@ class GestionUsuarios {
             });
         }
 
-        // Confirmación de contraseña (campo nuevo)
         const fConf = document.getElementById('f-password-confirm');
         if (fConf) {
-            fConf.maxLength = 50;
+            fConf.maxLength = LIMITES.password;
             fConf.addEventListener('input', () => {
                 const pass = document.getElementById('f-password')?.value || '';
                 this.validarCampo(fConf,
@@ -98,7 +94,6 @@ class GestionUsuarios {
         }
     }
 
-    // Muestra/oculta mensaje de validación bajo el campo
     validarCampo(input, esValido, mensajeError) {
         let hint = input.nextElementSibling;
         if (!hint || !hint.classList.contains('field-hint')) {
@@ -126,6 +121,9 @@ class GestionUsuarios {
             const r    = await fetch(this.api, { credentials: 'include' });
             const data = await r.json();
             if (!data.success) { this.toast('Error cargando usuarios', 'err'); return; }
+            this.totalUsuarios = data.total ?? data.usuarios.length;
+            this.limite        = data.limite ?? 20;
+            this.renderContador();
             this.renderTabla(data.usuarios);
         } catch { this.toast('Error de conexión al cargar usuarios', 'err'); }
     }
@@ -155,6 +153,39 @@ class GestionUsuarios {
     }
 
     // ─────────────────────────────────────────────────────────
+    // CONTADOR / LÍMITE
+    // ─────────────────────────────────────────────────────────
+    renderContador() {
+        const actual    = document.getElementById('contador-actual');
+        const limiteEl  = document.getElementById('contador-limite');
+        const dispoEl   = document.getElementById('contador-disponibles');
+        const barra     = document.getElementById('barra-progreso');
+        const btnNuevo  = document.getElementById('btn-nuevo-usuario');
+        const alertEl   = document.getElementById('panel-limite-alert');
+
+        if (actual)   actual.textContent   = this.totalUsuarios;
+        if (limiteEl) limiteEl.textContent = this.limite;
+
+        const disponibles = Math.max(0, this.limite - this.totalUsuarios);
+        if (dispoEl) {
+            dispoEl.textContent = disponibles === 0
+                ? '· Límite alcanzado'
+                : `· ${disponibles} disponible${disponibles === 1 ? '' : 's'}`;
+        }
+
+        const pct = Math.min(100, (this.totalUsuarios / this.limite) * 100);
+        if (barra) {
+            barra.querySelector('div').style.width = `${pct}%`;
+            barra.classList.toggle('lleno', pct >= 100);
+            barra.classList.toggle('alerta', pct >= 80 && pct < 100);
+        }
+
+        const lleno = this.totalUsuarios >= this.limite && !this.modoEdicion;
+        if (btnNuevo) btnNuevo.disabled = lleno;
+        if (alertEl)  alertEl.classList.toggle('visible', lleno);
+    }
+
+    // ─────────────────────────────────────────────────────────
     // RENDERIZAR TABLA
     // ─────────────────────────────────────────────────────────
     renderTabla(usuarios) {
@@ -177,7 +208,7 @@ class GestionUsuarios {
             <tr>
                 <td>
                     <strong>${this.esc(u.usuario)}</strong>
-                    ${esMismo ? '<span class="tag-tu">(tú)</span>' : ''}
+                    ${esMismo ? '<span class="tag-tu">tú</span>' : ''}
                 </td>
                 <td>${this.esc(u.nombre_completo)}</td>
                 <td class="col-email">${u.email ? this.esc(u.email) : '—'}</td>
@@ -200,6 +231,10 @@ class GestionUsuarios {
                     <button class="btn-accion btn-toggle"
                             onclick="app.toggleActivo(${u.id_usuario}, ${u.activo})">
                         ${u.activo ? 'Desactivar' : 'Activar'}
+                    </button>
+                    <button class="btn-accion btn-eliminar"
+                            onclick="app.eliminarUsuario(${u.id_usuario}, '${this.esc(u.nombre_completo)}')">
+                        Eliminar
                     </button>` : ''}
                 </td>
             </tr>`;
@@ -211,7 +246,13 @@ class GestionUsuarios {
     // ─────────────────────────────────────────────────────────
     bindEvents() {
         document.getElementById('btn-nuevo-usuario')
-            ?.addEventListener('click', () => this.abrirCreacion());
+            ?.addEventListener('click', () => {
+                if (this.totalUsuarios >= this.limite) {
+                    this.toast(`Límite de ${this.limite} usuarios alcanzado.`, 'err');
+                    return;
+                }
+                this.abrirCreacion();
+            });
 
         document.getElementById('btn-cancelar-usuario')
             ?.addEventListener('click', () => this.abrirCreacion());
@@ -231,9 +272,7 @@ class GestionUsuarios {
     }
 
     limpiarHints() {
-        document.querySelectorAll('.field-hint').forEach(h => {
-            h.textContent = '';
-        });
+        document.querySelectorAll('.field-hint').forEach(h => { h.textContent = ''; });
         ['f-nombre','f-usuario','f-email','f-rol','f-password','f-password-confirm'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.borderColor = '';
@@ -253,7 +292,6 @@ class GestionUsuarios {
         document.getElementById('f-rol').value      = '';
         document.getElementById('f-password').value = '';
 
-        // Limpiar y mostrar confirmación de contraseña
         const confWrap = document.getElementById('seccion-password-confirm');
         if (confWrap) {
             confWrap.style.display = '';
@@ -266,6 +304,7 @@ class GestionUsuarios {
         document.getElementById('f-password').required            = true;
 
         this.limpiarHints();
+        this.renderContador();
     }
 
     async abrirEdicion(id) {
@@ -287,7 +326,6 @@ class GestionUsuarios {
             document.getElementById('f-rol').value     = u.id_rol;
             document.getElementById('f-activo').value  = String(u.activo);
 
-            // Ocultar confirmación al editar (no se cambia contraseña aquí)
             const confWrap = document.getElementById('seccion-password-confirm');
             if (confWrap) confWrap.style.display = 'none';
 
@@ -297,6 +335,9 @@ class GestionUsuarios {
             document.getElementById('f-password').required            = false;
 
             this.limpiarHints();
+            // En modo edición permitimos guardar siempre
+            document.getElementById('btn-guardar-usuario').disabled = false;
+            document.getElementById('panel-limite-alert').classList.remove('visible');
         } catch { this.toast('Error cargando usuario', 'err'); }
     }
 
@@ -309,22 +350,33 @@ class GestionUsuarios {
         const confirm  = document.getElementById('f-password-confirm')?.value || '';
         const activo   = document.getElementById('f-activo').value;
 
-        // Validaciones
         if (!nombre || nombre.length < 2) {
             this.toast('El nombre debe tener al menos 2 caracteres', 'err'); return;
         }
-        if (!/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{2,100}$/.test(nombre)) {
+        if (nombre.length > LIMITES.nombre) {
+            this.toast(`El nombre no puede superar ${LIMITES.nombre} caracteres`, 'err'); return;
+        }
+        if (!new RegExp(`^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\\s]{2,${LIMITES.nombre}}$`).test(nombre)) {
             this.toast('El nombre solo puede contener letras y espacios', 'err'); return;
         }
         if (!idRol) { this.toast('Selecciona un rol', 'err'); return; }
+        if (email && email.length > LIMITES.email) {
+            this.toast(`El correo no puede superar ${LIMITES.email} caracteres`, 'err'); return;
+        }
 
         if (!this.modoEdicion) {
+            if (this.totalUsuarios >= this.limite) {
+                this.toast(`Límite de ${this.limite} usuarios alcanzado.`, 'err'); return;
+            }
             if (!usuario) { this.toast('El nombre de usuario es obligatorio', 'err'); return; }
-            if (!/^[a-zA-Z0-9_]{3,30}$/.test(usuario)) {
-                this.toast('Usuario: solo letras, números y _ (3-30 caracteres)', 'err'); return;
+            if (!new RegExp(`^[a-zA-Z0-9_]{3,${LIMITES.usuario}}$`).test(usuario)) {
+                this.toast(`Usuario: solo letras, números y _ (3-${LIMITES.usuario})`, 'err'); return;
             }
             if (!password || password.length < 6) {
                 this.toast('La contraseña debe tener al menos 6 caracteres', 'err'); return;
+            }
+            if (password.length > LIMITES.password) {
+                this.toast(`La contraseña no puede superar ${LIMITES.password} caracteres`, 'err'); return;
             }
             if (password !== confirm) {
                 this.toast('Las contraseñas no coinciden', 'err'); return;
@@ -390,6 +442,27 @@ class GestionUsuarios {
     }
 
     // ─────────────────────────────────────────────────────────
+    // ELIMINAR
+    // ─────────────────────────────────────────────────────────
+    async eliminarUsuario(id, nombre) {
+        if (!confirm(`¿Eliminar definitivamente a "${nombre}"?\n\nEsta acción no se puede deshacer.`)) return;
+        try {
+            const r    = await fetch(`${this.api}/${id}`, {
+                method: 'DELETE', credentials: 'include',
+            });
+            const data = await r.json();
+            this.toast(data.message || (data.success ? 'Usuario eliminado' : 'Error'), data.success ? 'ok' : 'err');
+            if (data.success) {
+                // Si estábamos editando al eliminado, volver a creación
+                if (this.modoEdicion && parseInt(this.idEditando) === parseInt(id)) {
+                    this.abrirCreacion();
+                }
+                await this.cargarUsuarios();
+            }
+        } catch { this.toast('Error de conexión', 'err'); }
+    }
+
+    // ─────────────────────────────────────────────────────────
     // MODAL CONTRASEÑA
     // ─────────────────────────────────────────────────────────
     abrirModalPassword(id, nombre, esMismo) {
@@ -404,9 +477,8 @@ class GestionUsuarios {
         document.getElementById('m-nueva').value     = '';
         document.getElementById('m-confirmar').value = '';
 
-        // Máx chars en modal
-        document.getElementById('m-nueva').maxLength     = 50;
-        document.getElementById('m-confirmar').maxLength = 50;
+        document.getElementById('m-nueva').maxLength     = LIMITES.password;
+        document.getElementById('m-confirmar').maxLength = LIMITES.password;
 
         document.getElementById('modal-password').classList.add('visible');
     }
@@ -423,6 +495,7 @@ class GestionUsuarios {
 
         if (!nueva)              { this.toast('Escribe la nueva contraseña', 'err'); return; }
         if (nueva.length < 6)    { this.toast('Mínimo 6 caracteres', 'err'); return; }
+        if (nueva.length > LIMITES.password) { this.toast(`Máximo ${LIMITES.password} caracteres`, 'err'); return; }
         if (nueva !== confirmar) { this.toast('Las contraseñas no coinciden', 'err'); return; }
 
         const btn = document.getElementById('btn-confirmar-pass');

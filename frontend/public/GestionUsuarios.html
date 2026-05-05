@@ -8,10 +8,73 @@
     <style>
         /* ── Layout ─────────────────────────────────────────── */
         .usuarios-wrap {
-            max-width: 1180px;
-            margin: 2rem auto;
+            max-width: 1240px;
+            margin: 1.6rem auto 2rem;
             padding: 0 1.5rem;
         }
+
+        .pagina-titulo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pagina-titulo h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--color-primary-dark);
+            letter-spacing: -.01em;
+        }
+
+        .pagina-titulo p {
+            margin-top: 4px;
+            color: var(--color-text-muted);
+            font-size: .88rem;
+        }
+
+        /* ── Contador / barra de límite ─────────────────────── */
+        .contador-usuarios {
+            background: white;
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-md);
+            padding: .8rem 1.1rem;
+            display: flex;
+            flex-direction: column;
+            gap: .4rem;
+            min-width: 240px;
+        }
+
+        .contador-usuarios .num {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-weight: 700;
+            color: var(--color-primary-dark);
+            font-size: .92rem;
+        }
+
+        .contador-usuarios .num strong { font-size: 1.05rem; }
+        .contador-usuarios .num span.disponible { color: var(--color-text-muted); font-weight: 600; font-size: .82rem; }
+
+        .barra-progreso {
+            background: #f0e8ea;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .barra-progreso > div {
+            height: 100%;
+            background: linear-gradient(90deg, #5c1f33, #7a2945);
+            transition: width .35s ease, background .25s ease;
+            border-radius: 8px;
+        }
+
+        .barra-progreso.lleno > div { background: linear-gradient(90deg, #b71c1c, #d32f2f); }
+        .barra-progreso.alerta > div { background: linear-gradient(90deg, #ef6c00, #f57c00); }
 
         .usuarios-grid {
             display: grid;
@@ -21,10 +84,7 @@
         }
 
         /* ── Panel sticky derecho ───────────────────────────── */
-        .panel-form {
-            position: sticky;
-            top: 1.2rem;
-        }
+        .panel-form { position: sticky; top: 1.2rem; }
 
         /* ── Encabezado de sección ──────────────────────────── */
         .section-head {
@@ -47,7 +107,7 @@
             border: 1px solid var(--color-border-light);
         }
 
-        #tabla-usuarios { min-width: 680px; }
+        #tabla-usuarios { min-width: 720px; }
         #tabla-usuarios thead th { white-space: nowrap; }
 
         .col-email    { color: var(--color-text-muted); font-size: .82rem; }
@@ -58,32 +118,41 @@
             font-size: .7rem;
             margin-left: 4px;
             font-weight: 600;
+            background: #f6e9ee;
+            padding: 1px 6px;
+            border-radius: 6px;
         }
 
         /* Botones de acción en tabla */
         .btn-accion {
             border: none;
             border-radius: var(--radius-sm);
-            padding: .28rem .65rem;
+            padding: .32rem .7rem;
             font-size: .74rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             margin-right: 3px;
-            transition: opacity .2s;
+            transition: opacity .2s, transform .15s;
             font-family: inherit;
         }
 
-        .btn-editar { background: #e8f0fe; color: #1a3a8b; }
-        .btn-pass   { background: #fff3e0; color: #7a4000; }
-        .btn-toggle { background: #f3e8ff; color: #4a0080; }
-        .btn-accion:hover { opacity: .72; }
+        .btn-accion:hover  { opacity: .8; transform: translateY(-1px); }
+        .btn-accion:active { transform: translateY(0); }
+
+        .btn-editar    { background: #e8f0fe; color: #1a3a8b; }
+        .btn-pass      { background: #fff3e0; color: #7a4000; }
+        .btn-toggle    { background: #f3e8ff; color: #4a0080; }
+        .btn-eliminar  { background: #fce8ed; color: #b71c1c; }
 
         /* ── Formulario ─────────────────────────────────────── */
         .form-panel-title {
             font-size: 1rem;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--color-primary-dark);
             margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
         }
 
         .form-sec { margin-bottom: .9rem; }
@@ -99,20 +168,22 @@
         .form-sec input,
         .form-sec select {
             width: 100%;
-            padding: .55rem .85rem;
+            padding: .58rem .9rem;
             border: 2px solid var(--color-border-light);
             border-radius: var(--radius-sm);
-            font-size: .9rem;
+            font-size: .92rem;
             box-sizing: border-box;
-            transition: border-color .2s;
+            transition: border-color .2s, box-shadow .2s;
             font-family: inherit;
+            background: #fbfafc;
         }
 
         .form-sec input:focus,
         .form-sec select:focus {
             outline: none;
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(92,31,51,.08);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(92,31,51,.10);
         }
 
         .form-sec small { color: #999; font-size: .72rem; }
@@ -126,20 +197,43 @@
 
         .form-actions-panel .btn-primary { flex: 1; }
 
+        /* ── Aviso límite alcanzado en panel ──────────────── */
+        .panel-limite-alert {
+            background: #fce8ed;
+            border: 1px solid #f5c2c2;
+            border-radius: var(--radius-sm);
+            padding: .65rem .85rem;
+            color: #b71c1c;
+            font-size: .82rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .panel-limite-alert.visible { display: block; }
+
         /* ── Btn nuevo ──────────────────────────────────────── */
         .btn-nuevo {
             background: var(--header-grad);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
-            padding: .45rem .9rem;
+            padding: .5rem .95rem;
             font-size: .82rem;
             font-weight: 700;
             cursor: pointer;
             font-family: inherit;
+            transition: opacity .2s, transform .15s;
+            box-shadow: 0 3px 8px rgba(92,31,51,.25);
         }
 
-        .btn-nuevo:hover { opacity: .88; }
+        .btn-nuevo:hover  { opacity: .9; transform: translateY(-1px); }
+        .btn-nuevo:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
 
         /* ── Modal form-sec override ────────────────────────── */
         .modal .form-sec { margin-bottom: 1rem; }
@@ -148,6 +242,8 @@
         @media (max-width: 960px) {
             .usuarios-grid { grid-template-columns: 1fr; }
             .panel-form    { position: static; }
+            .pagina-titulo { flex-direction: column; align-items: flex-start; }
+            .contador-usuarios { width: 100%; }
         }
     </style>
 </head>
@@ -168,24 +264,34 @@
 </header>
 
 <nav class="menu-navegacion" aria-label="Menú principal">
-    <ul id="lista-opciones" class="menu-lista">
-        <li><a href="/Dashboard.html">Dashboard</a></li>
-        <li><a href="/Entrada_Salida.html">Registro de entrada y salida</a></li>
-        <li><a href="/BuscarAlumno.html">Buscar alumno</a></li>
-        <li class="admin-only-link"><a href="/ModificarAlumno.html">Modificar alumno</a></li>
-        <li class="admin-only-link"><a href="/GestionUsuarios.html">Gestión de usuarios</a></li>
-        <li class="admin-only-link"><a href="/FiltrarAlumnos.html">Filtro de alumnos</a></li>
-    </ul>
+    <ul id="lista-opciones" class="menu-lista"></ul>
 </nav>
 <div id="menu-overlay" class="menu-overlay"></div>
 
 <div class="usuarios-wrap">
+
+    <div class="pagina-titulo">
+        <div>
+            <h2>Usuarios del sistema</h2>
+            <p>Administra las cuentas con acceso al sistema. Máximo 20 usuarios.</p>
+        </div>
+        <div class="contador-usuarios">
+            <div class="num">
+                <span><strong id="contador-actual">—</strong> de <strong id="contador-limite">20</strong> usuarios</span>
+                <span class="disponible" id="contador-disponibles"></span>
+            </div>
+            <div class="barra-progreso" id="barra-progreso">
+                <div style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="usuarios-grid">
 
         <!-- Tabla -->
         <div class="card">
             <div class="section-head">
-                <h2>Usuarios del sistema</h2>
+                <h2>Listado</h2>
                 <button class="btn-nuevo" id="btn-nuevo-usuario">+ Nuevo usuario</button>
             </div>
             <div class="table-scroll">
@@ -216,33 +322,37 @@
             <div class="card">
                 <div class="form-panel-title" id="panel-titulo">Nuevo usuario</div>
 
+                <div class="panel-limite-alert" id="panel-limite-alert">
+                    Límite de 20 usuarios alcanzado. Elimina o desactiva alguno antes de crear otro.
+                </div>
+
                 <form id="form-usuario" autocomplete="off">
                     <input type="hidden" id="f-id">
 
                     <div class="form-sec">
                         <label for="f-nombre">
                             Nombre completo *
-                            <small>(solo letras, máx. 100)</small>
+                            <small>(solo letras, máx. 60)</small>
                         </label>
-                        <input type="text" id="f-nombre" maxlength="100"
+                        <input type="text" id="f-nombre" maxlength="60"
                                placeholder="Apellidos Nombre" required>
                     </div>
 
                     <div class="form-sec">
                         <label for="f-usuario">
                             Nombre de usuario *
-                            <small>(letras, números y _, máx. 30)</small>
+                            <small>(letras, números y _, máx. 20)</small>
                         </label>
-                        <input type="text" id="f-usuario" maxlength="30"
+                        <input type="text" id="f-usuario" maxlength="20"
                                placeholder="sin espacios ni caracteres especiales"
                                required autocomplete="off">
                     </div>
 
                     <div class="form-sec">
                         <label for="f-email">
-                            Correo electrónico <small>(opcional, máx. 150)</small>
+                            Correo electrónico <small>(opcional, máx. 120)</small>
                         </label>
-                        <input type="email" id="f-email" maxlength="150"
+                        <input type="email" id="f-email" maxlength="120"
                                placeholder="usuario@ejemplo.com">
                     </div>
 
@@ -255,13 +365,12 @@
 
                     <div id="seccion-password" class="form-sec">
                         <label for="f-password">
-                            Contraseña * <small>(mínimo 6, máx. 50 caracteres)</small>
+                            Contraseña * <small>(mínimo 6, máx. 50)</small>
                         </label>
                         <input type="password" id="f-password" maxlength="50"
                                autocomplete="new-password">
                     </div>
 
-                    <!-- NUEVO: confirmación de contraseña -->
                     <div id="seccion-password-confirm" class="form-sec">
                         <label for="f-password-confirm">
                             Confirmar contraseña *
