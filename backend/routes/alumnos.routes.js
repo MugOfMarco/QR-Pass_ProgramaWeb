@@ -22,11 +22,12 @@ const upload  = multer({
 router.use(requireAuth);
 
 // ── Catálogos (rutas fijas — van PRIMERO) ────────────────────
-router.get('/buscar/alumnos',    ctrl.buscarAlumnos); // ESTA ES LA RUTA PARA TUS FILTROS
-router.get('/grupos/lista',      ctrl.obtenerGrupos);
-router.get('/estados/lista',     ctrl.obtenerEstadosAcademicos);
-router.get('/carreras/lista',    ctrl.obtenerCarreras);
-router.get('/materias/lista',    ctrl.obtenerMaterias);       
+router.get('/buscar/alumnos',      ctrl.buscarAlumnos);
+router.get('/incidencias/periodo', ctrl.obtenerIncidenciasPeriodo);
+router.get('/grupos/lista',        ctrl.obtenerGrupos);
+router.get('/estados/lista',       ctrl.obtenerEstadosAcademicos);
+router.get('/carreras/lista',      ctrl.obtenerCarreras);
+router.get('/materias/lista',      ctrl.obtenerMaterias);
 
 // ── Bloqueo ───────────────────────────────────────────────────
 router.put('/bloquear/:boleta',

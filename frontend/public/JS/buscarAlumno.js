@@ -167,7 +167,7 @@ class SistemaAlumnos {
 
         if (!this.incidencias.length) {
             tbody.innerHTML = `<tr>
-                <td colspan="4" style="text-align:center;padding:2rem">
+                <td colspan="5" style="text-align:center;padding:2rem">
                     No se encontraron registros
                 </td></tr>`;
             return;
@@ -177,7 +177,6 @@ class SistemaAlumnos {
             const tr = document.createElement('tr');
             tr.dataset.idRegistro = inc.id_registro;
 
-            // FIX: usar fecha_hora (no "fecha") y punto_acceso (no "puerta")
             const fechaObj  = inc.fecha_hora ? new Date(inc.fecha_hora) : null;
             const fechaFmt  = fechaObj
                 ? fechaObj.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
@@ -185,7 +184,8 @@ class SistemaAlumnos {
             const horaFmt   = fechaObj
                 ? fechaObj.toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit' })
                 : '—';
-            const puertaFmt = inc.punto_acceso || '—';
+            const puertaFmt    = inc.punto_acceso || '—';
+            const vigilanteFmt = inc.vigilante    || '—';
             const yaJust    = inc.justificacion
                 ? `<span title="${this.esc(inc.justificacion)}" style="color:#2e7d32">✔</span> `
                 : '';
@@ -202,7 +202,8 @@ class SistemaAlumnos {
                 <td>${horaFmt}</td>
                 <td class="tipo-${tipoClase}">
                     ${yaJust}${this.esc(inc.tipo || '—')}
-                </td>`;
+                </td>
+                <td style="font-size:.82rem;color:#555">${this.esc(vigilanteFmt)}</td>`;
             tbody.appendChild(tr);
         });
     }
@@ -217,7 +218,7 @@ class SistemaAlumnos {
 
         if (!this.accesos.length) {
             tbody.innerHTML = `<tr>
-                <td colspan="5" style="text-align:center;padding:2rem">
+                <td colspan="6" style="text-align:center;padding:2rem">
                     Sin entradas o salidas registradas
                 </td></tr>`;
             return;
@@ -233,24 +234,26 @@ class SistemaAlumnos {
 
             const fechaObj = reg.fecha_hora ? new Date(reg.fecha_hora) : null;
             const fechaFmt = fechaObj
-                ? fechaObj.toLocaleDateString('es-MX')
+                ? fechaObj.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
                 : '—';
             const horaFmt  = fechaObj
-                ? fechaObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                ? fechaObj.toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit' })
                 : '—';
 
-            const tipo      = reg.tipo || '—';
-            const tipoLow   = tipo.toLowerCase();
-            const esSalida  = tipoLow.includes('salida');
-            const esEntrada = tipoLow.includes('entrada');
-            const cls       = esSalida ? 'tipo-salida' : (esEntrada ? 'tipo-entrada_normal' : '');
+            const tipo         = reg.tipo      || '—';
+            const tipoLow      = tipo.toLowerCase();
+            const esSalida     = tipoLow.includes('salida');
+            const esEntrada    = tipoLow.includes('entrada');
+            const cls          = esSalida ? 'tipo-salida' : (esEntrada ? 'tipo-entrada_normal' : '');
+            const vigilanteFmt = reg.vigilante || '—';
 
             tr.innerHTML = `
                 <td class="${cls}">${this.esc(tipo)}</td>
                 <td>${fechaFmt}</td>
                 <td>${horaFmt}</td>
                 <td>${this.esc(reg.punto_acceso || '—')}</td>
-                <td>${badgePA}</td>`;
+                <td>${badgePA}</td>
+                <td style="font-size:.82rem;color:#555">${this.esc(vigilanteFmt)}</td>`;
             tbody.appendChild(tr);
         });
     }
@@ -462,11 +465,11 @@ class SistemaAlumnos {
 
         const incTbody = document.getElementById('incidents-tbody');
         if (incTbody) incTbody.innerHTML = `<tr>
-            <td colspan="4" style="text-align:center;padding:2rem">Ingresa una boleta</td></tr>`;
+            <td colspan="5" style="text-align:center;padding:2rem">Ingresa una boleta</td></tr>`;
 
         const accTbody = document.getElementById('accesos-tbody');
         if (accTbody) accTbody.innerHTML = `<tr>
-            <td colspan="5" style="text-align:center;padding:2rem">Ingresa una boleta</td></tr>`;
+            <td colspan="6" style="text-align:center;padding:2rem">Ingresa una boleta</td></tr>`;
 
         const foto = document.getElementById('student-photo');
         if (foto) { foto.src = ''; foto.style.display = 'none'; }
