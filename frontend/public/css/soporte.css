@@ -99,8 +99,8 @@
 .accordion-header {
     background: white;
     color: var(--color-text);
-    padding: .85rem 1rem;
-    font-size: .9rem;
+    padding: .9rem 1rem;
+    font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
@@ -142,18 +142,14 @@
     color: var(--color-text);
     max-height: 0;
     overflow: hidden;
-    transition: max-height .3s ease, padding .3s ease;
-    font-size: .88rem;
-    line-height: 1.55;
+    transition: max-height .35s ease;
+    font-size: .95rem;
+    line-height: 1.6;
 }
 
 .accordion-content-inner {
-    padding: 0 1rem;
-    transition: padding .3s ease;
-}
-
-.accordion-item.abierto .accordion-content-inner {
-    padding: .9rem 1rem 1rem;
+    /* Sin transición: el padding debe estar ya presente cuando se mida scrollHeight */
+    padding: .95rem 1rem 1.1rem;
 }
 
 /* ── Sección de contacto / formulario ────────────────────── */

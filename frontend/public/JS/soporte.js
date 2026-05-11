@@ -4,11 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── Acordeón ─────────────────────────────────────────
     document.querySelectorAll('.accordion-header').forEach(button => {
         button.addEventListener('click', () => {
-            const item     = button.closest('.accordion-item');
-            const content  = button.nextElementSibling;
+            const item      = button.closest('.accordion-item');
+            const content   = button.nextElementSibling;
             const yaAbierto = item.classList.contains('abierto');
 
-            // Cerrar todos los demás (acordeón único)
+            // Cerrar todos los demás
             document.querySelectorAll('.accordion-item.abierto').forEach(it => {
                 it.classList.remove('abierto');
                 const c = it.querySelector('.accordion-content');
@@ -17,9 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!yaAbierto) {
                 item.classList.add('abierto');
-                // Esperar al siguiente frame para que el padding interno cuente
+                // Doble rAF: el primero aplica la clase, el segundo lee el
+                // scrollHeight real (ya con padding interno incluido)
                 requestAnimationFrame(() => {
-                    content.style.maxHeight = content.scrollHeight + 'px';
+                    requestAnimationFrame(() => {
+                        content.style.maxHeight = (content.scrollHeight + 32) + 'px';
+                    });
                 });
             }
         });
