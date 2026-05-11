@@ -177,7 +177,7 @@ class SistemaAlumnos {
             const tr = document.createElement('tr');
             tr.dataset.idRegistro = inc.id_registro;
 
-            const fechaObj  = inc.fecha_hora ? new Date(inc.fecha_hora) : null;
+            const fechaObj  = inc.fecha_hora ? new Date(this.utc(inc.fecha_hora)) : null;
             const fechaFmt  = fechaObj
                 ? fechaObj.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
                 : '—';
@@ -232,7 +232,7 @@ class SistemaAlumnos {
         this.accesos.forEach(reg => {
             const tr = document.createElement('tr');
 
-            const fechaObj = reg.fecha_hora ? new Date(reg.fecha_hora) : null;
+            const fechaObj = reg.fecha_hora ? new Date(this.utc(reg.fecha_hora)) : null;
             const fechaFmt = fechaObj
                 ? fechaObj.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
                 : '—';
@@ -503,6 +503,12 @@ class SistemaAlumnos {
             box-shadow:0 4px 12px rgba(0,0,0,.2);font-size:.9rem;`;
         document.body.appendChild(n);
         setTimeout(() => n.remove(), 3000);
+    }
+
+    // Fuerza interpretación UTC en strings sin sufijo de zona (Supabase TIMESTAMP)
+    utc(iso) {
+        if (!iso) return null;
+        return /Z|[+-]\d{2}:\d{2}$/.test(iso) ? iso : iso + 'Z';
     }
 
     cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }

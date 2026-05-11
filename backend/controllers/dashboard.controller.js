@@ -126,15 +126,26 @@ export const obtenerDashboard = async (req, res) => {
         // ── Actividad por hora ─────────────────────────────────
         const porHora = Array(24).fill(0);
         registrosHoy.forEach(r => {
-            const d = new Date(r.fecha_hora);
-            const h = new Date(d.getTime() - 6 * 60 * 60 * 1000).getUTCHours();
-            porHora[h]++;
+            // Tratar siempre como UTC: añadir 'Z' si no tiene sufijo de zona
+            const iso = r.fecha_hora;
+            const isoUTC = /Z|[+-]\d{2}:\d{2}$/.test(iso) ? iso : iso + 'Z';
+            const d = new Date(isoUTC);
+            const h = d.toLocaleString('en-US', { timeZone: 'America/Mexico_City', hour: 'numeric', hour12: false });
+            porHora[parseInt(h) % 24]++;
         });
 
-        const horaActual = new Date(ahora.getTime() - 6 * 60 * 60 * 1000).getUTCHours();
+        const horaActual = parseInt(
+            new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City', hour: 'numeric', hour12: false })
+        ) % 24;
+
         const graficoHoras = [];
-        for (let h = 6; h <= Math.min(horaActual + 1, 22); h++) {
-            graficoHoras.push({ hora: h, count: porHora[h] });
+        // Incluir todas las horas con actividad + rango escolar hasta hora actual
+        for (let h = 0; h <= 23; h++) {
+            const enRangoEscolar = h >= 6 && h <= Math.max(horaActual, 6);
+            const tieneMovimiento = porHora[h] > 0;
+            if (enRangoEscolar || tieneMovimiento) {
+                graficoHoras.push({ hora: h, count: porHora[h] });
+            }
         }
 
         // ── Actividad por puerta — usando nombres normalizados ─
