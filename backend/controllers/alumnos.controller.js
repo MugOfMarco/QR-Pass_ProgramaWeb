@@ -412,3 +412,179 @@ export const deleteImage = async (req, res) => {
 };
 
 export const createAlumno = registrarAlumno;
+
+// ── Helpers privados ──────────────────────────────────────────
+function _normalizarPuerta(nombre) {
+    if (!nombre) return null;
+    const n = String(nombre).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (n.includes('mexico') || n.includes('tacuba') || n.includes('norte') || n === '1') return 'México-Tacuba';
+    if (n.includes('mar') || n.includes('mediterraneo') || n.includes('sur') || n === '2') return 'Mar-Mediterráneo';
+    return nombre;
+}
+
+function _getDiasHabiles(inicio, fin) {
+    const dias = [];
+    const current = new Date(`${inicio}T12:00:00`);
+    const end     = new Date(`${fin}T12:00:00`);
+    while (current <= end) {
+        const dow = current.getDay(); // 0=Dom, 6=Sab
+        if (dow >= 1 && dow <= 5) {
+            const yyyy = current.getFullYear();
+            const mm   = String(current.getMonth() + 1).padStart(2, '0');
+            const dd   = String(current.getDate()).padStart(2, '0');
+            dias.push(`${yyyy}-${mm}-${dd}`);
+        }
+        current.setDate(current.getDate() + 1);
+    }
+    return dias;
+}
+
+// ── GET /api/alumnos/incidencias/periodo ──────────────────────
+// Devuelve solo alumnos con al menos una incidencia (retardo,
+// sin credencial o falta) en el rango de fechas indicado.
+// Query params: fecha_inicio, fecha_fin, q, grupo, turno
+export const obtenerIncidenciasPeriodo = async (req, res) => {
+    try {
+        const { fecha_inicio, fecha_fin } = req.query;
+        const qSan     = sanitize(req.query.q     || '');
+        const grupoSan = sanitize(req.query.grupo  || '');
+        const turnoSan = sanitize(req.query.turno  || '');
+
+        if (!fecha_inicio || !fecha_fin) {
+            return res.status(400).json({ success: false, message: 'Se requieren fecha_inicio y fecha_fin.' });
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fecha_fin)) {
+            return res.status(400).json({ success: false, message: 'Formato de fecha inválido. Usa YYYY-MM-DD.' });
+        }
+
+        const desde = `${fecha_inicio}T00:00:00-06:00`;
+        const hasta = `${fecha_fin}T23:59:59-06:00`;
+
+        // 1. Registros de incidencias (retardo=3, sin credencial=4) con vigilante
+        const { data: registrosInc, error: e1 } = await supabaseAdmin
+            .from('registros_acceso')
+            .select(`
+                id_registro, boleta, fecha_hora, id_tipo_registro,
+                tipos_registro ( descripcion ),
+                puntos_acceso ( nombre_punto ),
+                usuarios_sistema:id_usuario_vigilante ( nombre_completo ),
+                justificaciones ( motivo )
+            `)
+            .in('id_tipo_registro', [3, 4])
+            .gte('fecha_hora', desde)
+            .lte('fecha_hora', hasta);
+
+        if (e1) throw e1;
+
+        // 2. Todos los registros (cualquier tipo) para detectar días de asistencia
+        const { data: registrosTodos, error: e2 } = await supabaseAdmin
+            .from('registros_acceso')
+            .select('boleta, fecha_hora')
+            .gte('fecha_hora', desde)
+            .lte('fecha_hora', hasta);
+
+        if (e2) throw e2;
+
+        // 3. Lista de alumnos con filtros opcionales
+        let queryAlumnos = supabaseAdmin
+            .from('alumnos')
+            .select(`
+                boleta, nombre_completo,
+                grupos:id_grupo_base ( nombre_grupo, turnos:id_turno ( nombre_turno ) )
+            `);
+
+        if (qSan) {
+            if (!isNaN(qSan)) queryAlumnos = queryAlumnos.eq('boleta', parseInt(qSan));
+            else queryAlumnos = queryAlumnos.ilike('nombre_completo', `%${qSan}%`);
+        }
+
+        const { data: alumnos, error: e3 } = await queryAlumnos;
+        if (e3) throw e3;
+
+        // 4. Días hábiles (lunes-viernes) en el rango
+        const diasHabiles = _getDiasHabiles(fecha_inicio, fecha_fin);
+
+        // 5. Mapa de asistencia: boleta → Set de fechas México con cualquier registro
+        const asistenciaPorBoleta = {};
+        for (const r of (registrosTodos || [])) {
+            const diaMX = new Date(r.fecha_hora).toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+            if (!asistenciaPorBoleta[r.boleta]) asistenciaPorBoleta[r.boleta] = new Set();
+            asistenciaPorBoleta[r.boleta].add(diaMX);
+        }
+
+        // 6. Mapa de incidencias reales: boleta → array
+        const incidenciasPorBoleta = {};
+        for (const r of (registrosInc || [])) {
+            if (!incidenciasPorBoleta[r.boleta]) incidenciasPorBoleta[r.boleta] = [];
+            incidenciasPorBoleta[r.boleta].push({
+                id_registro:   r.id_registro,
+                fecha_hora:    r.fecha_hora,
+                tipo:          r.tipos_registro?.descripcion,
+                punto_acceso:  _normalizarPuerta(r.puntos_acceso?.nombre_punto),
+                vigilante:     r.usuarios_sistema?.nombre_completo || null,
+                justificacion: r.justificaciones?.motivo || null,
+            });
+        }
+
+        // 7. Construir resultado por alumno
+        const resultado = [];
+        for (const al of (alumnos || [])) {
+            const grupoNombre = al.grupos?.nombre_grupo || 'Sin Grupo';
+            const turnoNombre = al.grupos?.turnos?.nombre_turno || 'Sin Turno';
+
+            if (grupoSan && grupoNombre !== grupoSan) continue;
+            if (turnoSan && turnoNombre !== turnoSan) continue;
+
+            const incidencias   = incidenciasPorBoleta[al.boleta] || [];
+            const asistencia    = asistenciaPorBoleta[al.boleta]  || new Set();
+
+            const retardos      = incidencias.filter(i => /retardo/i.test(i.tipo || '')).length;
+            const sinCredencial = incidencias.filter(i => /credencial/i.test(i.tipo || '')).length;
+
+            // Faltas: días hábiles sin ningún registro de acceso
+            const diasFalta  = diasHabiles.filter(d => !asistencia.has(d));
+            const faltas     = diasFalta.length;
+
+            const total = retardos + sinCredencial + faltas;
+            if (total === 0) continue;
+
+            // Agregar faltas como entradas virtuales (sin id_registro)
+            const incFaltas = diasFalta.map(d => ({
+                id_registro:   null,
+                fecha_hora:    `${d}T00:00:00`,
+                tipo:          'Falta',
+                punto_acceso:  null,
+                vigilante:     null,
+                justificacion: null,
+            }));
+
+            const detalle = [...incidencias, ...incFaltas]
+                .sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
+
+            resultado.push({
+                boleta:            al.boleta,
+                nombre_completo:   al.nombre_completo,
+                grupo:             grupoNombre,
+                turno:             turnoNombre,
+                total_incidencias: total,
+                retardos,
+                sin_credencial:    sinCredencial,
+                faltas,
+                detalle,
+            });
+        }
+
+        resultado.sort((a, b) => b.total_incidencias - a.total_incidencias);
+
+        return res.json({
+            success:      true,
+            data:         resultado,
+            dias_habiles: diasHabiles.length,
+            periodo:      { inicio: fecha_inicio, fin: fecha_fin },
+        });
+
+    } catch (err) {
+        console.error('Error en obtenerIncidenciasPeriodo:', err);
+        return res.status(500).json({ success: false, message: 'Error al obtener incidencias del período.' });
+    }
+};

@@ -135,7 +135,8 @@ class Alumno {
                 id_registro, fecha_hora,
                 tipos_registro ( descripcion ),
                 puntos_acceso ( nombre_punto ),
-                justificaciones ( motivo )
+                justificaciones ( motivo ),
+                usuarios_sistema:id_usuario_vigilante ( nombre_completo )
             `)
             .eq('boleta', parseInt(boleta))
             .order('fecha_hora', { ascending: false });
@@ -146,6 +147,7 @@ class Alumno {
             tipo:          r.tipos_registro?.descripcion,
             punto_acceso:  r.puntos_acceso?.nombre_punto,
             justificacion: r.justificaciones?.motivo || null,
+            vigilante:     r.usuarios_sistema?.nombre_completo || null,
         }));
     }
 

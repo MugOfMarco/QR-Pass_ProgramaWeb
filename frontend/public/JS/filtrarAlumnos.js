@@ -25,11 +25,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const seleccionContador = document.getElementById('seleccion-contador');
     const btnDeselectBar    = document.getElementById('btn-deselect-bar');
     const filtroGrupo       = document.getElementById('filtro-grupo');
+    const tabDatos          = document.getElementById('tab-datos');
+    const tabIncidencias    = document.getElementById('tab-incidencias');
+    const btnPeriodo        = document.getElementById('btn-periodo');
+    const periodoPanel      = document.getElementById('periodo-panel');
+    const fechaInicioInput  = document.getElementById('fecha-inicio');
+    const fechaFinInput     = document.getElementById('fecha-fin');
+    const btnAplicar        = document.getElementById('btn-aplicar-periodo');
+    const incInfoBar        = document.getElementById('inc-info-bar');
+    const incInfoText       = document.getElementById('inc-info-text');
+    const periodoLabel      = document.getElementById('periodo-label');
 
     // ── Estado ────────────────────────────────────────────────
-    let alumnosActuales = [];       // cache de alumnos renderizados
+    let alumnosActuales = [];        // cache de alumnos renderizados
     let seleccionados   = new Set(); // boletas seleccionadas
     let filtrosActivos  = {};        // filtros aplicados en la última carga
+    let modoVista       = 'datos';   // 'datos' | 'incidencias'
+    let fechaInicio     = '';
+    let fechaFin        = '';
 
     // ── Debounce ──────────────────────────────────────────────
     let timeoutId;
@@ -359,6 +372,162 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ── Cambiar entre modo Datos e Incidencias ────────────────
+    function cambiarModo(modo) {
+        modoVista = modo;
+
+        if (modo === 'datos') {
+            tabDatos?.classList.add('tab-activo');
+            tabIncidencias?.classList.remove('tab-activo');
+            if (btnSelAll)   btnSelAll.style.display   = '';
+            if (btnPeriodo)  btnPeriodo.style.display  = 'none';
+            if (periodoPanel) periodoPanel.style.display = 'none';
+            if (incInfoBar)  incInfoBar.classList.remove('visible');
+            seleccionados.clear();
+            cargarAlumnos();
+        } else {
+            tabDatos?.classList.remove('tab-activo');
+            tabIncidencias?.classList.add('tab-activo');
+            if (btnSelAll)   btnSelAll.style.display   = 'none';
+            if (btnPeriodo)  btnPeriodo.style.display  = '';
+            if (periodoPanel) periodoPanel.style.display = 'flex';
+            seleccionados.clear();
+            actualizarBarraSeleccion();
+
+            // Pre-rellenar con la semana actual si no hay fechas
+            if (!fechaInicio || !fechaFin) {
+                const hoy   = new Date();
+                const dow   = hoy.getDay();                      // 0=Dom
+                const lunes = new Date(hoy);
+                lunes.setDate(hoy.getDate() - ((dow + 6) % 7)); // retroceder al lunes
+                const viernes = new Date(lunes);
+                viernes.setDate(lunes.getDate() + 4);
+
+                fechaInicio = lunes.toISOString().split('T')[0];
+                fechaFin    = viernes.toISOString().split('T')[0];
+
+                if (fechaInicioInput) fechaInicioInput.value = fechaInicio;
+                if (fechaFinInput)    fechaFinInput.value    = fechaFin;
+            }
+            actualizarLabelPeriodo();
+            cargarIncidencias();
+        }
+    }
+
+    // ── Formatear etiqueta del período ────────────────────────
+    const MESES_ABREV = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+    function actualizarLabelPeriodo() {
+        if (!periodoLabel || !fechaInicio || !fechaFin) return;
+        const fi = new Date(fechaInicio + 'T12:00:00');
+        const ff = new Date(fechaFin    + 'T12:00:00');
+        periodoLabel.textContent =
+            `${fi.getDate()}/${MESES_ABREV[fi.getMonth()]}–${ff.getDate()}/${MESES_ABREV[ff.getMonth()]}`;
+    }
+
+    // ── Cargar incidencias del período ────────────────────────
+    async function cargarIncidencias() {
+        if (!fechaInicio || !fechaFin) return;
+
+        containerAlumnos.innerHTML = `
+            <div class="student-row">
+                <div class="student-data" style="text-align:center;width:100%;padding:1.5rem;color:#666;">
+                    Cargando incidencias…
+                </div>
+            </div>`;
+
+        const params = new URLSearchParams();
+        params.append('fecha_inicio', fechaInicio);
+        params.append('fecha_fin',    fechaFin);
+
+        const q = searchInput?.value.trim();
+        if (q) params.append('q', q);
+
+        const grupo = filtroGrupo?.value || '';
+        if (grupo) params.append('grupo', grupo);
+
+        const turno = document.querySelector('input[name="turno"]:checked');
+        if (turno) params.append('turno', turno.value);
+
+        try {
+            const res = await fetch(`/api/alumnos/incidencias/periodo?${params}`, {
+                credentials: 'include',
+            });
+            if (res.status === 401) { window.location.href = '/login.html'; return; }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || 'Error del servidor');
+
+            if (incInfoBar && incInfoText) {
+                const n = data.data.length;
+                incInfoText.textContent =
+                    `Período de ${data.dias_habiles} día(s) hábil(es) · ${n} alumno${n !== 1 ? 's' : ''} con incidencia${n !== 1 ? 's' : ''}`;
+                incInfoBar.classList.add('visible');
+            }
+
+            renderizarIncidencias(data.data);
+
+        } catch (err) {
+            console.error('Error cargando incidencias:', err);
+            containerAlumnos.innerHTML = `
+                <div class="student-row">
+                    <div class="student-data" style="text-align:center;width:100%;color:#d32f2f;font-weight:700;padding:1.5rem;">
+                        Error al cargar incidencias. Verifica la consola (F12).
+                    </div>
+                </div>`;
+        }
+    }
+
+    // ── Renderizar filas de incidencias ───────────────────────
+    function renderizarIncidencias(lista) {
+        containerAlumnos.innerHTML = '';
+
+        if (!lista.length) {
+            containerAlumnos.innerHTML = `
+                <div class="student-row">
+                    <div class="student-data" style="text-align:center;width:100%;color:#2e7d32;font-weight:700;padding:1.5rem;">
+                        Sin incidencias en el período seleccionado.
+                    </div>
+                </div>`;
+            return;
+        }
+
+        lista.forEach(alumno => {
+            const fila = document.createElement('div');
+            fila.className = 'student-row incidencia-row';
+            fila.dataset.boleta = alumno.boleta;
+
+            const badges = [
+                alumno.retardos      > 0 ? `<span class="badge badge-retardo">Retardos: ${alumno.retardos}</span>`            : '',
+                alumno.sin_credencial > 0 ? `<span class="badge badge-credencial">Sin Credencial: ${alumno.sin_credencial}</span>` : '',
+                alumno.faltas        > 0 ? `<span class="badge badge-falta">Faltas: ${alumno.faltas}</span>`                   : '',
+            ].filter(Boolean).join('');
+
+            fila.innerHTML = `
+                <div class="student-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="student-data">
+                    <div><strong>Nombre:</strong> ${esc(alumno.nombre_completo)}</div>
+                    <div class="badge-total">Total: ${alumno.total_incidencias} incidencia(s)</div>
+                    <div><strong>Grupo:</strong> ${esc(alumno.grupo)} &nbsp;|&nbsp; <strong>Turno:</strong> ${esc(alumno.turno)}</div>
+                    <div><strong>Boleta:</strong> ${esc(String(alumno.boleta))}</div>
+                    <div class="inc-badges">${badges}</div>
+                </div>`;
+
+            fila.addEventListener('click', () => {
+                window.location.href = `/BuscarAlumno.html?boleta=${alumno.boleta}`;
+            });
+
+            containerAlumnos.appendChild(fila);
+        });
+    }
+
     // ── Escape HTML ───────────────────────────────────────────
     function esc(s) {
         if (!s) return '';
@@ -371,13 +540,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Eventos ───────────────────────────────────────────────
     if (searchInput) {
-        searchInput.addEventListener('input', () => debounce(cargarAlumnos, 300));
+        searchInput.addEventListener('input', () => {
+            debounce(() => modoVista === 'datos' ? cargarAlumnos() : cargarIncidencias(), 300);
+        });
     }
     if (formFiltros) {
-        formFiltros.addEventListener('change', cargarAlumnos);
+        formFiltros.addEventListener('change', () => {
+            modoVista === 'datos' ? cargarAlumnos() : cargarIncidencias();
+        });
     }
     if (filtroGrupo) {
-        filtroGrupo.addEventListener('change', cargarAlumnos);
+        filtroGrupo.addEventListener('change', () => {
+            modoVista === 'datos' ? cargarAlumnos() : cargarIncidencias();
+        });
     }
     if (btnSelAll) {
         btnSelAll.addEventListener('click', toggleSeleccionarTodos);
@@ -399,12 +574,46 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPdfInc.addEventListener('click', descargarPDFIncidencias);
     }
 
+    // ── Tabs Datos / Incidencias ──────────────────────────────
+    if (tabDatos) {
+        tabDatos.addEventListener('click', () => cambiarModo('datos'));
+    }
+    if (tabIncidencias) {
+        tabIncidencias.addEventListener('click', () => cambiarModo('incidencias'));
+    }
+
+    // ── Selector de período ───────────────────────────────────
+    if (btnPeriodo) {
+        btnPeriodo.addEventListener('click', () => {
+            if (periodoPanel) {
+                const visible = periodoPanel.style.display === 'flex';
+                periodoPanel.style.display = visible ? 'none' : 'flex';
+            }
+        });
+    }
+    if (btnAplicar) {
+        btnAplicar.addEventListener('click', () => {
+            fechaInicio = fechaInicioInput?.value || '';
+            fechaFin    = fechaFinInput?.value    || '';
+            if (!fechaInicio || !fechaFin) {
+                alert('Selecciona ambas fechas.');
+                return;
+            }
+            if (fechaFin < fechaInicio) {
+                alert('La fecha final no puede ser anterior a la inicial.');
+                return;
+            }
+            actualizarLabelPeriodo();
+            cargarIncidencias();
+        });
+    }
+
     // ── Carga inicial ─────────────────────────────────────────
     cargarGrupos();
     cargarAlumnos().then(actualizarHoraRefresh);
 
-    // Auto-refresco cada 30 segundos
+    // Auto-refresco cada 30 s solo en modo Datos
     setInterval(() => {
-        cargarAlumnos().then(actualizarHoraRefresh);
+        if (modoVista === 'datos') cargarAlumnos().then(actualizarHoraRefresh);
     }, 30000);
 });
