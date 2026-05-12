@@ -34,6 +34,7 @@ export const obtenerDashboard = async (req, res) => {
             resAlumnos,
             resUsuarios,
             resPuntosAcceso,
+            resConfig,
         ] = await Promise.all([
 
             supabaseAdmin
@@ -96,6 +97,13 @@ export const obtenerDashboard = async (req, res) => {
             supabaseAdmin
                 .from('puntos_acceso')
                 .select('id_punto_acceso, nombre_punto'),
+
+            // Configuración del sistema (lógica de negocio)
+            supabaseAdmin
+                .from('configuracion_sistema')
+                .select('minutos_tolerancia, max_olvidos_credencial, ultima_modificacion')
+                .eq('id_config', 1)
+                .maybeSingle(),
         ]);
 
         // ── Mapa id_punto_acceso → nombre normalizado ──────────
@@ -182,6 +190,14 @@ export const obtenerDashboard = async (req, res) => {
             rol:     u.roles?.nombre_rol || '—',
         }));
 
+        const config = resConfig.data
+            ? {
+                minutos_tolerancia:    resConfig.data.minutos_tolerancia,
+                max_olvidos_credencial: resConfig.data.max_olvidos_credencial,
+                ultima_modificacion:   resConfig.data.ultima_modificacion,
+              }
+            : { minutos_tolerancia: 20, max_olvidos_credencial: 3, ultima_modificacion: null };
+
         return res.json({
             success: true,
             fecha:   hoyMX,
@@ -197,6 +213,7 @@ export const obtenerDashboard = async (req, res) => {
             ultimosRegistros:   ultimosFormateados,
             totalAlumnos:       resTotalAlumnos.count || 0,
             usuarios,
+            config,
         });
 
     } catch (err) {
@@ -205,5 +222,39 @@ export const obtenerDashboard = async (req, res) => {
             success: false,
             message: 'Error al cargar el dashboard.',
         });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/dashboard/config
+// Actualiza los parámetros de lógica de negocio
+// ─────────────────────────────────────────────────────────────
+export const actualizarConfig = async (req, res) => {
+    try {
+        const minutos    = parseInt(req.body.minutos_tolerancia);
+        const maxOlvidos = parseInt(req.body.max_olvidos_credencial);
+
+        if (isNaN(minutos) || minutos < 0 || minutos > 120) {
+            return res.status(400).json({ success: false, message: 'La tolerancia debe estar entre 0 y 120 minutos.' });
+        }
+        if (isNaN(maxOlvidos) || maxOlvidos < 1 || maxOlvidos > 10) {
+            return res.status(400).json({ success: false, message: 'El máximo de olvidos debe estar entre 1 y 10.' });
+        }
+
+        const { error } = await supabaseAdmin
+            .from('configuracion_sistema')
+            .update({
+                minutos_tolerancia:    minutos,
+                max_olvidos_credencial: maxOlvidos,
+                ultima_modificacion:   new Date().toISOString(),
+            })
+            .eq('id_config', 1);
+
+        if (error) throw error;
+
+        return res.json({ success: true, message: 'Configuración actualizada correctamente.' });
+    } catch (err) {
+        console.error('Error actualizando config:', err);
+        return res.status(500).json({ success: false, message: 'Error al guardar la configuración.' });
     }
 };
