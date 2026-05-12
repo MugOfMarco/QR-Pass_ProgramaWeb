@@ -366,17 +366,43 @@
         .empty-state { text-align: center; padding: 1.5rem 1rem; color: var(--muted); font-size: .82rem; }
         .empty-state span { font-size: 1.4rem; display: block; margin-bottom: .4rem; }
 
-        /* ── Accesos rápidos ──────────────────────────────── */
-        .accesos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; padding: .8rem 1rem; }
-        .acceso-btn {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: .4rem; padding: .85rem .5rem;
-            background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-            text-decoration: none; color: var(--text); font-size: .75rem; font-weight: 600;
-            text-align: center; transition: all .2s; cursor: pointer;
+        /* ── Lógica de negocio ────────────────────────────── */
+        .config-body { padding: .8rem 1rem 1rem; }
+        .config-field { margin-bottom: 1rem; }
+        .config-field:last-of-type { margin-bottom: 1.2rem; }
+        .config-label {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-size: .75rem; font-weight: 700; color: #555; margin-bottom: .3rem;
         }
-        .acceso-btn:hover { background: var(--ipn-ghost); border-color: var(--ipn-border); color: var(--ipn); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(92,31,51,.1); }
-        .acceso-btn svg { width: 20px; height: 20px; color: var(--ipn); }
+        .config-label span { font-weight: 400; color: var(--muted); font-size: .7rem; }
+        .config-input {
+            width: 100%; padding: .5rem .75rem;
+            border: 2px solid var(--border); border-radius: 8px;
+            font-size: .88rem; font-family: var(--font);
+            background: var(--surface2); color: var(--text);
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .config-input:focus {
+            outline: none; border-color: var(--ipn);
+            box-shadow: 0 0 0 3px rgba(92,31,51,.10);
+            background: white;
+        }
+        .config-desc { font-size: .7rem; color: var(--muted); margin-top: .25rem; }
+        .config-footer { display: flex; align-items: center; gap: .7rem; }
+        .btn-config-save {
+            flex: 1; padding: .55rem; border: none; border-radius: 8px;
+            background: linear-gradient(135deg, var(--ipn) 0%, var(--ipn-dark) 100%);
+            color: white; font-size: .82rem; font-weight: 700;
+            font-family: var(--font); cursor: pointer;
+            transition: opacity .2s, transform .15s;
+        }
+        .btn-config-save:hover  { opacity: .88; transform: translateY(-1px); }
+        .btn-config-save:active { transform: translateY(0); }
+        .btn-config-save:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+        .config-status { font-size: .72rem; font-weight: 600; min-width: 0; }
+        .config-status.ok  { color: var(--ok); }
+        .config-status.err { color: var(--err); }
+        .config-mod { font-size: .68rem; color: var(--muted); text-align: right; padding: 0 1rem .6rem; }
 
         /* ── Usuarios activos ─────────────────────────────── */
         .usuario-row { display: flex; align-items: center; gap: .65rem; padding: .55rem 1.2rem; border-bottom: 1px solid var(--border); }
@@ -630,35 +656,42 @@
                 </div>
             </div>
 
-            <!-- Accesos rápidos -->
+            <!-- Lógica de negocio -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M19.07 4.93A10 10 0 0 1 4.93 19.07M19.07 4.93l-2.12 2.12M4.93 19.07l2.12-2.12M19.07 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07l-2.12-2.12M4.93 4.93l2.12 2.12"/>
                         </svg>
-                        Accesos rápidos
+                        Lógica de negocio
                     </div>
                 </div>
-                <div class="accesos-grid">
-                    <a href="/ModificarAlumno.html" class="acceso-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        Registrar alumno
-                    </a>
-                    <a href="/FiltrarAlumnos.html" class="acceso-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                        Filtrar alumnos
-                    </a>
-                    <a href="/GestionUsuarios.html" class="acceso-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        Gestión usuarios
-                    </a>
-                    <a href="/Entrada_Salida.html" class="acceso-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                        Registro acceso
-                    </a>
+                <div class="config-body">
+                    <div class="config-field">
+                        <div class="config-label">
+                            Tolerancia de retardo
+                            <span id="lbl-tolerancia">20 min</span>
+                        </div>
+                        <input type="number" id="cfg-tolerancia" class="config-input"
+                               min="0" max="120" step="1" value="20">
+                        <p class="config-desc">Minutos de gracia al ingresar antes de registrar un retardo.</p>
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">
+                            Máx. olvidos de credencial
+                            <span id="lbl-olvidos">3 veces</span>
+                        </div>
+                        <input type="number" id="cfg-olvidos" class="config-input"
+                               min="1" max="10" step="1" value="3">
+                        <p class="config-desc">Incidencias "sin credencial" antes del bloqueo automático.</p>
+                    </div>
+                    <div class="config-footer">
+                        <button id="btn-guardar-config" class="btn-config-save">Guardar cambios</button>
+                        <span id="config-status" class="config-status"></span>
+                    </div>
                 </div>
+                <p id="config-mod-fecha" class="config-mod"></p>
             </div>
 
             <!-- Usuarios -->
@@ -751,6 +784,7 @@ async function cargarDashboard() {
         renderPuertas(data.actividadPorPuerta);
         renderNotificaciones(data.notificaciones);
         renderUsuarios(data.usuarios);
+        if (data.config) renderConfig(data.config);
 
         document.getElementById('total-alumnos-num').textContent = data.totalAlumnos;
         document.getElementById('total-usuarios-num').textContent = data.usuarios.length;
@@ -916,6 +950,78 @@ function renderListaProximos(containerId, lista) {
             <a class="notif-action" href="/BuscarAlumno.html?boleta=${a.boleta}">Ver</a>
         </div>`).join('');
 }
+
+// ── Lógica de negocio ──────────────────────────────────────
+function renderConfig(cfg) {
+    const inpT = document.getElementById('cfg-tolerancia');
+    const inpO = document.getElementById('cfg-olvidos');
+    if (!inpT || !inpO) return;
+
+    inpT.value = cfg.minutos_tolerancia    ?? 20;
+    inpO.value = cfg.max_olvidos_credencial ?? 3;
+
+    document.getElementById('lbl-tolerancia').textContent = `${cfg.minutos_tolerancia ?? 20} min`;
+    document.getElementById('lbl-olvidos').textContent    = `${cfg.max_olvidos_credencial ?? 3} veces`;
+
+    if (cfg.ultima_modificacion) {
+        const utc = /Z|[+-]\d{2}:\d{2}$/.test(cfg.ultima_modificacion)
+            ? cfg.ultima_modificacion : cfg.ultima_modificacion + 'Z';
+        const fecha = new Date(utc).toLocaleString('es-MX', {
+            timeZone: 'America/Mexico_City',
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+        });
+        document.getElementById('config-mod-fecha').textContent = `Última modificación: ${fecha}`;
+    }
+}
+
+document.getElementById('cfg-tolerancia')?.addEventListener('input', function() {
+    document.getElementById('lbl-tolerancia').textContent = `${this.value} min`;
+});
+document.getElementById('cfg-olvidos')?.addEventListener('input', function() {
+    document.getElementById('lbl-olvidos').textContent = `${this.value} veces`;
+});
+
+document.getElementById('btn-guardar-config')?.addEventListener('click', async () => {
+    const btn    = document.getElementById('btn-guardar-config');
+    const status = document.getElementById('config-status');
+    const minutos    = parseInt(document.getElementById('cfg-tolerancia').value);
+    const maxOlvidos = parseInt(document.getElementById('cfg-olvidos').value);
+
+    if (isNaN(minutos) || isNaN(maxOlvidos)) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    status.textContent = '';
+    status.className = 'config-status';
+
+    try {
+        const r = await fetch('/api/dashboard/config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ minutos_tolerancia: minutos, max_olvidos_credencial: maxOlvidos }),
+        });
+        const data = await r.json();
+        if (data.success) {
+            status.textContent = '✓ Guardado';
+            status.className = 'config-status ok';
+            toast('Configuración actualizada', 'ok');
+            document.getElementById('config-mod-fecha').textContent =
+                `Última modificación: ${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+        } else {
+            status.textContent = data.message || 'Error al guardar';
+            status.className = 'config-status err';
+        }
+    } catch {
+        status.textContent = 'Error de conexión';
+        status.className = 'config-status err';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar cambios';
+        setTimeout(() => { status.textContent = ''; status.className = 'config-status'; }, 4000);
+    }
+});
 
 // ── Desbloquear desde dashboard ────────────────────────────
 async function desbloquearAlumno(boleta, btn) {
