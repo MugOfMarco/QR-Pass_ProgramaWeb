@@ -18,7 +18,13 @@ function getTransporter() {
         return null;
     }
 
-    transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    transporter = nodemailer.createTransport({
+        host, port, secure,
+        auth: { user, pass },
+        connectionTimeout: 10_000,
+        greetingTimeout:    5_000,
+        socketTimeout:     10_000,
+    });
     return transporter;
 }
 
@@ -52,12 +58,20 @@ export async function enviarCorreoRecuperacion(destino, nombre, urlReset) {
         return { success: true, devLink: urlReset, warning: lastConfigError };
     }
 
-    await t.sendMail({
+    const mailOptions = {
         from, to: destino,
         subject: 'QR Pass — Recuperación de contraseña',
         html,
         text: `Hola ${nombre || ''},\n\nPara restablecer tu contraseña visita: ${urlReset}\n\nEl enlace caduca en 30 minutos.\n\nSi no solicitaste este cambio, ignora este correo.`,
-    });
+    };
+
+    // Timeout de 12 s por si Render bloquea el puerto SMTP saliente
+    await Promise.race([
+        t.sendMail(mailOptions),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('SMTP timeout: sin respuesta en 12 s')), 12_000)
+        ),
+    ]);
 
     return { success: true };
 }
