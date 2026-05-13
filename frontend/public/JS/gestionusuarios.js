@@ -1,10 +1,10 @@
 // frontend/public/JS/gestionusuarios.js
 // ============================================================
-// FEATURES:
-//   · Límite de 20 usuarios (UI desactiva creación al alcanzar)
-//   · Validaciones: nombre 60 chars, usuario 20, email 120, pass 6-50
-//   · Acciones: editar, contraseña, activar/desactivar, ELIMINAR
-//   · Contador visual con barra de progreso
+// Cambios respecto a la versión anterior:
+//   · Panel "Datos del administrador" siempre visible arriba
+//   · Se elimina btn-nuevo-usuario (form siempre mostrado)
+//   · Rol "Administrador" excluido del select al crear usuarios
+//   · Usuarios con rol Admin solo muestran botón "Contraseña"
 // ============================================================
 
 const LIMITES = { nombre: 60, usuario: 20, email: 120, password: 50 };
@@ -13,6 +13,7 @@ class GestionUsuarios {
     constructor() {
         this.api           = '/api/usuarios';
         this.usuarioSesion = null;
+        this.adminData     = null;   // datos completos del admin logueado
         this.modoEdicion   = false;
         this.idEditando    = null;
         this.idPassword    = null;
@@ -32,9 +33,75 @@ class GestionUsuarios {
             this.usuarioSesion.id   = data.user?.id;
         } catch { location.href = '/login.html'; return; }
 
-        await Promise.all([ this.cargarRoles(), this.cargarUsuarios() ]);
+        await Promise.all([
+            this.cargarRoles(),
+            this.cargarUsuarios(),
+            this.cargarDatosAdmin(),
+        ]);
         this.bindEvents();
         this.bindValidaciones();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // PANEL DEL ADMINISTRADOR
+    // ─────────────────────────────────────────────────────────
+    async cargarDatosAdmin() {
+        const id = this.usuarioSesion?.id;
+        if (!id) return;
+        try {
+            const r    = await fetch(`${this.api}/${id}`, { credentials: 'include' });
+            const data = await r.json();
+            if (!data.success) return;
+            this.adminData = data.usuario;
+
+            const panel = document.getElementById('admin-panel');
+            if (panel) panel.style.display = '';
+
+            const inicial = (data.usuario.nombre_completo || '?').trim().charAt(0).toUpperCase();
+            document.getElementById('admin-avatar-letra').textContent   = inicial;
+            document.getElementById('admin-username-label').textContent = `@${data.usuario.usuario}`;
+            document.getElementById('admin-nombre').value = data.usuario.nombre_completo || '';
+            document.getElementById('admin-email').value  = data.usuario.email || '';
+        } catch (e) { console.warn('No se pudo cargar datos del admin:', e); }
+    }
+
+    async guardarDatosAdmin() {
+        const nombre = document.getElementById('admin-nombre').value.trim();
+        const email  = document.getElementById('admin-email').value.trim();
+        const id     = this.usuarioSesion?.id;
+
+        if (!nombre || nombre.length < 2) {
+            this.toast('El nombre debe tener al menos 2 caracteres.', 'err'); return;
+        }
+
+        const btn = document.getElementById('btn-guardar-admin');
+        btn.disabled = true; btn.textContent = 'Guardando…';
+
+        try {
+            const r = await fetch(`${this.api}/${id}`, {
+                method:      'PUT',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    nombre_completo: nombre,
+                    email:           email || null,
+                    id_rol:          this.adminData?.id_rol,
+                    activo:          true,
+                }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                this.toast('Datos actualizados correctamente.', 'ok');
+                // Actualizar avatar con nueva inicial
+                document.getElementById('admin-avatar-letra').textContent =
+                    nombre.charAt(0).toUpperCase();
+                this.adminData = { ...this.adminData, nombre_completo: nombre, email };
+                await this.cargarUsuarios(); // refrescar tabla
+            } else {
+                this.toast(data.message || 'Error al guardar.', 'err');
+            }
+        } catch { this.toast('Error de conexión.', 'err'); }
+        finally { btn.disabled = false; btn.textContent = 'Guardar datos'; }
     }
 
     // ─────────────────────────────────────────────────────────
@@ -75,9 +142,7 @@ class GestionUsuarios {
                     `Mínimo 6 caracteres, máximo ${LIMITES.password}`);
                 const fConf = document.getElementById('f-password-confirm');
                 if (fConf?.value) {
-                    this.validarCampo(fConf,
-                        fConf.value === fPass.value,
-                        'Las contraseñas no coinciden');
+                    this.validarCampo(fConf, fConf.value === fPass.value, 'Las contraseñas no coinciden');
                 }
             });
         }
@@ -87,9 +152,7 @@ class GestionUsuarios {
             fConf.maxLength = LIMITES.password;
             fConf.addEventListener('input', () => {
                 const pass = document.getElementById('f-password')?.value || '';
-                this.validarCampo(fConf,
-                    fConf.value === pass,
-                    'Las contraseñas no coinciden');
+                this.validarCampo(fConf, fConf.value === pass, 'Las contraseñas no coinciden');
             });
         }
     }
@@ -99,13 +162,12 @@ class GestionUsuarios {
         if (!hint || !hint.classList.contains('field-hint')) {
             hint = document.createElement('small');
             hint.className = 'field-hint';
-            hint.style.cssText = 'display:block;font-size:.72rem;margin-top:2px;';
+            hint.style.cssText = 'display:block;font-size:.68rem;margin-top:2px;';
             input.insertAdjacentElement('afterend', hint);
         }
         if (esValido) {
             input.style.borderColor = '#4caf50';
             hint.textContent = '';
-            hint.style.color = '';
         } else {
             input.style.borderColor = '#f44336';
             hint.textContent = mensajeError;
@@ -140,12 +202,15 @@ class GestionUsuarios {
                 return;
             }
             sel.innerHTML = '<option value="">— Selecciona rol —</option>';
-            data.roles.forEach(rol => {
-                const opt = document.createElement('option');
-                opt.value       = rol.id_rol;
-                opt.textContent = rol.nombre_rol;
-                sel.appendChild(opt);
-            });
+            // Excluir "Administrador" del selector: solo debe haber 1 admin
+            data.roles
+                .filter(rol => rol.nombre_rol !== 'Administrador')
+                .forEach(rol => {
+                    const opt = document.createElement('option');
+                    opt.value       = rol.id_rol;
+                    opt.textContent = rol.nombre_rol;
+                    sel.appendChild(opt);
+                });
         } catch (e) {
             console.error('Error cargando roles:', e);
             sel.innerHTML = '<option value="">Error al cargar roles</option>';
@@ -156,12 +221,11 @@ class GestionUsuarios {
     // CONTADOR / LÍMITE
     // ─────────────────────────────────────────────────────────
     renderContador() {
-        const actual    = document.getElementById('contador-actual');
-        const limiteEl  = document.getElementById('contador-limite');
-        const dispoEl   = document.getElementById('contador-disponibles');
-        const barra     = document.getElementById('barra-progreso');
-        const btnNuevo  = document.getElementById('btn-nuevo-usuario');
-        const alertEl   = document.getElementById('panel-limite-alert');
+        const actual   = document.getElementById('contador-actual');
+        const limiteEl = document.getElementById('contador-limite');
+        const dispoEl  = document.getElementById('contador-disponibles');
+        const barra    = document.getElementById('barra-progreso');
+        const alertEl  = document.getElementById('panel-limite-alert');
 
         if (actual)   actual.textContent   = this.totalUsuarios;
         if (limiteEl) limiteEl.textContent = this.limite;
@@ -169,20 +233,19 @@ class GestionUsuarios {
         const disponibles = Math.max(0, this.limite - this.totalUsuarios);
         if (dispoEl) {
             dispoEl.textContent = disponibles === 0
-                ? '· Límite alcanzado'
-                : `· ${disponibles} disponible${disponibles === 1 ? '' : 's'}`;
+                ? 'Límite alcanzado'
+                : `${disponibles} libre${disponibles === 1 ? '' : 's'}`;
         }
 
         const pct = Math.min(100, (this.totalUsuarios / this.limite) * 100);
         if (barra) {
             barra.querySelector('div').style.width = `${pct}%`;
-            barra.classList.toggle('lleno', pct >= 100);
+            barra.classList.toggle('lleno',  pct >= 100);
             barra.classList.toggle('alerta', pct >= 80 && pct < 100);
         }
 
         const lleno = this.totalUsuarios >= this.limite && !this.modoEdicion;
-        if (btnNuevo) btnNuevo.disabled = lleno;
-        if (alertEl)  alertEl.classList.toggle('visible', lleno);
+        if (alertEl) alertEl.classList.toggle('visible', lleno);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -202,7 +265,32 @@ class GestionUsuarios {
                 'Vigilante':     'badge-vigilante',
             }[u.rol] || 'badge-vigilante';
 
-            const esMismo = u.usuario === this.usuarioSesion?.usuario;
+            const esMismo   = u.usuario === this.usuarioSesion?.usuario;
+            const esAdmin   = u.rol === 'Administrador';
+
+            // Los administradores solo tienen el botón de contraseña en la tabla
+            // (sus datos se gestionan en el panel superior)
+            const botonesAccion = esAdmin
+                ? `<button class="btn-accion btn-pass"
+                           onclick="app.abrirModalPassword(${u.id_usuario}, '${this.esc(u.nombre_completo)}', ${esMismo})">
+                       Contraseña
+                   </button>`
+                : `<button class="btn-accion btn-editar"
+                           onclick="app.abrirEdicion(${u.id_usuario})">
+                       Editar
+                   </button>
+                   <button class="btn-accion btn-pass"
+                           onclick="app.abrirModalPassword(${u.id_usuario}, '${this.esc(u.nombre_completo)}', false)">
+                       Contraseña
+                   </button>
+                   <button class="btn-accion btn-toggle"
+                           onclick="app.toggleActivo(${u.id_usuario}, ${u.activo})">
+                       ${u.activo ? 'Desactivar' : 'Activar'}
+                   </button>
+                   <button class="btn-accion btn-eliminar"
+                           onclick="app.eliminarUsuario(${u.id_usuario}, '${this.esc(u.nombre_completo)}')">
+                       Eliminar
+                   </button>`;
 
             return `
             <tr>
@@ -211,32 +299,16 @@ class GestionUsuarios {
                     ${esMismo ? '<span class="tag-tu">tú</span>' : ''}
                 </td>
                 <td>${this.esc(u.nombre_completo)}</td>
-                <td class="col-email">${u.email ? this.esc(u.email) : '—'}</td>
+                <td class="col-email" title="${u.email ? this.esc(u.email) : ''}">
+                    ${u.email ? this.esc(u.email) : '—'}
+                </td>
                 <td><span class="badge ${badgeRol}">${this.esc(u.rol)}</span></td>
                 <td>
                     <span class="badge ${u.activo ? 'badge-activo' : 'badge-inactivo'}">
                         ${u.activo ? 'Activo' : 'Inactivo'}
                     </span>
                 </td>
-                <td class="col-acciones">
-                    <button class="btn-accion btn-editar"
-                            onclick="app.abrirEdicion(${u.id_usuario})">
-                        Editar
-                    </button>
-                    <button class="btn-accion btn-pass"
-                            onclick="app.abrirModalPassword(${u.id_usuario}, '${this.esc(u.nombre_completo)}', ${esMismo})">
-                        Contraseña
-                    </button>
-                    ${!esMismo ? `
-                    <button class="btn-accion btn-toggle"
-                            onclick="app.toggleActivo(${u.id_usuario}, ${u.activo})">
-                        ${u.activo ? 'Desactivar' : 'Activar'}
-                    </button>
-                    <button class="btn-accion btn-eliminar"
-                            onclick="app.eliminarUsuario(${u.id_usuario}, '${this.esc(u.nombre_completo)}')">
-                        Eliminar
-                    </button>` : ''}
-                </td>
+                <td class="col-acciones">${botonesAccion}</td>
             </tr>`;
         }).join('');
     }
@@ -245,15 +317,6 @@ class GestionUsuarios {
     // FORMULARIO LATERAL
     // ─────────────────────────────────────────────────────────
     bindEvents() {
-        document.getElementById('btn-nuevo-usuario')
-            ?.addEventListener('click', () => {
-                if (this.totalUsuarios >= this.limite) {
-                    this.toast(`Límite de ${this.limite} usuarios alcanzado.`, 'err');
-                    return;
-                }
-                this.abrirCreacion();
-            });
-
         document.getElementById('btn-cancelar-usuario')
             ?.addEventListener('click', () => this.abrirCreacion());
 
@@ -265,6 +328,19 @@ class GestionUsuarios {
 
         document.getElementById('btn-cerrar-modal')
             ?.addEventListener('click', () => this.cerrarModal());
+
+        document.getElementById('btn-guardar-admin')
+            ?.addEventListener('click', () => this.guardarDatosAdmin());
+
+        document.getElementById('btn-pass-admin')
+            ?.addEventListener('click', () => {
+                if (!this.usuarioSesion?.id) return;
+                this.abrirModalPassword(
+                    this.usuarioSesion.id,
+                    this.adminData?.nombre_completo || 'Admin',
+                    true  // es el usuario actual → pide contraseña actual
+                );
+            });
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') this.cerrarModal();
@@ -335,7 +411,6 @@ class GestionUsuarios {
             document.getElementById('f-password').required            = false;
 
             this.limpiarHints();
-            // En modo edición permitimos guardar siempre
             document.getElementById('btn-guardar-usuario').disabled = false;
             document.getElementById('panel-limite-alert').classList.remove('visible');
         } catch { this.toast('Error cargando usuario', 'err'); }
@@ -368,15 +443,11 @@ class GestionUsuarios {
             if (this.totalUsuarios >= this.limite) {
                 this.toast(`Límite de ${this.limite} usuarios alcanzado.`, 'err'); return;
             }
-            if (!usuario) { this.toast('El nombre de usuario es obligatorio', 'err'); return; }
-            if (!new RegExp(`^[a-zA-Z0-9_]{3,${LIMITES.usuario}}$`).test(usuario)) {
+            if (!usuario || !new RegExp(`^[a-zA-Z0-9_]{3,${LIMITES.usuario}}$`).test(usuario)) {
                 this.toast(`Usuario: solo letras, números y _ (3-${LIMITES.usuario})`, 'err'); return;
             }
             if (!password || password.length < 6) {
                 this.toast('La contraseña debe tener al menos 6 caracteres', 'err'); return;
-            }
-            if (password.length > LIMITES.password) {
-                this.toast(`La contraseña no puede superar ${LIMITES.password} caracteres`, 'err'); return;
             }
             if (password !== confirm) {
                 this.toast('Las contraseñas no coinciden', 'err'); return;
@@ -391,23 +462,16 @@ class GestionUsuarios {
 
             if (!this.modoEdicion) {
                 r = await fetch(this.api, {
-                    method:      'POST',
-                    headers:     { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ usuario, password, nombre_completo: nombre, email, id_rol: idRol }),
                 });
                 data = await r.json();
             } else {
                 r = await fetch(`${this.api}/${this.idEditando}`, {
-                    method:      'PUT',
-                    headers:     { 'Content-Type': 'application/json' },
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        nombre_completo: nombre,
-                        email,
-                        id_rol:  idRol,
-                        activo:  activo === 'true',
-                    }),
+                    body: JSON.stringify({ nombre_completo: nombre, email, id_rol: idRol, activo: activo === 'true' }),
                 });
                 data = await r.json();
             }
@@ -417,7 +481,6 @@ class GestionUsuarios {
             this.toast(data.message, 'ok');
             this.abrirCreacion();
             await this.cargarUsuarios();
-
         } catch { this.toast('Error de conexión', 'err'); }
         finally {
             btn.disabled    = false;
@@ -426,37 +489,27 @@ class GestionUsuarios {
     }
 
     // ─────────────────────────────────────────────────────────
-    // ACTIVAR / DESACTIVAR
+    // ACTIVAR / DESACTIVAR / ELIMINAR
     // ─────────────────────────────────────────────────────────
     async toggleActivo(id, estaActivo) {
         const accion = estaActivo ? 'desactivar' : 'reactivar';
         if (!confirm(`¿Seguro que deseas ${accion} este usuario?`)) return;
         try {
-            const r    = await fetch(`${this.api}/${id}/${accion}`, {
-                method: 'PUT', credentials: 'include',
-            });
+            const r    = await fetch(`${this.api}/${id}/${accion}`, { method: 'PUT', credentials: 'include' });
             const data = await r.json();
             this.toast(data.message || (data.success ? 'Hecho' : 'Error'), data.success ? 'ok' : 'err');
             if (data.success) await this.cargarUsuarios();
         } catch { this.toast('Error de conexión', 'err'); }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // ELIMINAR
-    // ─────────────────────────────────────────────────────────
     async eliminarUsuario(id, nombre) {
         if (!confirm(`¿Eliminar definitivamente a "${nombre}"?\n\nEsta acción no se puede deshacer.`)) return;
         try {
-            const r    = await fetch(`${this.api}/${id}`, {
-                method: 'DELETE', credentials: 'include',
-            });
+            const r    = await fetch(`${this.api}/${id}`, { method: 'DELETE', credentials: 'include' });
             const data = await r.json();
             this.toast(data.message || (data.success ? 'Usuario eliminado' : 'Error'), data.success ? 'ok' : 'err');
             if (data.success) {
-                // Si estábamos editando al eliminado, volver a creación
-                if (this.modoEdicion && parseInt(this.idEditando) === parseInt(id)) {
-                    this.abrirCreacion();
-                }
+                if (this.modoEdicion && parseInt(this.idEditando) === parseInt(id)) this.abrirCreacion();
                 await this.cargarUsuarios();
             }
         } catch { this.toast('Error de conexión', 'err'); }
@@ -470,7 +523,7 @@ class GestionUsuarios {
         document.getElementById('modal-titulo').textContent = `Cambiar contraseña — ${nombre}`;
 
         const secActual = document.getElementById('seccion-pass-actual');
-        secActual.style.display      = esMismo ? '' : 'none';
+        secActual.style.display = esMismo ? '' : 'none';
         document.getElementById('m-actual').required = esMismo;
 
         document.getElementById('m-actual').value    = '';
@@ -493,10 +546,10 @@ class GestionUsuarios {
         const nueva     = document.getElementById('m-nueva').value;
         const confirmar = document.getElementById('m-confirmar').value;
 
-        if (!nueva)              { this.toast('Escribe la nueva contraseña', 'err'); return; }
-        if (nueva.length < 6)    { this.toast('Mínimo 6 caracteres', 'err'); return; }
-        if (nueva.length > LIMITES.password) { this.toast(`Máximo ${LIMITES.password} caracteres`, 'err'); return; }
-        if (nueva !== confirmar) { this.toast('Las contraseñas no coinciden', 'err'); return; }
+        if (!nueva)                               { this.toast('Escribe la nueva contraseña', 'err'); return; }
+        if (nueva.length < 6)                     { this.toast('Mínimo 6 caracteres', 'err'); return; }
+        if (nueva.length > LIMITES.password)      { this.toast(`Máximo ${LIMITES.password} caracteres`, 'err'); return; }
+        if (nueva !== confirmar)                  { this.toast('Las contraseñas no coinciden', 'err'); return; }
 
         const btn = document.getElementById('btn-confirmar-pass');
         btn.disabled = true; btn.textContent = 'Guardando…';
@@ -536,6 +589,4 @@ class GestionUsuarios {
 }
 
 let app;
-document.addEventListener('DOMContentLoaded', () => {
-    app = new GestionUsuarios();
-});
+document.addEventListener('DOMContentLoaded', () => { app = new GestionUsuarios(); });
