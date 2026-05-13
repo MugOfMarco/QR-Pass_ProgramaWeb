@@ -6,176 +6,291 @@
     <title>Gestión de Usuarios — CECyT 9</title>
     <link rel="stylesheet" href="../css/global.css">
     <style>
-        /* ── Layout ─────────────────────────────────────────── */
+        /* ── Wrapper ─────────────────────────────────────────── */
         .usuarios-wrap {
-            max-width: 1240px;
-            margin: 1.6rem auto 2rem;
-            padding: 0 1.5rem;
+            max-width: 1280px;
+            margin: 1.4rem auto 2rem;
+            padding: 0 1.4rem;
         }
 
-        .pagina-titulo {
+        /* ── Cabecera de página ──────────────────────────────── */
+        .page-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 1.2rem;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: .8rem;
+            margin-bottom: 1.1rem;
         }
 
-        .pagina-titulo h2 {
-            font-size: 1.4rem;
+        .page-header h2 {
+            font-size: 1.3rem;
             font-weight: 800;
             color: var(--color-primary-dark);
-            letter-spacing: -.01em;
         }
 
-        .pagina-titulo p {
-            margin-top: 4px;
-            color: var(--color-text-muted);
-            font-size: .88rem;
-        }
+        .page-header p { color: var(--color-text-muted); font-size: .85rem; margin-top: 2px; }
 
-        /* ── Contador / barra de límite ─────────────────────── */
-        .contador-usuarios {
+        /* ── Barra de límite ─────────────────────────────────── */
+        .limite-bar {
             background: white;
             border: 1px solid var(--color-border-light);
             border-radius: var(--radius-md);
-            padding: .8rem 1.1rem;
+            padding: .65rem 1rem;
             display: flex;
             flex-direction: column;
-            gap: .4rem;
-            min-width: 240px;
+            gap: .35rem;
+            min-width: 200px;
         }
 
-        .contador-usuarios .num {
+        .limite-bar .nums {
             display: flex;
             justify-content: space-between;
-            align-items: baseline;
+            font-size: .82rem;
             font-weight: 700;
             color: var(--color-primary-dark);
-            font-size: .92rem;
         }
 
-        .contador-usuarios .num strong { font-size: 1.05rem; }
-        .contador-usuarios .num span.disponible { color: var(--color-text-muted); font-weight: 600; font-size: .82rem; }
+        .limite-bar .nums .dispo { color: var(--color-text-muted); font-weight: 500; }
 
         .barra-progreso {
             background: #f0e8ea;
             border-radius: 8px;
-            height: 8px;
+            height: 7px;
             overflow: hidden;
         }
 
         .barra-progreso > div {
             height: 100%;
-            background: linear-gradient(90deg, #5c1f33, #7a2945);
-            transition: width .35s ease, background .25s ease;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+            transition: width .35s, background .25s;
             border-radius: 8px;
         }
 
-        .barra-progreso.lleno > div { background: linear-gradient(90deg, #b71c1c, #d32f2f); }
+        .barra-progreso.lleno > div  { background: linear-gradient(90deg, #b71c1c, #d32f2f); }
         .barra-progreso.alerta > div { background: linear-gradient(90deg, #ef6c00, #f57c00); }
 
+        /* ── Panel del administrador ──────────────────────────── */
+        .admin-panel {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 1.2rem;
+            padding: 1.1rem 1.4rem;
+            margin-bottom: 1.1rem;
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .admin-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--header-grad);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .admin-info-label {
+            font-size: .7rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            margin-bottom: .1rem;
+        }
+
+        .admin-username {
+            font-size: .82rem;
+            color: var(--color-text-muted);
+        }
+
+        .admin-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .7rem;
+        }
+
+        .admin-field label {
+            display: block;
+            font-size: .74rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: .22rem;
+        }
+
+        .admin-field input {
+            width: 100%;
+            padding: .48rem .75rem;
+            border: 2px solid var(--color-border-light);
+            border-radius: var(--radius-sm);
+            font-size: .88rem;
+            font-family: inherit;
+            background: #fbfafc;
+            color: var(--color-text);
+            box-sizing: border-box;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .admin-field input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(92,31,51,.09);
+        }
+
+        .admin-actions {
+            display: flex;
+            flex-direction: column;
+            gap: .45rem;
+            flex-shrink: 0;
+        }
+
+        .btn-admin-save {
+            background: var(--header-grad);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: .48rem 1rem;
+            font-size: .8rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity .2s, transform .15s;
+            white-space: nowrap;
+        }
+
+        .btn-admin-save:hover { opacity: .88; transform: translateY(-1px); }
+
+        .btn-admin-pass {
+            background: #fff3e0;
+            color: #7a4000;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: .48rem 1rem;
+            font-size: .8rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity .2s;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .btn-admin-pass:hover { opacity: .8; }
+
+        /* ── Grid principal ──────────────────────────────────── */
         .usuarios-grid {
             display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 1.5rem;
+            grid-template-columns: minmax(0, 1fr) 330px;
+            gap: 1.2rem;
             align-items: start;
         }
 
-        /* ── Panel sticky derecho ───────────────────────────── */
+        /* ── Panel sticky derecho ────────────────────────────── */
         .panel-form { position: sticky; top: 1.2rem; }
 
-        /* ── Encabezado de sección ──────────────────────────── */
+        /* ── Encabezado de sección ───────────────────────────── */
         .section-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 1rem;
+            margin-bottom: .85rem;
         }
 
         .section-head h2 {
-            font-size: 1rem;
+            font-size: .95rem;
             font-weight: 700;
             color: var(--color-primary-dark);
         }
 
-        /* ── Tabla ──────────────────────────────────────────── */
+        /* ── Tabla ───────────────────────────────────────────── */
         .table-scroll {
             overflow-x: auto;
             border-radius: var(--radius-md);
             border: 1px solid var(--color-border-light);
         }
 
-        #tabla-usuarios { min-width: 720px; }
-        #tabla-usuarios thead th { white-space: nowrap; }
+        #tabla-usuarios thead th { white-space: nowrap; font-size: .8rem; }
 
-        .col-email    { color: var(--color-text-muted); font-size: .82rem; }
+        #tabla-usuarios td { font-size: .82rem; }
+
+        .col-email {
+            color: var(--color-text-muted);
+            font-size: .78rem;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         .col-acciones { white-space: nowrap; }
 
         .tag-tu {
             color: var(--color-primary);
-            font-size: .7rem;
+            font-size: .66rem;
             margin-left: 4px;
             font-weight: 600;
             background: #f6e9ee;
-            padding: 1px 6px;
-            border-radius: 6px;
+            padding: 1px 5px;
+            border-radius: 5px;
         }
 
-        /* Botones de acción en tabla */
+        /* Botones de acción */
         .btn-accion {
             border: none;
             border-radius: var(--radius-sm);
-            padding: .32rem .7rem;
-            font-size: .74rem;
+            padding: .28rem .6rem;
+            font-size: .72rem;
             font-weight: 700;
             cursor: pointer;
-            margin-right: 3px;
-            transition: opacity .2s, transform .15s;
+            margin-right: 2px;
+            transition: opacity .2s, transform .12s;
             font-family: inherit;
         }
 
         .btn-accion:hover  { opacity: .8; transform: translateY(-1px); }
         .btn-accion:active { transform: translateY(0); }
 
-        .btn-editar    { background: #e8f0fe; color: #1a3a8b; }
-        .btn-pass      { background: #fff3e0; color: #7a4000; }
-        .btn-toggle    { background: #f3e8ff; color: #4a0080; }
-        .btn-eliminar  { background: #fce8ed; color: #b71c1c; }
+        .btn-editar   { background: #e8f0fe; color: #1a3a8b; }
+        .btn-pass     { background: #fff3e0; color: #7a4000; }
+        .btn-toggle   { background: #f3e8ff; color: #4a0080; }
+        .btn-eliminar { background: #fce8ed; color: #b71c1c; }
 
-        /* ── Formulario ─────────────────────────────────────── */
+        /* ── Formulario lateral ──────────────────────────────── */
         .form-panel-title {
-            font-size: 1rem;
+            font-size: .95rem;
             font-weight: 800;
             color: var(--color-primary-dark);
-            margin-bottom: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: .4rem;
+            margin-bottom: 1rem;
         }
 
-        .form-sec { margin-bottom: .9rem; }
+        .form-sec { margin-bottom: .75rem; }
 
         .form-sec label {
             display: block;
-            font-size: .8rem;
+            font-size: .76rem;
             font-weight: 700;
             color: #555;
-            margin-bottom: .3rem;
+            margin-bottom: .25rem;
         }
 
         .form-sec input,
         .form-sec select {
             width: 100%;
-            padding: .58rem .9rem;
+            padding: .52rem .85rem;
             border: 2px solid var(--color-border-light);
             border-radius: var(--radius-sm);
-            font-size: .92rem;
+            font-size: .88rem;
             box-sizing: border-box;
             transition: border-color .2s, box-shadow .2s;
             font-family: inherit;
             background: #fbfafc;
+            color: var(--color-text);
         }
 
         .form-sec input:focus,
@@ -183,67 +298,53 @@
             outline: none;
             border-color: var(--color-primary);
             background: white;
-            box-shadow: 0 0 0 3px rgba(92,31,51,.10);
+            box-shadow: 0 0 0 3px rgba(92,31,51,.09);
         }
 
-        .form-sec small { color: #999; font-size: .72rem; }
+        .form-sec small { color: #999; font-size: .68rem; }
 
         .form-actions-panel {
             display: flex;
-            gap: .6rem;
+            gap: .5rem;
             flex-wrap: wrap;
-            margin-top: 1rem;
+            margin-top: .9rem;
         }
 
-        .form-actions-panel .btn-primary { flex: 1; }
+        .form-actions-panel .btn-primary { flex: 1; font-size: .84rem; padding: .55rem .8rem; }
+        .form-actions-panel .btn-secondary { font-size: .84rem; padding: .55rem .8rem; }
 
-        /* ── Aviso límite alcanzado en panel ──────────────── */
+        /* ── Aviso límite ────────────────────────────────────── */
         .panel-limite-alert {
             background: #fce8ed;
             border: 1px solid #f5c2c2;
             border-radius: var(--radius-sm);
-            padding: .65rem .85rem;
+            padding: .55rem .8rem;
             color: #b71c1c;
-            font-size: .82rem;
+            font-size: .78rem;
             font-weight: 600;
-            margin-bottom: 1rem;
+            margin-bottom: .8rem;
             display: none;
         }
 
         .panel-limite-alert.visible { display: block; }
 
-        /* ── Btn nuevo ──────────────────────────────────────── */
-        .btn-nuevo {
-            background: var(--header-grad);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: .5rem .95rem;
-            font-size: .82rem;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: inherit;
-            transition: opacity .2s, transform .15s;
-            box-shadow: 0 3px 8px rgba(92,31,51,.25);
+        /* ── Modal ───────────────────────────────────────────── */
+        .modal .form-sec { margin-bottom: .9rem; }
+
+        /* ── Responsive ──────────────────────────────────────── */
+        @media (max-width: 1020px) {
+            .usuarios-grid  { grid-template-columns: 1fr; }
+            .panel-form     { position: static; }
+            .admin-panel    { grid-template-columns: auto 1fr; }
+            .admin-actions  { grid-column: 1 / -1; flex-direction: row; }
         }
 
-        .btn-nuevo:hover  { opacity: .9; transform: translateY(-1px); }
-        .btn-nuevo:disabled {
-            opacity: .55;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        /* ── Modal form-sec override ────────────────────────── */
-        .modal .form-sec { margin-bottom: 1rem; }
-
-        /* ── Responsive ─────────────────────────────────────── */
-        @media (max-width: 960px) {
-            .usuarios-grid { grid-template-columns: 1fr; }
-            .panel-form    { position: static; }
-            .pagina-titulo { flex-direction: column; align-items: flex-start; }
-            .contador-usuarios { width: 100%; }
+        @media (max-width: 680px) {
+            .page-header    { flex-direction: column; align-items: flex-start; }
+            .limite-bar     { width: 100%; }
+            .admin-panel    { grid-template-columns: 1fr; }
+            .admin-avatar   { display: none; }
+            .admin-fields   { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -270,15 +371,16 @@
 
 <div class="usuarios-wrap">
 
-    <div class="pagina-titulo">
+    <!-- Cabecera -->
+    <div class="page-header">
         <div>
             <h2>Usuarios del sistema</h2>
             <p>Administra las cuentas con acceso al sistema. Máximo 20 usuarios.</p>
         </div>
-        <div class="contador-usuarios">
-            <div class="num">
-                <span><strong id="contador-actual">—</strong> de <strong id="contador-limite">20</strong> usuarios</span>
-                <span class="disponible" id="contador-disponibles"></span>
+        <div class="limite-bar">
+            <div class="nums">
+                <span><strong id="contador-actual">—</strong> / <strong id="contador-limite">20</strong></span>
+                <span class="dispo" id="contador-disponibles"></span>
             </div>
             <div class="barra-progreso" id="barra-progreso">
                 <div style="width:0%"></div>
@@ -286,13 +388,36 @@
         </div>
     </div>
 
+    <!-- Panel del administrador -->
+    <div class="card admin-panel" id="admin-panel" style="display:none">
+        <div class="admin-avatar" id="admin-avatar-letra">A</div>
+        <div>
+            <div class="admin-info-label">Tu cuenta de administrador</div>
+            <div class="admin-username" id="admin-username-label">@usuario</div>
+            <div class="admin-fields" style="margin-top:.55rem">
+                <div class="admin-field">
+                    <label for="admin-nombre">Nombre completo</label>
+                    <input type="text" id="admin-nombre" maxlength="60" placeholder="Apellidos Nombre">
+                </div>
+                <div class="admin-field">
+                    <label for="admin-email">Correo electrónico</label>
+                    <input type="email" id="admin-email" maxlength="120" placeholder="correo@ejemplo.com">
+                </div>
+            </div>
+        </div>
+        <div class="admin-actions">
+            <button class="btn-admin-save" id="btn-guardar-admin">Guardar datos</button>
+            <button class="btn-admin-pass" id="btn-pass-admin">Cambiar contraseña</button>
+        </div>
+    </div>
+
+    <!-- Grid: tabla + formulario -->
     <div class="usuarios-grid">
 
         <!-- Tabla -->
         <div class="card">
             <div class="section-head">
                 <h2>Listado</h2>
-                <button class="btn-nuevo" id="btn-nuevo-usuario">+ Nuevo usuario</button>
             </div>
             <div class="table-scroll">
                 <table id="tabla-usuarios">
@@ -317,7 +442,7 @@
             </div>
         </div>
 
-        <!-- Formulario -->
+        <!-- Formulario lateral -->
         <div class="panel-form">
             <div class="card">
                 <div class="form-panel-title" id="panel-titulo">Nuevo usuario</div>
@@ -331,8 +456,7 @@
 
                     <div class="form-sec">
                         <label for="f-nombre">
-                            Nombre completo *
-                            <small>(solo letras, máx. 60)</small>
+                            Nombre completo * <small>(solo letras, máx. 60)</small>
                         </label>
                         <input type="text" id="f-nombre" maxlength="60"
                                placeholder="Apellidos Nombre" required>
@@ -340,17 +464,15 @@
 
                     <div class="form-sec">
                         <label for="f-usuario">
-                            Nombre de usuario *
-                            <small>(letras, números y _, máx. 20)</small>
+                            Usuario * <small>(letras, números y _, máx. 20)</small>
                         </label>
                         <input type="text" id="f-usuario" maxlength="20"
-                               placeholder="sin espacios ni caracteres especiales"
-                               required autocomplete="off">
+                               placeholder="sin espacios" required autocomplete="off">
                     </div>
 
                     <div class="form-sec">
                         <label for="f-email">
-                            Correo electrónico <small>(opcional, máx. 120)</small>
+                            Correo <small>(opcional, máx. 120)</small>
                         </label>
                         <input type="email" id="f-email" maxlength="120"
                                placeholder="usuario@ejemplo.com">
@@ -365,16 +487,14 @@
 
                     <div id="seccion-password" class="form-sec">
                         <label for="f-password">
-                            Contraseña * <small>(mínimo 6, máx. 50)</small>
+                            Contraseña * <small>(mín. 6, máx. 50)</small>
                         </label>
                         <input type="password" id="f-password" maxlength="50"
                                autocomplete="new-password">
                     </div>
 
                     <div id="seccion-password-confirm" class="form-sec">
-                        <label for="f-password-confirm">
-                            Confirmar contraseña *
-                        </label>
+                        <label for="f-password-confirm">Confirmar contraseña *</label>
                         <input type="password" id="f-password-confirm" maxlength="50"
                                autocomplete="new-password" placeholder="Repite la contraseña">
                     </div>
@@ -399,8 +519,8 @@
             </div>
         </div>
 
-    </div>
-</div>
+    </div><!-- /usuarios-grid -->
+</div><!-- /usuarios-wrap -->
 
 <!-- Modal contraseña -->
 <div class="modal-overlay" id="modal-password">
@@ -409,22 +529,17 @@
 
         <div id="seccion-pass-actual" class="form-sec">
             <label for="m-actual">Contraseña actual *</label>
-            <input type="password" id="m-actual" maxlength="50"
-                   autocomplete="current-password">
+            <input type="password" id="m-actual" maxlength="50" autocomplete="current-password">
         </div>
 
         <div class="form-sec">
-            <label for="m-nueva">
-                Nueva contraseña * <small>(mínimo 6, máx. 50)</small>
-            </label>
-            <input type="password" id="m-nueva" maxlength="50"
-                   autocomplete="new-password">
+            <label for="m-nueva">Nueva contraseña * <small>(mín. 6, máx. 50)</small></label>
+            <input type="password" id="m-nueva" maxlength="50" autocomplete="new-password">
         </div>
 
         <div class="form-sec">
             <label for="m-confirmar">Confirmar nueva contraseña *</label>
-            <input type="password" id="m-confirmar" maxlength="50"
-                   autocomplete="new-password">
+            <input type="password" id="m-confirmar" maxlength="50" autocomplete="new-password">
         </div>
 
         <div class="modal-actions">
