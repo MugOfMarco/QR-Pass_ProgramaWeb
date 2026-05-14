@@ -115,5 +115,23 @@ CREATE INDEX IF NOT EXISTS idx_registros_tipo_fecha
 
 
 -- ============================================================
+-- 5. TABLA sessions — sesiones persistentes del servidor
+--    El backend Node.js guarda las sesiones de usuario aquí
+--    para que los reinicios del servidor (Render free tier)
+--    no destruyan las sesiones activas de vigilantes y prefectos.
+--
+--    IMPORTANTE: ejecutar esto ANTES de reiniciar el servidor
+--    con la nueva versión del código.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS sessions (
+    sid    VARCHAR NOT NULL PRIMARY KEY,
+    sess   JSONB   NOT NULL,
+    expire TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_expire ON sessions(expire);
+
+-- ============================================================
 -- FIN DE LA MIGRACIÓN
 -- ============================================================

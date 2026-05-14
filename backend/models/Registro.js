@@ -39,8 +39,18 @@ class Registro {
             .single();
 
         if (error) {
-            console.error('Error creando registro:', error.message);
-            return { success: false, message: error.message };
+            console.error('Error creando registro en BD:', {
+                code:    error.code,
+                message: error.message,
+                details: error.details,
+                hint:    error.hint,
+            });
+            // Dar mensaje claro según el tipo de error
+            let msg = error.message || 'Error al guardar el registro.';
+            if (error.code === '23503') msg = `Error de FK en registros_acceso: ${error.details || error.message}`;
+            if (error.code === '23502') msg = `Campo requerido vacío: ${error.details || error.message}`;
+            if (error.code === '23514') msg = `Restricción CHECK violada: ${error.details || error.message}`;
+            return { success: false, message: msg };
         }
 
         return {

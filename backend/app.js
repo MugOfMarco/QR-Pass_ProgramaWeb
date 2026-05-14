@@ -18,6 +18,64 @@ import backupRoutes    from './routes/backup.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SESIONES PERSISTENTES EN SUPABASE
+// Evita que los reinicios de Render (free tier) destruyan las sesiones activas.
+// Las sesiones se guardan en la tabla `sessions` de Supabase.
+// ─────────────────────────────────────────────────────────────────────────────
+class SupabaseSessionStore extends session.Store {
+    constructor() {
+        super();
+        // Limpiar sesiones expiradas cada 20 minutos
+        setInterval(() => this._purgeExpired(), 20 * 60 * 1000);
+    }
+
+    async get(sid, callback) {
+        try {
+            const { data } = await supabaseAdmin
+                .from('sessions')
+                .select('sess, expire')
+                .eq('sid', sid)
+                .maybeSingle();
+
+            if (!data) return callback(null, null);
+            if (new Date(data.expire) < new Date()) return callback(null, null);
+            callback(null, data.sess);
+        } catch (err) {
+            callback(null, null); // sesión inválida → usuario tendrá que re-loguearse
+        }
+    }
+
+    async set(sid, sessionData, callback) {
+        try {
+            const maxAge  = sessionData.cookie?.maxAge ?? (8 * 60 * 60 * 1000);
+            const expire  = new Date(Date.now() + maxAge).toISOString();
+            await supabaseAdmin
+                .from('sessions')
+                .upsert({ sid, sess: sessionData, expire }, { onConflict: 'sid' });
+        } catch { /* tabla no existe aún — la sesión continúa en memoria sin persistencia */ }
+        callback(null); // nunca falla: si la tabla no existe simplemente no persiste
+    }
+
+    async destroy(sid, callback) {
+        try {
+            await supabaseAdmin.from('sessions').delete().eq('sid', sid);
+            callback(null);
+        } catch (err) {
+            callback(null); // ignorar errores en destroy
+        }
+    }
+
+    async _purgeExpired() {
+        try {
+            await supabaseAdmin
+                .from('sessions')
+                .delete()
+                .lt('expire', new Date().toISOString());
+        } catch { /* ignorar */ }
+    }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
@@ -36,14 +94,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
+    store:             new SupabaseSessionStore(),
     secret:            process.env.SESSION_SECRET || 'cecyt9_secret_2025',
-    resave:            true,
-    saveUninitialized: true,
+    resave:            false,       // SupabaseSessionStore maneja la persistencia
+    saveUninitialized: false,       // no crear sesiones vacías
     cookie: {
         httpOnly: true,
         secure:   false,
         sameSite: 'lax',
-        maxAge:   1000 * 60 * 60 * 8,
+        maxAge:   1000 * 60 * 60 * 8,  // 8 horas
     },
 }));
 
@@ -131,14 +190,31 @@ app.use((err, req, res, _next) => {
 
 async function iniciarServidor() {
     try {
+        // Verificar conexión a Supabase
         const { error } = await supabaseAdmin
             .from('configuracion_sistema')
             .select('id_config')
             .limit(1);
 
         if (error) throw new Error(`Supabase: ${error.message}`);
-
         console.log('✅ Conexión a Supabase establecida');
+
+        // Verificar que la tabla sessions existe (creada via SQL Editor de Supabase)
+        const { error: sesErr } = await supabaseAdmin
+            .from('sessions')
+            .select('sid')
+            .limit(1);
+
+        if (sesErr) {
+            console.warn(
+                '⚠  Tabla "sessions" no encontrada en Supabase. ' +
+                'Las sesiones se perderán al reiniciar el servidor. ' +
+                'Ejecuta el SQL de creación de la tabla sessions en Supabase.'
+            );
+        } else {
+            console.log('✅ Sesiones persistentes en Supabase activadas');
+        }
+
         app.listen(PORT, () =>
             console.log(`🚀 Servidor en http://localhost:${PORT}`)
         );

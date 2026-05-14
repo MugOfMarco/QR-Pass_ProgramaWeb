@@ -145,6 +145,7 @@
 .badge-idle    { background: #e0e0e0; color: #999; }
 .badge-entrada { background: var(--color-success); color: #fff; }
 .badge-salida  { background: #2196f3; color: #fff; }
+.badge-retardo { background: var(--color-warning); color: #fff; }
 
 /* ── Columna de outputs (campos de texto) ─────────────────── */
 .column-outputs {
