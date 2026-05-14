@@ -217,23 +217,23 @@ class RegistroSystem {
         const texto = document.getElementById('tipo-texto');
         if (!badge || !texto) return;
 
-        badge.className = 'tipo-badge';
+        badge.className = 'badge-movimiento';   // reset a la clase base
 
         if (tipoDetectado === 'salida') {
-            badge.classList.add('tipo-salida');
+            badge.classList.add('badge-salida');
             texto.textContent = '↑ SALIDA';
         } else {
             switch (idTipo) {
                 case this.TIPO.RETARDO:
-                    badge.classList.add('tipo-retardo');
+                    badge.classList.add('badge-retardo');
                     texto.textContent = '↓ RETARDO';
                     break;
                 case this.TIPO.SIN_CREDENCIAL:
-                    badge.classList.add('tipo-retardo');
+                    badge.classList.add('badge-retardo');
                     texto.textContent = '↓ SIN CREDENCIAL';
                     break;
                 default:
-                    badge.classList.add('tipo-entrada');
+                    badge.classList.add('badge-entrada');
                     texto.textContent = '↓ ENTRADA';
             }
         }
@@ -304,7 +304,7 @@ class RegistroSystem {
 
         const badge = document.getElementById('tipo-badge');
         const texto = document.getElementById('tipo-texto');
-        if (badge) badge.className = 'tipo-badge tipo-espera';
+        if (badge) badge.className = 'badge-movimiento badge-idle';
         if (texto) texto.textContent = '— esperando —';
     }
 
