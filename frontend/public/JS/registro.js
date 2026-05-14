@@ -19,6 +19,11 @@ class RegistroSystem {
         const input = document.getElementById('boleta-input');
         if (!input) { console.error('No se encontró #boleta-input'); return; }
 
+        this._input = input;
+
+        // Auto-enfocar el campo al cargar
+        input.focus();
+
         input.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter' && e.keyCode !== 13) return;
             e.preventDefault();
@@ -37,6 +42,11 @@ class RegistroSystem {
             requestAnimationFrame(() => { input.value = boleta; });
             if (boleta.length >= 5) this.procesar(boleta, esQR);
         });
+
+        // Re-enfocar si el usuario hace clic fuera del input
+        document.addEventListener('click', (e) => {
+            if (e.target !== input) input.focus();
+        });
     }
 
     async procesar(boleta, esQR) {
@@ -48,11 +58,17 @@ class RegistroSystem {
 
             if (respAlumno.status === 401) { window.location.href = '/login.html'; return; }
             if (respAlumno.status === 404) {
-                this.mostrarEstado('Alumno no encontrado', 'error');
+                this.mostrarEstado('Alumno no encontrado — boleta no registrada', 'error');
                 return;
             }
             if (!respAlumno.ok) {
-                this.mostrarEstado(`Error del servidor (${respAlumno.status})`, 'error');
+                let errMsg = `Error del servidor (${respAlumno.status})`;
+                try {
+                    const errBody = await respAlumno.json();
+                    if (errBody.message) errMsg = errBody.message;
+                } catch { /* ignorar */ }
+                this.mostrarEstado(errMsg, 'error');
+                console.error('Error al obtener alumno:', respAlumno.status, errMsg);
                 return;
             }
 
@@ -111,10 +127,20 @@ class RegistroSystem {
 
             if (respRegistro.status === 401) { window.location.href = '/login.html'; return; }
 
-            const resultado = await respRegistro.json();
+            let resultado;
+            try {
+                resultado = await respRegistro.json();
+            } catch {
+                this.mostrarEstado(`Error HTTP ${respRegistro.status} — respuesta inválida del servidor`, 'error');
+                console.error('Respuesta no-JSON del servidor:', respRegistro.status, respRegistro.statusText);
+                return;
+            }
 
             if (!respRegistro.ok || !resultado.success) {
-                this.mostrarEstado(resultado.message || 'Error al registrar', 'error');
+                // Mostrar el mensaje exacto que devuelve el servidor
+                const msg = resultado.message || `Error ${respRegistro.status} al registrar`;
+                this.mostrarEstado(msg, 'error');
+                console.error('Error del servidor al registrar:', respRegistro.status, resultado);
                 return;
             }
 
@@ -293,6 +319,7 @@ class RegistroSystem {
         ['nombre-output','boleta-output','grupo-output','horario-output',
          'retardos-output','sin-credencial-output'].forEach(id => this.set(id, ''));
         this.set('boleta-input', '');
+        if (this._input) this._input.focus(); // re-enfocar para el siguiente escaneo
 
         const statusMsg = document.getElementById('status-message');
         if (statusMsg) statusMsg.textContent = 'Esperando registro...';

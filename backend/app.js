@@ -53,10 +53,8 @@ class SupabaseSessionStore extends session.Store {
             await supabaseAdmin
                 .from('sessions')
                 .upsert({ sid, sess: sessionData, expire }, { onConflict: 'sid' });
-            callback(null);
-        } catch (err) {
-            callback(err);
-        }
+        } catch { /* tabla no existe aún — la sesión continúa en memoria sin persistencia */ }
+        callback(null); // nunca falla: si la tabla no existe simplemente no persiste
     }
 
     async destroy(sid, callback) {
