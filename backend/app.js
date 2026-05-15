@@ -6,6 +6,7 @@ import path         from 'path';
 import session      from 'express-session';
 import { fileURLToPath } from 'url';
 
+import { smtpConfigurado } from './services/email.service.js';
 import authRoutes      from './routes/auth.routes.js';
 import alumnosRoutes   from './routes/alumnos.routes.js';
 import registrosRoutes from './routes/registros.routes.js';
@@ -15,6 +16,7 @@ import reportesRoutes  from './routes/reportes.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import gruposRoutes    from './routes/grupos.routes.js';
 import backupRoutes    from './routes/backup.routes.js';
+import soporteRoutes   from './routes/soporte.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -82,6 +84,8 @@ const __dirname  = path.dirname(__filename);
 const app  = express();
 const PORT = process.env.SERVER_PORT || 3000;
 
+app.set('trust proxy', 1);
+
 app.use(cors({
     origin: [
         process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -115,6 +119,7 @@ app.use('/api/reportes',  reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/grupos',    gruposRoutes);
 app.use('/api/backup',    backupRoutes);
+app.use('/api/soporte',   soporteRoutes);
 
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
     extensions: ['html', 'css', 'js'],
@@ -139,7 +144,12 @@ app.use((req, res, next) => {
         '/gestiongrupos.html',
     ];
 
+    const adminOSoporte = ['/soportepanel.html'];
+
     if (soloAdmin.includes(ruta.toLowerCase()) && tipo !== 'Administrador') {
+        return res.status(403).send('<h1>Acceso Denegado</h1><a href="/">Volver</a>');
+    }
+    if (adminOSoporte.includes(ruta.toLowerCase()) && !['Administrador', 'Soporte'].includes(tipo)) {
         return res.status(403).send('<h1>Acceso Denegado</h1><a href="/">Volver</a>');
     }
     next();
@@ -147,9 +157,10 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => {
     if (!req.session.user) return res.redirect('/login.html');
-    return req.session.user.tipo === 'Administrador'
-        ? res.redirect('/Dashboard.html')
-        : res.redirect('/Entrada_Salida.html');
+    const tipo = req.session.user.tipo;
+    if (tipo === 'Administrador') return res.redirect('/Dashboard.html');
+    if (tipo === 'Soporte')       return res.redirect('/SoportePanel.html');
+    return res.redirect('/Entrada_Salida.html');
 });
 
 [
@@ -166,6 +177,7 @@ app.get('/', (req, res) => {
     '/BuscarAlumnoVigilante.html',
     '/GestionGrupos.html',
     '/Soporte.html',
+    '/SoportePanel.html',
     '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>
@@ -213,6 +225,12 @@ async function iniciarServidor() {
             );
         } else {
             console.log('✅ Sesiones persistentes en Supabase activadas');
+        }
+
+        if (smtpConfigurado()) {
+            console.log('✅ SMTP configurado — envío de correos activo');
+        } else {
+            console.warn('⚠️  SMTP no configurado — define SMTP_HOST, SMTP_USER y SMTP_PASS en .env');
         }
 
         app.listen(PORT, () =>

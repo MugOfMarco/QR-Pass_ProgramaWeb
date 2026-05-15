@@ -2,7 +2,7 @@
 import { supabaseAdmin } from '../database/supabase.js';
 import bcrypt from 'bcryptjs';
 
-export const LIMITE_USUARIOS    = 20;
+export const LIMITE_USUARIOS    = 30;
 export const MAX_NOMBRE         = 60;
 export const MAX_USUARIO        = 20;
 export const MAX_EMAIL          = 120;

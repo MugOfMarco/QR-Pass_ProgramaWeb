@@ -1,0 +1,281 @@
+// frontend/public/JS/soportePanel.js — Panel Kanban agente de soporte
+'use strict';
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const $ = id => document.getElementById(id);
+
+const ESTADO_LABEL = {
+    abierto:           'Abierto',
+    en_progreso:       'En progreso',
+    esperando_usuario: 'Esperando usuario',
+    resuelto:          'Resuelto',
+    cerrado:           'Cerrado',
+};
+const PRIO_LABEL   = { urgente:'Urgente', alta:'Alta', media:'Media', baja:'Baja' };
+
+const COLUMNAS = ['abierto', 'en_progreso', 'esperando_usuario', 'resuelto'];
+
+let ticketsData  = [];
+let ticketActivo = null;
+let tabActivo    = 'reply';
+
+// ── Init ───────────────────────────────────────────────────────
+(async function init() {
+    try {
+        const r    = await fetch('/api/auth/check', { credentials: 'include' });
+        const data = await r.json();
+        if (!data.isAuthenticated) { location.href = '/login.html'; return; }
+        const roles = ['Soporte', 'Administrador'];
+        if (!roles.includes(data.tipo)) { location.href = '/Entrada_Salida.html'; return; }
+    } catch { location.href = '/login.html'; return; }
+
+    await Promise.all([ cargarTickets(), cargarMetricas() ]);
+    bindFiltros();
+    bindDetalle();
+})();
+
+// ── Carga tickets ──────────────────────────────────────────────
+async function cargarTickets() {
+    const estado    = $('filtro-estado').value    || null;
+    const prioridad = $('filtro-prioridad').value || null;
+
+    let url = '/api/soporte/panel/tickets';
+    const params = [];
+    if (estado)    params.push(`estado=${encodeURIComponent(estado)}`);
+    if (prioridad) params.push(`prioridad=${encodeURIComponent(prioridad)}`);
+    if (params.length) url += '?' + params.join('&');
+
+    try {
+        const r    = await fetch(url, { credentials: 'include' });
+        const data = await r.json();
+        ticketsData = data.success ? data.tickets : [];
+    } catch { ticketsData = []; }
+
+    renderKanban();
+}
+
+async function cargarMetricas() {
+    try {
+        const r    = await fetch('/api/soporte/panel/metricas', { credentials: 'include' });
+        const data = await r.json();
+        if (!data.success) return;
+        const m = data.metricas;
+        $('met-total').textContent    = `${m.total} total`;
+        $('met-abiertos').textContent = `${m.abiertos} abiertos`;
+        $('met-progreso').textContent = `${m.en_progreso} en progreso`;
+        $('met-espera').textContent   = `${m.esperando} esperando`;
+        $('met-resueltos').textContent= `${m.resueltos} resueltos`;
+        $('met-urgentes').textContent = `${m.urgentes} urgentes`;
+    } catch {}
+}
+
+// ── Render Kanban ──────────────────────────────────────────────
+function renderKanban() {
+    COLUMNAS.forEach(col => {
+        const lista  = ticketsData.filter(t => t.estado === col);
+        const cards  = $(`col-${col}`);
+        const count  = $(`col-count-${col}`);
+        if (count) count.textContent = lista.length;
+
+        if (!cards) return;
+        cards.innerHTML = lista.length
+            ? lista.map(t => crearKCard(t)).join('')
+            : `<div class="kanban-vacio">Sin tickets</div>`;
+    });
+
+    // Si hay un ticket activo, mantener el highlight
+    if (ticketActivo) {
+        document.querySelectorAll(`.kcard[data-id="${ticketActivo}"]`).forEach(el => {
+            el.classList.add('activo');
+        });
+    }
+}
+
+function crearKCard(t) {
+    return `
+        <div class="kcard" data-id="${t.id_ticket}" onclick="abrirDetalle(${t.id_ticket})">
+            <div class="kcard-asunto">${esc(t.asunto)}</div>
+            <div class="kcard-meta">
+                <span class="prio-badge prio-${esc(t.prioridad)}">${esc(PRIO_LABEL[t.prioridad] || t.prioridad)}</span>
+                <span class="kcard-sol">${esc(t.solicitante)}</span>
+            </div>
+        </div>`;
+}
+
+// ── Abrir detalle ──────────────────────────────────────────────
+async function abrirDetalle(id) {
+    ticketActivo = id;
+    document.querySelectorAll('.kcard').forEach(el => {
+        el.classList.toggle('activo', parseInt(el.dataset.id) === id);
+    });
+
+    const panel = $('detalle-panel');
+    panel.style.display = '';
+
+    try {
+        const r    = await fetch(`/api/soporte/panel/tickets/${id}`, { credentials: 'include' });
+        const data = await r.json();
+        if (!data.success) return;
+        renderDetalle(data.ticket);
+    } catch {}
+}
+
+function renderDetalle(t) {
+    // Badges
+    $('det-prio-badge').className   = `prio-badge prio-${esc(t.prioridad)}`;
+    $('det-prio-badge').textContent = PRIO_LABEL[t.prioridad] || t.prioridad;
+    $('det-estado-badge').className   = `estado-badge est-${esc(t.estado)}`;
+    $('det-estado-badge').textContent = ESTADO_LABEL[t.estado] || t.estado;
+
+    $('det-asunto').textContent = t.asunto;
+
+    $('det-meta').innerHTML = `
+        <span>📋 #${t.id_ticket}</span>
+        <span>👤 ${esc(t.solicitante)} (${esc(t.rol_solicitante)})</span>
+        ${t.agente ? `<span>🛠 Agente: ${esc(t.agente)}</span>` : ''}
+        <span>📅 ${new Date(t.fecha_creacion).toLocaleString('es-MX')}</span>
+        ${t.modulo ? `<span>🔧 Módulo: ${esc(t.modulo)}</span>` : ''}
+    `;
+
+    $('det-descripcion').textContent = t.descripcion;
+
+    // Botón tomar
+    const btnTomar = $('btn-tomar-ticket');
+    btnTomar.style.display = t.id_agente ? 'none' : '';
+
+    // Mensajes
+    const mensajes = $('det-mensajes');
+    mensajes.innerHTML = t.mensajes?.length
+        ? t.mensajes.map(m => {
+            const esAgente = m.rol_autor === 'Soporte' || m.rol_autor === 'Administrador';
+            const notaClass = m.es_nota_interna ? 'det-msg-nota' : (esAgente ? 'det-msg-agent' : 'det-msg-user');
+            return `<div class="det-msg ${notaClass}">
+                <div class="det-msg-autor">${esc(m.autor)} · ${new Date(m.fecha_envio).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>
+                ${esc(m.contenido)}
+            </div>`;
+        }).join('')
+        : '<p style="font-size:.8rem;color:#aaa">Sin mensajes.</p>';
+
+    mensajes.scrollTop = mensajes.scrollHeight;
+
+    // Eventos
+    $('det-reply-msg').style.display = 'none';
+}
+
+// ── Bind controles del detalle ─────────────────────────────────
+function bindDetalle() {
+    $('btn-cerrar-detalle').addEventListener('click', () => {
+        $('detalle-panel').style.display = 'none';
+        ticketActivo = null;
+        document.querySelectorAll('.kcard').forEach(el => el.classList.remove('activo'));
+    });
+
+    $('btn-tomar-ticket').addEventListener('click', async () => {
+        if (!ticketActivo) return;
+        try {
+            const r = await fetch(`/api/soporte/panel/tickets/${ticketActivo}/tomar`, {
+                method: 'PATCH', credentials: 'include',
+            });
+            const data = await r.json();
+            if (data.success) { await refrescar(); await abrirDetalle(ticketActivo); }
+        } catch {}
+    });
+
+    $('btn-aplicar-estado').addEventListener('click', async () => {
+        const estado = $('det-estado-sel').value;
+        if (!estado || !ticketActivo) return;
+        try {
+            const r = await fetch(`/api/soporte/panel/tickets/${ticketActivo}/estado`, {
+                method:  'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ estado }),
+            });
+            const data = await r.json();
+            if (data.success) { await refrescar(); await abrirDetalle(ticketActivo); }
+        } catch {}
+    });
+
+    $('btn-aplicar-prio').addEventListener('click', async () => {
+        const prioridad = $('det-prio-sel').value;
+        if (!prioridad || !ticketActivo) return;
+        try {
+            const r = await fetch(`/api/soporte/panel/tickets/${ticketActivo}/prioridad`, {
+                method:  'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ prioridad }),
+            });
+            const data = await r.json();
+            if (data.success) { await refrescar(); await abrirDetalle(ticketActivo); }
+        } catch {}
+    });
+
+    $('btn-eliminar-ticket').addEventListener('click', async () => {
+        if (!ticketActivo || !confirm('¿Eliminar este ticket definitivamente?')) return;
+        try {
+            await fetch(`/api/soporte/panel/tickets/${ticketActivo}`, {
+                method: 'DELETE', credentials: 'include',
+            });
+            $('detalle-panel').style.display = 'none';
+            ticketActivo = null;
+            await refrescar();
+        } catch {}
+    });
+
+    // Tabs reply / nota interna
+    document.querySelectorAll('.det-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabActivo = tab.dataset.tab;
+            document.querySelectorAll('.det-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            $('det-reply-text').placeholder = tabActivo === 'nota'
+                ? 'Nota interna (no visible al usuario)…'
+                : 'Escribe tu respuesta al usuario…';
+        });
+    });
+
+    $('btn-enviar-det-reply').addEventListener('click', async () => {
+        const contenido = $('det-reply-text').value.trim();
+        const msg       = $('det-reply-msg');
+        if (!contenido) { setMsg(msg, 'Escribe un mensaje.', false); return; }
+
+        const btn = $('btn-enviar-det-reply');
+        btn.disabled = true; btn.textContent = 'Enviando…';
+
+        try {
+            const r = await fetch(`/api/soporte/panel/tickets/${ticketActivo}/mensajes`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ contenido, es_nota_interna: tabActivo === 'nota' }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                $('det-reply-text').value = '';
+                msg.style.display = 'none';
+                await abrirDetalle(ticketActivo);
+            } else {
+                setMsg(msg, data.message || 'Error al enviar.', false);
+            }
+        } catch { setMsg(msg, 'Error de conexión.', false); }
+        finally  { btn.disabled = false; btn.textContent = 'Enviar'; }
+    });
+}
+
+// ── Filtros ────────────────────────────────────────────────────
+function bindFiltros() {
+    $('btn-refrescar').addEventListener('click', refrescar);
+    $('filtro-estado').addEventListener('change',    cargarTickets);
+    $('filtro-prioridad').addEventListener('change', cargarTickets);
+}
+
+async function refrescar() {
+    await Promise.all([ cargarTickets(), cargarMetricas() ]);
+}
+
+function setMsg(el, text, ok) {
+    el.textContent   = text;
+    el.style.color   = ok ? '#16a34a' : '#dc2626';
+    el.style.display = '';
+}

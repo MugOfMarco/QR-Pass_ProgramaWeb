@@ -97,6 +97,95 @@ class Grupo {
         return data || [];
     }
 
+    // ─── Horarios: listar por grupo ───────────────────────────
+    static async listarHorarios(id_grupo) {
+        const { data, error } = await supabaseAdmin
+            .from('horarios_grupo')
+            .select(`
+                id_horario, dia_semana, hora_inicio, hora_fin,
+                materias ( id_materia, nombre_materia ),
+                semestres ( id_semestre, nombre_semestre )
+            `)
+            .eq('id_grupo', parseInt(id_grupo))
+            .order('dia_semana')
+            .order('hora_inicio');
+        if (error) throw error;
+        return (data || []).map(h => ({
+            id_horario:      h.id_horario,
+            dia_semana:      h.dia_semana,
+            hora_inicio:     h.hora_inicio,
+            hora_fin:        h.hora_fin,
+            id_materia:      h.materias?.id_materia ?? null,
+            nombre_materia:  h.materias?.nombre_materia ?? '—',
+            id_semestre:     h.semestres?.id_semestre ?? null,
+            nombre_semestre: h.semestres?.nombre_semestre ?? '—',
+        }));
+    }
+
+    // ─── Horarios: crear ──────────────────────────────────────
+    static async crearHorario({ id_grupo, id_materia, id_semestre, dia_semana, hora_inicio, hora_fin }) {
+        const { data, error } = await supabaseAdmin
+            .from('horarios_grupo')
+            .insert({
+                id_grupo:    parseInt(id_grupo),
+                id_materia:  parseInt(id_materia),
+                id_semestre: parseInt(id_semestre),
+                dia_semana:  parseInt(dia_semana),
+                hora_inicio,
+                hora_fin,
+            })
+            .select('id_horario')
+            .single();
+        if (error) return { success: false, message: error.message };
+        return { success: true, id_horario: data.id_horario };
+    }
+
+    // ─── Horarios: editar ─────────────────────────────────────
+    static async editarHorario(id_horario, { id_materia, id_semestre, dia_semana, hora_inicio, hora_fin }) {
+        const { error } = await supabaseAdmin
+            .from('horarios_grupo')
+            .update({
+                id_materia:  parseInt(id_materia),
+                id_semestre: parseInt(id_semestre),
+                dia_semana:  parseInt(dia_semana),
+                hora_inicio,
+                hora_fin,
+            })
+            .eq('id_horario', parseInt(id_horario));
+        if (error) return { success: false, message: error.message };
+        return { success: true };
+    }
+
+    // ─── Horarios: eliminar ───────────────────────────────────
+    static async eliminarHorario(id_horario) {
+        const { error } = await supabaseAdmin
+            .from('horarios_grupo')
+            .delete()
+            .eq('id_horario', parseInt(id_horario));
+        if (error) return { success: false, message: error.message };
+        return { success: true };
+    }
+
+    // ─── Catálogo de materias ─────────────────────────────────
+    static async listarMaterias() {
+        const { data, error } = await supabaseAdmin
+            .from('materias')
+            .select('id_materia, nombre_materia')
+            .order('nombre_materia');
+        if (error) throw error;
+        return data || [];
+    }
+
+    // ─── Catálogo de semestres ────────────────────────────────
+    static async listarSemestres() {
+        const { data, error } = await supabaseAdmin
+            .from('semestres')
+            .select('id_semestre, nombre_semestre')
+            .order('id_semestre');
+        if (error) throw error;
+        return data || [];
+    }
+
     // ─── Acción masiva sobre alumnos ──────────────────────────
     // tipo: 'estado' | 'grupo' | 'bloquear' | 'desbloquear'
     static async accionMasiva(boletas, tipo, valor) {

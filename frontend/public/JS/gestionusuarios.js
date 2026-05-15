@@ -18,7 +18,7 @@ class GestionUsuarios {
         this.idEditando    = null;
         this.idPassword    = null;
         this.totalUsuarios = 0;
-        this.limite        = 20;
+        this.limite        = 30;
         this.init();
     }
 
@@ -184,7 +184,7 @@ class GestionUsuarios {
             const data = await r.json();
             if (!data.success) { this.toast('Error cargando usuarios', 'err'); return; }
             this.totalUsuarios = data.total ?? data.usuarios.length;
-            this.limite        = data.limite ?? 20;
+            this.limite        = data.limite ?? 30;
             this.renderContador();
             this.renderTabla(data.usuarios);
         } catch { this.toast('Error de conexión al cargar usuarios', 'err'); }
@@ -263,6 +263,7 @@ class GestionUsuarios {
                 'Administrador': 'badge-admin',
                 'Prefecto':      'badge-prefecto',
                 'Vigilante':     'badge-vigilante',
+                'Soporte':       'badge-soporte',
             }[u.rol] || 'badge-vigilante';
 
             const esMismo   = u.usuario === this.usuarioSesion?.usuario;

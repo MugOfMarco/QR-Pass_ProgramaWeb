@@ -26,15 +26,18 @@ class Registro {
     // ─────────────────────────────────────────────────────────
     // Crear un nuevo registro de acceso
     // ─────────────────────────────────────────────────────────
-    static async crear({ boleta, id_punto_acceso, id_tipo_registro, id_usuario_vigilante }) {
+    static async crear({ boleta, id_punto_acceso, id_tipo_registro, id_usuario_vigilante, observaciones = null }) {
+        const payload = {
+            boleta:              parseInt(boleta),
+            id_punto_acceso:     id_punto_acceso ?? null,
+            id_tipo_registro,
+            id_usuario_vigilante: id_usuario_vigilante || null,
+        };
+        if (observaciones) payload.observaciones = observaciones;
+
         const { data, error } = await supabaseAdmin
             .from('registros_acceso')
-            .insert({
-                boleta:              parseInt(boleta),
-                id_punto_acceso,
-                id_tipo_registro,
-                id_usuario_vigilante: id_usuario_vigilante || null,
-            })
+            .insert(payload)
             .select('id_registro, fecha_hora')
             .single();
 

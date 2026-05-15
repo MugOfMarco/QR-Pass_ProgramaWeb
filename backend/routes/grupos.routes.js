@@ -4,23 +4,37 @@ import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
 import {
     listarGrupos,
     listarTurnos,
+    listarMaterias,
+    listarSemestres,
+    listarHorarios,
     crearGrupo,
     editarGrupo,
     accionMasiva,
     cargaMasiva,
+    crearHorario,
+    editarHorario,
+    eliminarHorario,
 } from '../controllers/grupos.controller.js';
 
 const router = express.Router();
 router.use(requireAuth);
 
-// Cualquier usuario autenticado puede ver grupos
-router.get('/',        listarGrupos);
-router.get('/turnos',  listarTurnos);
+// Cualquier usuario autenticado puede ver grupos y catálogos
+router.get('/',           listarGrupos);
+router.get('/turnos',     listarTurnos);
+router.get('/materias',   listarMaterias);
+router.get('/semestres',  listarSemestres);
 
-// Solo Administrador puede modificar
-router.post('/',               requireRole('Administrador'), crearGrupo);
-router.put('/:id',             requireRole('Administrador'), editarGrupo);
-router.post('/accion-masiva',  requireRole('Administrador'), accionMasiva);
-router.post('/carga-masiva',   requireRole('Administrador'), cargaMasiva);
+// Horarios por grupo — solo Admin
+router.get('/:id/horarios',  requireRole('Administrador'), listarHorarios);
+router.post('/:id/horarios', requireRole('Administrador'), crearHorario);
+
+// Solo Administrador puede modificar grupos y horarios sueltos
+router.post('/',                    requireRole('Administrador'), crearGrupo);
+router.put('/:id',                  requireRole('Administrador'), editarGrupo);
+router.post('/accion-masiva',       requireRole('Administrador'), accionMasiva);
+router.post('/carga-masiva',        requireRole('Administrador'), cargaMasiva);
+router.put('/horarios/:id',         requireRole('Administrador'), editarHorario);
+router.delete('/horarios/:id',      requireRole('Administrador'), eliminarHorario);
 
 export default router;

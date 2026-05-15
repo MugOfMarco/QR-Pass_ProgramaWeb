@@ -27,6 +27,7 @@ const TIPO = {
     SALIDA:           2,
     RETARDO:          3,
     SIN_CREDENCIAL:   4,
+    FALTA:            5,
 };
 
 // Tipos que cuentan como "el alumno está dentro"
@@ -211,10 +212,57 @@ export const obtenerEstadisticas = async (req, res) => {
             salidas:       registrosHoy.filter(r => r.id_tipo_registro === TIPO.SALIDA).length,
             retardos:      registrosHoy.filter(r => r.id_tipo_registro === TIPO.RETARDO).length,
             sinCredencial: registrosHoy.filter(r => r.id_tipo_registro === TIPO.SIN_CREDENCIAL).length,
+            faltas:        registrosHoy.filter(r => r.id_tipo_registro === TIPO.FALTA).length,
         };
         return res.json({ success: true, estadisticas: stats });
     } catch (error) {
         console.error('Error obteniendo estadísticas:', error);
         return res.status(500).json({ success: false, message: 'Error obteniendo estadísticas.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/registros/falta
+// Registra una falta manual para un alumno (Admin / Prefecto).
+// El alumno no pasa por el torniquete; la falta queda como
+// incidencia tipo 5 sin punto de acceso específico.
+// ─────────────────────────────────────────────────────────────
+export const registrarFalta = async (req, res) => {
+    try {
+        const { boleta, motivo } = req.body;
+
+        if (!boleta) {
+            return res.status(400).json({ success: false, message: 'La boleta es obligatoria.' });
+        }
+
+        const alumno = await Alumno.obtenerBasico(boleta);
+        if (!alumno) {
+            return res.status(404).json({ success: false, message: 'Alumno no encontrado.' });
+        }
+
+        const id_usuario_vigilante = req.session?.user?.id || null;
+
+        const registro = await Registro.crear({
+            boleta,
+            id_punto_acceso:    null,
+            id_tipo_registro:   TIPO.FALTA,
+            id_usuario_vigilante,
+            observaciones:      motivo ? String(motivo).substring(0, 200) : null,
+        });
+
+        if (!registro.success) {
+            return res.status(500).json({ success: false, message: registro.message });
+        }
+
+        return res.status(201).json({
+            success:     true,
+            message:     'Falta registrada correctamente.',
+            id_registro: registro.id_registro,
+            fecha_hora:  registro.fecha_hora,
+        });
+
+    } catch (error) {
+        console.error('Error registrando falta:', error);
+        return res.status(500).json({ success: false, message: 'Error interno al registrar la falta.' });
     }
 };

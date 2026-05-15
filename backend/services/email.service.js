@@ -1,36 +1,49 @@
-// backend/services/email.service.js
 import nodemailer from 'nodemailer';
 
-let transporter = null;
-let lastConfigError = null;
+let _transporter = null;
 
-function getTransporter() {
-    if (transporter) return transporter;
-
-    const host = process.env.SMTP_HOST;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+function buildTransporter() {
+    const host   = process.env.SMTP_HOST;
+    const user   = process.env.SMTP_USER;
+    const pass   = process.env.SMTP_PASS;
+    const port   = parseInt(process.env.SMTP_PORT || '587', 10);
     const secure = String(process.env.SMTP_SECURE || 'false') === 'true';
 
-    if (!host || !user || !pass) {
-        lastConfigError = 'SMTP no configurado (SMTP_HOST/SMTP_USER/SMTP_PASS)';
-        return null;
-    }
+    if (!host || !user || !pass) return null;
 
-    transporter = nodemailer.createTransport({
+    return nodemailer.createTransport({
         host, port, secure,
         auth: { user, pass },
         connectionTimeout: 10_000,
         greetingTimeout:    5_000,
         socketTimeout:     10_000,
     });
-    return transporter;
+}
+
+export function smtpConfigurado() {
+    return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
 }
 
 export async function enviarCorreoRecuperacion(destino, nombre, urlReset) {
-    const t = getTransporter();
-    const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@qrpass.local';
+    if (!destino) throw new Error('Destinatario vacío — el usuario no tiene correo registrado');
+
+    if (!_transporter) {
+        _transporter = buildTransporter();
+    }
+
+    if (!_transporter) {
+        throw new Error(
+            'SMTP no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS en las variables de entorno'
+        );
+    }
+
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 
     const html = `
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;border:1px solid #e5dde0;border-radius:12px;overflow:hidden">
@@ -52,32 +65,24 @@ export async function enviarCorreoRecuperacion(destino, nombre, urlReset) {
         </div>
     `;
 
-    if (!t) {
-        console.warn('⚠️  Email no enviado (' + lastConfigError + ')');
-        console.warn('🔗 Enlace de recuperación para ' + destino + ': ' + urlReset);
-        return { success: true, devLink: urlReset, warning: lastConfigError };
+    const text = `Hola ${escapeHtml(nombre || '')},\n\nPara restablecer tu contraseña visita: ${urlReset}\n\nEl enlace caduca en 30 minutos.\n\nSi no solicitaste este cambio, ignora este correo.`;
+
+    try {
+        await Promise.race([
+            _transporter.sendMail({
+                from,
+                to: destino,
+                subject: 'QR Pass — Recuperación de contraseña',
+                html,
+                text,
+            }),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SMTP timeout: sin respuesta en 12 s')), 12_000)
+            ),
+        ]);
+        return { success: true };
+    } catch (err) {
+        _transporter = null;
+        throw err;
     }
-
-    const mailOptions = {
-        from, to: destino,
-        subject: 'QR Pass — Recuperación de contraseña',
-        html,
-        text: `Hola ${nombre || ''},\n\nPara restablecer tu contraseña visita: ${urlReset}\n\nEl enlace caduca en 30 minutos.\n\nSi no solicitaste este cambio, ignora este correo.`,
-    };
-
-    // Timeout de 12 s por si Render bloquea el puerto SMTP saliente
-    await Promise.race([
-        t.sendMail(mailOptions),
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('SMTP timeout: sin respuesta en 12 s')), 12_000)
-        ),
-    ]);
-
-    return { success: true };
-}
-
-function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
-    }[c]));
 }

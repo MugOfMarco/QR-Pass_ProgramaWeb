@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Soporte — QR Pass</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/soportePanel.css">
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-container">
+        <div class="Boton-nav">
+            <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <img src="../imgs/menu.png" alt="Menú">
+            </button>
+        </div>
+        <h1 class="title">Panel de Soporte</h1>
+        <div class="logo">
+            <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+        </div>
+    </div>
+</header>
+
+<nav class="menu-navegacion" aria-label="Menú principal">
+    <ul id="lista-opciones" class="menu-lista"></ul>
+</nav>
+<div id="menu-overlay" class="menu-overlay"></div>
+
+<div class="panel-wrap">
+
+    <!-- ── BARRA SUPERIOR: métricas + filtros ─────────────── -->
+    <div class="panel-topbar">
+        <div class="metricas-row" id="metricas-row">
+            <div class="metrica-chip" id="met-total">— total</div>
+            <div class="metrica-chip chip-open"  id="met-abiertos">— abiertos</div>
+            <div class="metrica-chip chip-prog"  id="met-progreso">— en progreso</div>
+            <div class="metrica-chip chip-wait"  id="met-espera">— esperando</div>
+            <div class="metrica-chip chip-done"  id="met-resueltos">— resueltos</div>
+            <div class="metrica-chip chip-urg"   id="met-urgentes">— urgentes</div>
+        </div>
+        <div class="panel-filtros">
+            <select id="filtro-estado" class="filtro-sel">
+                <option value="">Todos los estados</option>
+                <option value="abierto">Abiertos</option>
+                <option value="en_progreso">En progreso</option>
+                <option value="esperando_usuario">Esperando usuario</option>
+                <option value="resuelto">Resueltos</option>
+                <option value="cerrado">Cerrados</option>
+            </select>
+            <select id="filtro-prioridad" class="filtro-sel">
+                <option value="">Todas las prioridades</option>
+                <option value="urgente">Urgente</option>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
+            </select>
+            <button class="filtro-btn" id="btn-refrescar">↻ Refrescar</button>
+        </div>
+    </div>
+
+    <!-- ── CUERPO: Kanban + detalle ───────────────────────── -->
+    <div class="panel-body">
+
+        <!-- Tablero Kanban -->
+        <div class="kanban" id="kanban-board">
+            <div class="kanban-col">
+                <div class="kanban-col-hdr kanban-hdr-open">Cola <span class="kanban-badge" id="col-count-abierto">0</span></div>
+                <div class="kanban-cards" id="col-abierto"></div>
+            </div>
+            <div class="kanban-col">
+                <div class="kanban-col-hdr kanban-hdr-prog">En Progreso <span class="kanban-badge" id="col-count-en_progreso">0</span></div>
+                <div class="kanban-cards" id="col-en_progreso"></div>
+            </div>
+            <div class="kanban-col">
+                <div class="kanban-col-hdr kanban-hdr-wait">Esperando <span class="kanban-badge" id="col-count-esperando_usuario">0</span></div>
+                <div class="kanban-cards" id="col-esperando_usuario"></div>
+            </div>
+            <div class="kanban-col">
+                <div class="kanban-col-hdr kanban-hdr-done">Resueltos <span class="kanban-badge" id="col-count-resuelto">0</span></div>
+                <div class="kanban-cards" id="col-resuelto"></div>
+            </div>
+        </div>
+
+        <!-- Panel de detalle (derecha) -->
+        <aside class="detalle-panel" id="detalle-panel" style="display:none">
+            <div class="detalle-hdr">
+                <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+                    <span class="prio-badge" id="det-prio-badge">—</span>
+                    <span class="estado-badge" id="det-estado-badge">—</span>
+                </div>
+                <button class="det-close-btn" id="btn-cerrar-detalle" title="Cerrar">✕</button>
+            </div>
+
+            <h3 id="det-asunto" class="det-asunto">—</h3>
+
+            <div class="det-meta" id="det-meta"></div>
+
+            <p class="det-desc-label">Descripción</p>
+            <div class="det-desc-box" id="det-descripcion"></div>
+
+            <!-- Acciones de agente -->
+            <div class="det-acciones">
+                <button class="sop-btn-primary" id="btn-tomar-ticket" style="display:none">
+                    Tomar ticket
+                </button>
+                <div class="det-acc-row">
+                    <select id="det-estado-sel" class="det-sel">
+                        <option value="">Cambiar estado…</option>
+                        <option value="abierto">Abierto</option>
+                        <option value="en_progreso">En progreso</option>
+                        <option value="esperando_usuario">Esperando usuario</option>
+                        <option value="resuelto">Resuelto</option>
+                        <option value="cerrado">Cerrado</option>
+                    </select>
+                    <button class="det-acc-btn" id="btn-aplicar-estado">Aplicar</button>
+                </div>
+                <div class="det-acc-row">
+                    <select id="det-prio-sel" class="det-sel">
+                        <option value="">Cambiar prioridad…</option>
+                        <option value="urgente">Urgente</option>
+                        <option value="alta">Alta</option>
+                        <option value="media">Media</option>
+                        <option value="baja">Baja</option>
+                    </select>
+                    <button class="det-acc-btn" id="btn-aplicar-prio">Aplicar</button>
+                </div>
+                <button class="sop-btn-danger" id="btn-eliminar-ticket">Eliminar ticket</button>
+            </div>
+
+            <!-- Conversación -->
+            <p class="det-desc-label" style="margin-top:1rem">Conversación</p>
+            <div class="det-mensajes" id="det-mensajes"></div>
+
+            <!-- Reply / Nota interna -->
+            <div class="det-reply-wrap">
+                <div class="det-reply-tabs">
+                    <button class="det-tab active" data-tab="reply" id="tab-reply">Responder</button>
+                    <button class="det-tab" data-tab="nota" id="tab-nota">Nota interna</button>
+                </div>
+                <textarea id="det-reply-text" rows="3" class="det-textarea"
+                          placeholder="Escribe tu respuesta…"></textarea>
+                <div style="display:flex;gap:.5rem;margin-top:.4rem">
+                    <button class="sop-btn-primary" id="btn-enviar-det-reply">Enviar</button>
+                </div>
+                <p id="det-reply-msg" class="sop-msg" style="display:none"></p>
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+<footer class="site-footer">
+    <div class="footer-container">
+        <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
+    </div>
+</footer>
+
+<script src="./JS/navigation.js"></script>
+<script src="./JS/soportePanel.js"></script>
+</body>
+</html>
