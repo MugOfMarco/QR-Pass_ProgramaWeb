@@ -116,6 +116,38 @@
         </div>
     </div>
 
+    <!-- ── PANEL FALTA MANUAL (solo Prefecto / Admin) ─────── -->
+    <section id="panel-falta" style="display:none;max-width:520px;margin:1.2rem auto;padding:0 1rem">
+        <details style="background:#fff;border:1px solid #e5dde0;border-radius:10px;overflow:hidden">
+            <summary style="padding:.7rem 1.1rem;cursor:pointer;font-weight:700;font-size:.9rem;
+                            background:linear-gradient(135deg,#5c1f33,#3d1422);color:#fff;list-style:none">
+                ⚠ Registrar falta manual
+            </summary>
+            <div style="padding:1rem">
+                <p style="font-size:.8rem;color:#666;margin-bottom:.8rem">
+                    Registra una falta para un alumno que no asistió. Requiere rol <strong>Prefecto</strong> o <strong>Administrador</strong>.
+                </p>
+                <label style="display:block;font-size:.8rem;font-weight:700;color:#555;margin-bottom:.3rem" for="falta-boleta">Boleta del alumno *</label>
+                <input type="text" id="falta-boleta" inputmode="numeric" maxlength="10"
+                       placeholder="Ej. 2023630001" autocomplete="off"
+                       style="width:100%;padding:.5rem .8rem;border:2px solid #dde;border-radius:6px;
+                              font-size:.9rem;box-sizing:border-box;margin-bottom:.7rem;font-family:inherit">
+                <label style="display:block;font-size:.8rem;font-weight:700;color:#555;margin-bottom:.3rem" for="falta-motivo">Motivo (opcional)</label>
+                <textarea id="falta-motivo" maxlength="200" rows="2"
+                          placeholder="Describe brevemente el motivo de la falta…"
+                          style="width:100%;padding:.5rem .8rem;border:2px solid #dde;border-radius:6px;
+                                 font-size:.85rem;box-sizing:border-box;resize:vertical;font-family:inherit;margin-bottom:.8rem"></textarea>
+                <button id="btn-registrar-falta"
+                        style="background:linear-gradient(135deg,#5c1f33,#3d1422);color:#fff;border:none;
+                               padding:.55rem 1.2rem;border-radius:7px;font-weight:700;font-size:.88rem;
+                               cursor:pointer;font-family:inherit">
+                    Registrar falta
+                </button>
+                <span id="falta-msg" style="display:none;margin-left:.8rem;font-size:.82rem;font-weight:700"></span>
+            </div>
+        </details>
+    </section>
+
     <footer class="site-footer">
         <div class="footer-container">
             <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
@@ -125,5 +157,58 @@
     <script src="./JS/navigation.js"></script>
     <script src="./JS/registro.js" defer></script>
     <script src="./JS/validaciones.js" defer></script>
+    <script>
+    // Panel falta — mostrar solo para Prefecto/Admin y manejar envío
+    (async function initFalta() {
+        try {
+            const r    = await fetch('/api/auth/check', { credentials: 'include' });
+            const data = await r.json();
+            if (!data.isAuthenticated) return;
+            const roles = ['Prefecto', 'Administrador'];
+            if (!roles.includes(data.tipo)) return;
+            document.getElementById('panel-falta').style.display = '';
+        } catch { return; }
+    })();
+
+    document.getElementById('btn-registrar-falta').addEventListener('click', async () => {
+        const boleta = document.getElementById('falta-boleta').value.trim();
+        const motivo = document.getElementById('falta-motivo').value.trim();
+        const msg    = document.getElementById('falta-msg');
+        const btn    = document.getElementById('btn-registrar-falta');
+
+        if (!boleta) {
+            msg.textContent = 'Ingresa la boleta.';
+            msg.style.color = '#dc2626';
+            msg.style.display = '';
+            return;
+        }
+
+        btn.disabled = true; btn.textContent = 'Registrando…';
+        msg.style.display = 'none';
+
+        try {
+            const r = await fetch('/api/registros/falta', {
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ boleta, motivo: motivo || null }),
+            });
+            const data = await r.json();
+            msg.textContent    = data.message || (data.success ? 'Falta registrada.' : 'Error.');
+            msg.style.color    = data.success ? '#16a34a' : '#dc2626';
+            msg.style.display  = '';
+            if (data.success) {
+                document.getElementById('falta-boleta').value = '';
+                document.getElementById('falta-motivo').value = '';
+            }
+        } catch {
+            msg.textContent   = 'Error de conexión.';
+            msg.style.color   = '#dc2626';
+            msg.style.display = '';
+        } finally {
+            btn.disabled = false; btn.textContent = 'Registrar falta';
+        }
+    });
+    </script>
 </body>
 </html>

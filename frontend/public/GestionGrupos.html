@@ -462,6 +462,80 @@
         @media (max-width: 768px) {
             .toolbar { flex-direction: column; align-items: flex-start; }
         }
+
+        /* ── Modal horario ───────────────────────────────────── */
+        .modal-lg { max-width: 760px; width: 98%; }
+
+        .horario-table { width: 100%; font-size: .82rem; border-collapse: collapse; margin-bottom: .8rem; }
+        .horario-table th,
+        .horario-table td { padding: .45rem .7rem; border-bottom: 1px solid var(--border); text-align: left; }
+        .horario-table thead th { background: var(--header-grad); color: #fff; font-size: .76rem; letter-spacing: .03em; }
+        .horario-table tbody tr:last-child td { border-bottom: none; }
+
+        .horario-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .6rem .9rem;
+            margin-top: .8rem;
+        }
+        .horario-form-grid .full { grid-column: 1 / -1; }
+
+        .horario-form-grid label { font-size: .78rem; font-weight: 700; color: #555; display: block; margin-bottom: .2rem; }
+        .horario-form-grid select,
+        .horario-form-grid input[type="time"] {
+            width: 100%;
+            padding: .45rem .7rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: .88rem;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .horario-form-grid select:focus,
+        .horario-form-grid input:focus { outline: none; border-color: var(--ipn); }
+
+        .btn-del-horario {
+            background: none;
+            border: none;
+            color: var(--err);
+            cursor: pointer;
+            font-size: .8rem;
+            font-weight: 700;
+            padding: .1rem .3rem;
+        }
+        .btn-del-horario:hover { opacity: .7; }
+
+        .btn-edit-horario {
+            background: none;
+            border: none;
+            color: var(--info);
+            cursor: pointer;
+            font-size: .8rem;
+            font-weight: 700;
+            padding: .1rem .3rem;
+        }
+        .btn-edit-horario:hover { opacity: .7; }
+
+        .horario-subtitulo {
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--ipn-dark);
+            margin: .8rem 0 .4rem;
+        }
+
+        .btn-horario-grupo {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: .2rem .55rem;
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all .15s;
+        }
+        .btn-horario-grupo:hover { border-color: var(--info); color: var(--info); }
     </style>
 </head>
 <body>
@@ -597,6 +671,73 @@
     </div>
 </div>
 
+<!-- MODAL HORARIO -->
+<div class="modal-overlay" id="modal-horario">
+    <div class="modal modal-lg">
+        <h3 id="modal-horario-titulo">Horario del grupo</h3>
+
+        <p class="horario-subtitulo">Horarios registrados</p>
+        <div id="horario-tabla-wrap">
+            <table class="horario-table">
+                <thead>
+                    <tr>
+                        <th>Día</th><th>Inicio</th><th>Fin</th>
+                        <th>Materia</th><th>Semestre</th><th></th>
+                    </tr>
+                </thead>
+                <tbody id="horario-tbody">
+                    <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1rem">Sin horarios registrados</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="horario-subtitulo" id="horario-form-titulo">Agregar horario</p>
+        <div class="horario-form-grid">
+            <input type="hidden" id="hf-id">
+            <div>
+                <label for="hf-materia">Materia *</label>
+                <select id="hf-materia">
+                    <option value="">Cargando…</option>
+                </select>
+            </div>
+            <div>
+                <label for="hf-semestre">Semestre *</label>
+                <select id="hf-semestre">
+                    <option value="">Cargando…</option>
+                </select>
+            </div>
+            <div>
+                <label for="hf-dia">Día de la semana *</label>
+                <select id="hf-dia">
+                    <option value="">— Selecciona —</option>
+                    <option value="1">Lunes</option>
+                    <option value="2">Martes</option>
+                    <option value="3">Miércoles</option>
+                    <option value="4">Jueves</option>
+                    <option value="5">Viernes</option>
+                    <option value="6">Sábado</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:.5rem">
+                <div style="flex:1">
+                    <label for="hf-inicio">Hora inicio *</label>
+                    <input type="time" id="hf-inicio">
+                </div>
+                <div style="flex:1">
+                    <label for="hf-fin">Hora fin *</label>
+                    <input type="time" id="hf-fin">
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:1.1rem">
+            <button class="btn-primary" id="btn-guardar-horario">Agregar horario</button>
+            <button class="btn-secondary" id="btn-cancelar-horario-edit" style="display:none">Cancelar edición</button>
+            <button class="btn-secondary" id="btn-cerrar-horario">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="./JS/navigation.js"></script>
@@ -631,7 +772,7 @@ function toast(msg, tipo = 'ok') {
         if (!data.isAuthenticated) { location.href = '/login.html'; return; }
         if (data.tipo !== 'Administrador') { location.href = '/Entrada_Salida.html'; return; }
     } catch { location.href = '/login.html'; return; }
-    await Promise.all([ cargarGrupos(), cargarTurnos(), cargarEstados() ]);
+    await Promise.all([ cargarGrupos(), cargarTurnos(), cargarEstados(), cargarHorariosDatos() ]);
 })();
 
 async function cargarGrupos() {
@@ -725,6 +866,10 @@ function crearTarjetaGrupo(g) {
             <button class="btn-edit-grupo" data-gid="${g.id_grupo}"
                     onclick="event.stopPropagation(); abrirEditarGrupo(${g.id_grupo})">
                 ✏ Editar
+            </button>
+            <button class="btn-horario-grupo" data-gid="${g.id_grupo}"
+                    onclick="event.stopPropagation(); abrirHorario(${g.id_grupo}, '${esc(g.nombre)}')">
+                📅 Horario
             </button>
         </div>
 
@@ -1133,6 +1278,195 @@ btnLimpiar.addEventListener('click', () => {
     btnCargar.disabled                 = true;
     btnLimpiar.style.display           = 'none';
     $('progress-bar').style.width      = '0%';
+});
+
+// ── Horarios ───────────────────────────────────────────────────
+let materiasData    = [];
+let semestresData   = [];
+let horariosActivos = [];
+let horarioGrupoId  = null;
+let editandoHorario = null;
+
+const DIAS = { 1:'Lunes', 2:'Martes', 3:'Miércoles', 4:'Jueves', 5:'Viernes', 6:'Sábado', 7:'Domingo' };
+
+async function cargarHorariosDatos() {
+    try {
+        const [rm, rs] = await Promise.all([
+            fetch('/api/grupos/materias',  { credentials: 'include' }),
+            fetch('/api/grupos/semestres', { credentials: 'include' }),
+        ]);
+        const [dm, ds] = await Promise.all([ rm.json(), rs.json() ]);
+        if (dm.success) materiasData  = dm.materias;
+        if (ds.success) semestresData = ds.semestres;
+
+        const selMat = $('hf-materia');
+        selMat.innerHTML = '<option value="">— Selecciona materia —</option>';
+        materiasData.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id_materia;
+            opt.textContent = m.nombre_materia;
+            selMat.appendChild(opt);
+        });
+
+        const selSem = $('hf-semestre');
+        selSem.innerHTML = '<option value="">— Selecciona semestre —</option>';
+        semestresData.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id_semestre;
+            opt.textContent = s.nombre_semestre;
+            selSem.appendChild(opt);
+        });
+    } catch {}
+}
+
+async function abrirHorario(gid, nombre) {
+    horarioGrupoId = gid;
+    editandoHorario = null;
+    $('modal-horario-titulo').textContent = `Horario — ${nombre}`;
+    $('horario-form-titulo').textContent  = 'Agregar horario';
+    $('btn-guardar-horario').textContent  = 'Agregar horario';
+    $('btn-cancelar-horario-edit').style.display = 'none';
+    limpiarFormHorario();
+    await refrescarHorariosTabla(gid);
+    $('modal-horario').classList.add('visible');
+}
+
+async function refrescarHorariosTabla(gid) {
+    try {
+        const r    = await fetch(`/api/grupos/${gid}/horarios`, { credentials: 'include' });
+        const data = await r.json();
+        horariosActivos = data.success ? data.horarios : [];
+        renderHorariosTabla();
+    } catch { horariosActivos = []; renderHorariosTabla(); }
+}
+
+function renderHorariosTabla() {
+    const tbody = $('horario-tbody');
+    if (!horariosActivos.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1rem">Sin horarios registrados</td></tr>';
+        return;
+    }
+    tbody.innerHTML = horariosActivos.map(h => `
+        <tr>
+            <td>${esc(DIAS[h.dia_semana] || h.dia_semana)}</td>
+            <td>${esc(h.hora_inicio)}</td>
+            <td>${esc(h.hora_fin)}</td>
+            <td>${esc(h.nombre_materia)}</td>
+            <td>${esc(h.nombre_semestre)}</td>
+            <td style="white-space:nowrap">
+                <button class="btn-edit-horario" onclick="iniciarEditHorario(${h.id_horario})">✏</button>
+                <button class="btn-del-horario"  onclick="eliminarHorario(${h.id_horario})">🗑</button>
+            </td>
+        </tr>`).join('');
+}
+
+function iniciarEditHorario(id) {
+    const h = horariosActivos.find(x => x.id_horario === id);
+    if (!h) return;
+    editandoHorario = id;
+    $('hf-id').value      = id;
+    $('hf-materia').value = h.id_materia;
+    $('hf-semestre').value= h.id_semestre;
+    $('hf-dia').value     = h.dia_semana;
+    $('hf-inicio').value  = h.hora_inicio;
+    $('hf-fin').value     = h.hora_fin;
+    $('horario-form-titulo').textContent = 'Editar horario';
+    $('btn-guardar-horario').textContent = 'Guardar cambios';
+    $('btn-cancelar-horario-edit').style.display = '';
+    $('hf-materia').focus();
+}
+
+function limpiarFormHorario() {
+    $('hf-id').value = '';
+    $('hf-materia').value  = '';
+    $('hf-semestre').value = '';
+    $('hf-dia').value      = '';
+    $('hf-inicio').value   = '';
+    $('hf-fin').value      = '';
+}
+
+$('btn-cancelar-horario-edit').addEventListener('click', () => {
+    editandoHorario = null;
+    $('horario-form-titulo').textContent = 'Agregar horario';
+    $('btn-guardar-horario').textContent = 'Agregar horario';
+    $('btn-cancelar-horario-edit').style.display = 'none';
+    limpiarFormHorario();
+});
+
+$('btn-guardar-horario').addEventListener('click', async () => {
+    const id_materia  = $('hf-materia').value;
+    const id_semestre = $('hf-semestre').value;
+    const dia_semana  = $('hf-dia').value;
+    const hora_inicio = $('hf-inicio').value;
+    const hora_fin    = $('hf-fin').value;
+
+    if (!id_materia || !id_semestre || !dia_semana || !hora_inicio || !hora_fin) {
+        toast('Completa todos los campos del horario', 'err'); return;
+    }
+    if (hora_fin <= hora_inicio) {
+        toast('La hora de fin debe ser mayor que la de inicio', 'err'); return;
+    }
+
+    const btn = $('btn-guardar-horario');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+
+    try {
+        const body = { id_materia, id_semestre, dia_semana, hora_inicio, hora_fin };
+        let url, method;
+
+        if (editandoHorario) {
+            url    = `/api/grupos/horarios/${editandoHorario}`;
+            method = 'PUT';
+        } else {
+            url    = `/api/grupos/${horarioGrupoId}/horarios`;
+            method = 'POST';
+        }
+
+        const r    = await fetch(url, {
+            method,
+            headers:     { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body),
+        });
+        const data = await r.json();
+
+        if (data.success) {
+            toast(editandoHorario ? 'Horario actualizado' : 'Horario agregado', 'ok');
+            editandoHorario = null;
+            $('horario-form-titulo').textContent = 'Agregar horario';
+            $('btn-guardar-horario').textContent = 'Agregar horario';
+            $('btn-cancelar-horario-edit').style.display = 'none';
+            limpiarFormHorario();
+            await refrescarHorariosTabla(horarioGrupoId);
+        } else {
+            toast(data.message || 'Error al guardar', 'err');
+        }
+    } catch { toast('Error de conexión', 'err'); }
+    finally {
+        btn.disabled = false;
+        btn.textContent = editandoHorario ? 'Guardar cambios' : 'Agregar horario';
+    }
+});
+
+async function eliminarHorario(id) {
+    if (!confirm('¿Eliminar este horario?')) return;
+    try {
+        const r    = await fetch(`/api/grupos/horarios/${id}`, {
+            method: 'DELETE', credentials: 'include',
+        });
+        const data = await r.json();
+        if (data.success) {
+            toast('Horario eliminado', 'ok');
+            await refrescarHorariosTabla(horarioGrupoId);
+        } else {
+            toast(data.message || 'Error al eliminar', 'err');
+        }
+    } catch { toast('Error de conexión', 'err'); }
+}
+
+$('btn-cerrar-horario').addEventListener('click', () => $('modal-horario').classList.remove('visible'));
+$('modal-horario').addEventListener('click', e => {
+    if (e.target === $('modal-horario')) $('modal-horario').classList.remove('visible');
 });
 
 // ── Descargar plantilla Excel ──────────────────────────────────

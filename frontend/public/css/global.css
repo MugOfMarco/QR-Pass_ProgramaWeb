@@ -380,6 +380,7 @@ body {
 .badge-admin    { background: var(--color-error-bg); color: #8b1a30; }
 .badge-prefecto { background: #e8f0fe; color: #1a3a8b; }
 .badge-vigilante{ background: #e8f5e9; color: #1a5e20; }
+.badge-soporte  { background: #fef3c7; color: #92400e; }
 .badge-activo   { background: #e8f5e9; color: #1a5e20; }
 .badge-inactivo { background: var(--color-error-bg); color: #8b1a30; }
 

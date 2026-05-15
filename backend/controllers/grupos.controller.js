@@ -78,6 +78,89 @@ export const accionMasiva = async (req, res) => {
     }
 };
 
+// ── GET /api/grupos/materias ──────────────────────────────────
+export const listarMaterias = async (_req, res) => {
+    try {
+        const materias = await Grupo.listarMaterias();
+        return res.json({ success: true, materias });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al cargar materias.' });
+    }
+};
+
+// ── GET /api/grupos/semestres ─────────────────────────────────
+export const listarSemestres = async (_req, res) => {
+    try {
+        const semestres = await Grupo.listarSemestres();
+        return res.json({ success: true, semestres });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al cargar semestres.' });
+    }
+};
+
+// ── GET /api/grupos/:id/horarios ──────────────────────────────
+export const listarHorarios = async (req, res) => {
+    try {
+        const horarios = await Grupo.listarHorarios(req.params.id);
+        return res.json({ success: true, horarios });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al cargar horarios.' });
+    }
+};
+
+// ── POST /api/grupos/:id/horarios ─────────────────────────────
+export const crearHorario = async (req, res) => {
+    try {
+        const { id_materia, id_semestre, dia_semana, hora_inicio, hora_fin } = req.body;
+        if (!id_materia || !id_semestre || dia_semana === undefined || !hora_inicio || !hora_fin) {
+            return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
+        }
+        if (hora_fin <= hora_inicio) {
+            return res.status(400).json({ success: false, message: 'La hora de fin debe ser mayor que la de inicio.' });
+        }
+        const r = await Grupo.crearHorario({
+            id_grupo:    req.params.id,
+            id_materia, id_semestre, dia_semana,
+            hora_inicio: s(hora_inicio),
+            hora_fin:    s(hora_fin),
+        });
+        return r.success ? res.status(201).json(r) : res.status(400).json(r);
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al crear horario.' });
+    }
+};
+
+// ── PUT /api/grupos/horarios/:id ──────────────────────────────
+export const editarHorario = async (req, res) => {
+    try {
+        const { id_materia, id_semestre, dia_semana, hora_inicio, hora_fin } = req.body;
+        if (!id_materia || !id_semestre || dia_semana === undefined || !hora_inicio || !hora_fin) {
+            return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
+        }
+        if (hora_fin <= hora_inicio) {
+            return res.status(400).json({ success: false, message: 'La hora de fin debe ser mayor que la de inicio.' });
+        }
+        const r = await Grupo.editarHorario(req.params.id, {
+            id_materia, id_semestre, dia_semana,
+            hora_inicio: s(hora_inicio),
+            hora_fin:    s(hora_fin),
+        });
+        return r.success ? res.json(r) : res.status(400).json(r);
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al editar horario.' });
+    }
+};
+
+// ── DELETE /api/grupos/horarios/:id ──────────────────────────
+export const eliminarHorario = async (req, res) => {
+    try {
+        const r = await Grupo.eliminarHorario(req.params.id);
+        return r.success ? res.json(r) : res.status(400).json(r);
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al eliminar horario.' });
+    }
+};
+
 // ── POST /api/grupos/carga-masiva ─────────────────────────────
 // Body: { alumnos: [ { boleta, nombre_completo, nombre_grupo, estado_academico, puertas_abiertas } ] }
 // Hace upsert: si boleta existe → UPDATE, si no → INSERT

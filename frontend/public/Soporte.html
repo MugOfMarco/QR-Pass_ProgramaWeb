@@ -9,208 +9,166 @@
 </head>
 <body>
 
-    <header class="site-header">
-        <div class="header-container">
-            <div class="Boton-nav">
-                <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
-                    <img src="../imgs/menu.png" alt="Menú">
-                </button>
-            </div>
-            <h1 class="title">Soporte QR Pass</h1>
-            <div class="logo">
-                <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
-            </div>
+<header class="site-header">
+    <div class="header-container">
+        <div class="Boton-nav">
+            <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <img src="../imgs/menu.png" alt="Menú">
+            </button>
         </div>
-    </header>
+        <h1 class="title">Centro de Soporte — QR Pass</h1>
+        <div class="logo">
+            <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+        </div>
+    </div>
+</header>
 
-    <nav class="menu-navegacion" aria-label="Menú principal">
-        <ul id="lista-opciones" class="menu-lista"></ul>
-    </nav>
-    <div id="menu-overlay" class="menu-overlay"></div>
+<nav class="menu-navegacion" aria-label="Menú principal">
+    <ul id="lista-opciones" class="menu-lista"></ul>
+</nav>
+<div id="menu-overlay" class="menu-overlay"></div>
 
-    <main class="soporte-wrap">
+<main class="sop-wrap">
 
-        <!-- Hero -->
-        <section class="soporte-hero">
-            <h2>Centro de ayuda</h2>
-            <p>Consulta nuestras preguntas frecuentes para resolver dudas comunes sobre el sistema. Si no encuentras lo que buscas, escríbenos al final de la página.</p>
-            <div class="divisor"></div>
-        </section>
+    <!-- ── COLUMNA IZQUIERDA: Formulario + FAQ ─────────────── -->
+    <aside class="sop-left">
 
-        <!-- FAQs -->
-        <section class="faq-grid">
-
-            <div class="faq-col">
-                <div class="card">
-                    <div class="categoria">Acceso al sistema</div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>¿Qué hacer si olvido mi contraseña?</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                Si eres <strong>vigilante</strong>, solicítalo a tu administrador para que la cambie por ti.
-                                Si eres <strong>administrador</strong>, presiona <em>"¿Olvidaste tu contraseña?"</em> en la pantalla de inicio de sesión e ingresa el correo registrado. Recibirás un enlace para restablecerla.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>¿Qué hacer si hay un error al iniciar sesión?</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                Verifica que las credenciales estén escritas correctamente. Si el sistema sigue denegando el acceso, contacta al administrador principal para revisar el estado de tu cuenta.
-                            </div>
-                        </div>
-                    </div>
+        <!-- Crear ticket -->
+        <section class="sop-card">
+            <h2 class="sop-card-title">✉ Nuevo ticket de soporte</h2>
+            <form id="form-ticket" autocomplete="off" novalidate>
+                <div class="sop-field">
+                    <label for="tk-asunto">Asunto *</label>
+                    <input type="text" id="tk-asunto" maxlength="120"
+                           placeholder="Resumen breve del problema">
                 </div>
-
-                <div class="card">
-                    <div class="categoria">Gestión de usuarios (administradores)</div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>¿Cómo registrar a un nuevo alumno o vigilante?</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                Desde el módulo correspondiente, presiona <em>+ Nuevo</em>, llena los datos requeridos y asigna el rol. El sistema valida los datos y los guarda en la base de datos.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>¿Es posible modificar o eliminar el registro de un alumno?</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                Sí. En la tabla puedes editar la información, desactivar la cuenta o eliminarla definitivamente. Recuerda que la eliminación es irreversible.
-                            </div>
-                        </div>
-                    </div>
+                <div class="sop-field">
+                    <label for="tk-modulo">Módulo afectado</label>
+                    <select id="tk-modulo">
+                        <option value="">— Sin especificar —</option>
+                        <option value="acceso">Registro de entrada/salida</option>
+                        <option value="alumnos">Gestión de alumnos</option>
+                        <option value="grupos">Gestión de grupos</option>
+                        <option value="usuarios">Gestión de usuarios</option>
+                        <option value="reportes">Reportes / Descargas</option>
+                        <option value="qr">Código QR</option>
+                        <option value="otro">Otro</option>
+                    </select>
                 </div>
-            </div>
-
-            <div class="faq-col">
-                <div class="card">
-                    <div class="categoria">Control de entradas y salidas</div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>¿Cómo funciona el escaneo para registrar una entrada o salida?</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                El alumno muestra su código QR en pantalla. Como vigilante, asegúrate de que el lector escanee el código; el sistema validará automáticamente la información y registrará la hora exacta del movimiento.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>El sistema marca el código QR como "Inválido"</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                Esto ocurre si el código no pertenece a un usuario registrado o si hay un problema de lectura. Pide al alumno que muestre el QR claramente; si el error persiste, debe revisar su registro con la administración.
-                            </div>
-                        </div>
-                    </div>
+                <div class="sop-field">
+                    <label for="tk-prioridad">Prioridad</label>
+                    <select id="tk-prioridad">
+                        <option value="baja">Baja — no urgente</option>
+                        <option value="media" selected>Media — normal</option>
+                        <option value="alta">Alta — afecta mi trabajo</option>
+                        <option value="urgente">Urgente — sistema caído</option>
+                    </select>
                 </div>
-
-                <div class="card">
-                    <div class="categoria">Consulta de historial y reportes</div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>¿Cómo revisar a qué hora entró o salió un alumno?</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                Ingresa al módulo de historial o registros. Allí puedes visualizar la tabla con los datos de las entradas y salidas, incluyendo la fecha y hora exacta.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-header" type="button">
-                            <span>¿Se pueden buscar los registros de una boleta específica?</span>
-                            <i class="arrow"></i>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                Sí, en la sección del historial usa la búsqueda ingresando el número de boleta del alumno para filtrar y ver únicamente sus movimientos.
-                            </div>
-                        </div>
-                    </div>
+                <div class="sop-field">
+                    <label for="tk-descripcion">Descripción detallada *</label>
+                    <textarea id="tk-descripcion" rows="4" maxlength="2000"
+                              placeholder="Explica el problema con el mayor detalle posible: qué hiciste, qué esperabas, qué ocurrió…"></textarea>
                 </div>
-            </div>
-        </section>
-
-        <!-- Formulario de contacto (visual; sin lógica) -->
-        <section class="contacto-section">
-            <h3>¿Necesitas ayuda?</h3>
-            <p class="subtitulo">Envíanos tu solicitud y te responderemos lo antes posible.</p>
-
-            <form id="form-soporte" autocomplete="off">
-                <div class="contacto-grid">
-                    <div class="form-sec">
-                        <label for="sop-nombre">Nombre completo</label>
-                        <input type="text" id="sop-nombre" name="nombre" maxlength="60" placeholder="Tu nombre">
-                    </div>
-                    <div class="form-sec">
-                        <label for="sop-correo">Correo electrónico</label>
-                        <input type="email" id="sop-correo" name="correo" maxlength="120" placeholder="tu@correo.com">
-                    </div>
-                </div>
-
-                <div class="contacto-grid">
-                    <div class="form-sec">
-                        <label for="sop-tipo">Tipo de solicitud</label>
-                        <select id="sop-tipo" name="tipo">
-                            <option value="">Selecciona una opción</option>
-                            <option value="acceso">Problema de acceso</option>
-                            <option value="usuarios">Gestión de usuarios</option>
-                            <option value="reportes">Reportes / historial</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-                    <div class="form-sec">
-                        <label for="sop-asunto">Asunto</label>
-                        <input type="text" id="sop-asunto" name="asunto" maxlength="80" placeholder="Resumen breve">
-                    </div>
-                </div>
-
-                <div class="form-sec">
-                    <label for="sop-mensaje">Mensaje</label>
-                    <textarea id="sop-mensaje" name="mensaje" maxlength="500" placeholder="Describe tu problema o solicitud…"></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn-enviar">Enviar solicitud</button>
-                </div>
+                <button type="submit" class="sop-btn-primary" id="btn-enviar-ticket">
+                    Enviar ticket
+                </button>
+                <p id="form-ticket-msg" class="sop-msg" style="display:none"></p>
             </form>
         </section>
-    </main>
 
-    <footer class="site-footer">
-        <div class="footer-container">
-            <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
+        <!-- FAQ -->
+        <section class="sop-card">
+            <h2 class="sop-card-title">❓ Preguntas frecuentes</h2>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Qué hacer si olvido mi contraseña?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Si eres <strong>vigilante</strong>, solicítalo a tu administrador.
+                    Si eres <strong>administrador</strong>, usa la opción <em>"¿Olvidaste tu contraseña?"</em> en el login.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">El código QR no es reconocido<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Verifica que el código pertenezca a un alumno registrado. Si el problema persiste, contacta al administrador para revisar el estado de la cuenta del alumno.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Cómo agregar alumnos masivamente?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Desde <strong>Gestión de Grupos</strong>, usa la sección <em>"Carga masiva desde Excel"</em>. Descarga la plantilla, llénala y sube el archivo .xlsx. El sistema insertará o actualizará cada alumno automáticamente.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Cómo consultar el historial de un alumno?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Ve a <strong>Buscar Alumno</strong>, ingresa la boleta y podrás ver todos sus registros de entrada/salida con fecha y hora.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">Un alumno aparece como "bloqueado"<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    El sistema bloquea automáticamente a alumnos con demasiados retardos o sin credencial. Un administrador puede desbloquearlo desde <strong>Gestión de Grupos</strong> → seleccionar alumno → Desbloquear.
+                </div>
+            </div>
+        </section>
+    </aside>
+
+    <!-- ── COLUMNA DERECHA: Mis tickets ───────────────────── -->
+    <section class="sop-right">
+        <div class="sop-card sop-tickets-panel">
+            <h2 class="sop-card-title">📋 Mis tickets</h2>
+
+            <div id="tickets-lista">
+                <p class="sop-muted">Cargando tus tickets…</p>
+            </div>
         </div>
-    </footer>
 
-    <script src="./JS/navigation.js"></script>
-    <script src="./JS/soporte.js"></script>
+        <!-- Detalle de ticket seleccionado -->
+        <div class="sop-card sop-detalle-panel" id="ticket-detalle-panel" style="display:none">
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">
+                <button class="sop-btn-ghost" id="btn-volver-lista">← Volver</button>
+                <h2 class="sop-card-title" style="margin:0;flex:1" id="detalle-asunto">—</h2>
+            </div>
+
+            <div class="detalle-meta" id="detalle-meta"></div>
+
+            <div class="detalle-desc-wrap">
+                <p class="sop-label">Descripción</p>
+                <p id="detalle-descripcion" class="detalle-desc"></p>
+            </div>
+
+            <div class="mensajes-wrap" id="mensajes-wrap">
+                <p class="sop-label">Conversación</p>
+                <div id="mensajes-lista" class="mensajes-lista"></div>
+            </div>
+
+            <div id="reply-form-wrap">
+                <textarea id="reply-contenido" rows="3" maxlength="2000"
+                          placeholder="Escribe tu respuesta…"
+                          class="sop-textarea"></textarea>
+                <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
+                    <button class="sop-btn-primary" id="btn-enviar-reply">Enviar respuesta</button>
+                    <button class="sop-btn-danger"  id="btn-cerrar-ticket" style="display:none">Cerrar ticket</button>
+                </div>
+                <p id="reply-msg" class="sop-msg" style="display:none"></p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer">
+    <div class="footer-container">
+        <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
+    </div>
+</footer>
+
+<script src="./JS/navigation.js"></script>
+<script src="./JS/soporte.js"></script>
 </body>
 </html>

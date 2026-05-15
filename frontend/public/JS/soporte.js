@@ -1,39 +1,214 @@
-// frontend/public/JS/soporte.js
-document.addEventListener('DOMContentLoaded', () => {
+// frontend/public/JS/soporte.js — Sistema de tickets de usuario
+'use strict';
 
-    // ─── Acordeón ─────────────────────────────────────────
-    document.querySelectorAll('.accordion-header').forEach(button => {
-        button.addEventListener('click', () => {
-            const item      = button.closest('.accordion-item');
-            const content   = button.nextElementSibling;
-            const yaAbierto = item.classList.contains('abierto');
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const $ = id => document.getElementById(id);
 
-            // Cerrar todos los demás
-            document.querySelectorAll('.accordion-item.abierto').forEach(it => {
-                it.classList.remove('abierto');
-                const c = it.querySelector('.accordion-content');
-                if (c) c.style.maxHeight = null;
-            });
+const ESTADO_LABEL = {
+    abierto:           'Abierto',
+    en_progreso:       'En progreso',
+    esperando_usuario: 'Esperando usuario',
+    resuelto:          'Resuelto',
+    cerrado:           'Cerrado',
+};
+const PRIO_LABEL = { urgente:'Urgente', alta:'Alta', media:'Media', baja:'Baja' };
 
-            if (!yaAbierto) {
-                item.classList.add('abierto');
-                // Doble rAF: el primero aplica la clase, el segundo lee el
-                // scrollHeight real (ya con padding interno incluido)
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        content.style.maxHeight = (content.scrollHeight + 32) + 'px';
-                    });
-                });
-            }
-        });
+let ticketsData   = [];
+let ticketActivo  = null;
+let usuarioActual = null;
+
+// ── Init ───────────────────────────────────────────────────────
+(async function init() {
+    try {
+        const r    = await fetch('/api/auth/check', { credentials: 'include' });
+        const data = await r.json();
+        if (!data.isAuthenticated) { location.href = '/login.html'; return; }
+        usuarioActual = data;
+    } catch { location.href = '/login.html'; return; }
+
+    await cargarTickets();
+    bindFaq();
+    bindFormTicket();
+    bindDetalle();
+})();
+
+// ── Cargar mis tickets ─────────────────────────────────────────
+async function cargarTickets() {
+    try {
+        const r    = await fetch('/api/soporte/tickets', { credentials: 'include' });
+        const data = await r.json();
+        ticketsData = data.success ? data.tickets : [];
+        renderLista();
+    } catch { renderLista(); }
+}
+
+function renderLista() {
+    const wrap = $('tickets-lista');
+    if (!ticketsData.length) {
+        wrap.innerHTML = '<p class="sop-muted">No tienes tickets. Usa el formulario para crear uno.</p>';
+        return;
+    }
+    wrap.innerHTML = ticketsData.map(t => `
+        <div class="ticket-item" data-id="${t.id_ticket}" onclick="abrirDetalle(${t.id_ticket})">
+            <div class="ticket-asunto">${esc(t.asunto)}</div>
+            <div class="ticket-meta">
+                <span class="tk-estado tk-${esc(t.estado)}">${esc(ESTADO_LABEL[t.estado] || t.estado)}</span>
+                <span class="tk-prio tk-${esc(t.prioridad)}">${esc(PRIO_LABEL[t.prioridad] || t.prioridad)}</span>
+                ${t.agente ? `<span style="font-size:.7rem;color:#777">Agente: ${esc(t.agente)}</span>` : ''}
+                <span class="tk-fecha">${new Date(t.fecha_creacion).toLocaleDateString('es-MX')}</span>
+            </div>
+        </div>`).join('');
+}
+
+// ── Abrir detalle ──────────────────────────────────────────────
+async function abrirDetalle(id) {
+    ticketActivo = id;
+    document.querySelectorAll('.ticket-item').forEach(el => {
+        el.classList.toggle('activo', parseInt(el.dataset.id) === id);
     });
 
-    // ─── Formulario de contacto (sin lógica real, solo visual) ─
-    const form = document.getElementById('form-soporte');
-    form?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        // Mensaje visual; el módulo no envía datos al backend.
-        alert('Solicitud registrada localmente. (Esta sección es informativa y no envía la solicitud al servidor.)');
-        form.reset();
-    });
+    $('tickets-lista').style.display        = 'none';
+    $('ticket-detalle-panel').style.display = '';
+
+    try {
+        const r    = await fetch(`/api/soporte/tickets/${id}`, { credentials: 'include' });
+        const data = await r.json();
+        if (!data.success) { mostrarDetalleError('No se pudo cargar el ticket.'); return; }
+        renderDetalle(data.ticket);
+    } catch { mostrarDetalleError('Error de conexión.'); }
+}
+
+function mostrarDetalleError(msg) {
+    $('detalle-asunto').textContent  = 'Error';
+    $('detalle-meta').innerHTML      = `<span style="color:#dc2626">${esc(msg)}</span>`;
+    $('detalle-descripcion').textContent = '';
+    $('mensajes-lista').innerHTML    = '';
+}
+
+function renderDetalle(t) {
+    $('detalle-asunto').textContent = t.asunto;
+    $('detalle-meta').innerHTML = `
+        <span class="tk-estado tk-${esc(t.estado)}">${esc(ESTADO_LABEL[t.estado] || t.estado)}</span>
+        <span class="tk-prio tk-${esc(t.prioridad)}">${esc(PRIO_LABEL[t.prioridad] || t.prioridad)}</span>
+        ${t.modulo ? `<span style="font-size:.75rem;color:#888">Módulo: ${esc(t.modulo)}</span>` : ''}
+        ${t.agente ? `<span style="font-size:.75rem;color:#888">Agente: ${esc(t.agente)}</span>` : ''}
+        <span style="font-size:.75rem;color:#aaa">${new Date(t.fecha_creacion).toLocaleString('es-MX')}</span>
+    `;
+    $('detalle-descripcion').textContent = t.descripcion;
+
+    const lista = $('mensajes-lista');
+    lista.innerHTML = t.mensajes?.length
+        ? t.mensajes.map(m => {
+            const esAgente = m.rol_autor === 'Soporte' || m.rol_autor === 'Administrador';
+            return `<div class="msg-burbuja ${esAgente ? 'msg-agente' : 'msg-usuario'}">
+                <div class="msg-autor">${esc(m.autor)} · ${new Date(m.fecha_envio).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>
+                ${esc(m.contenido)}
+            </div>`;
+        }).join('')
+        : '<p class="sop-muted" style="font-size:.82rem">Sin mensajes aún.</p>';
+
+    lista.scrollTop = lista.scrollHeight;
+
+    const terminado = t.estado === 'cerrado' || t.estado === 'resuelto';
+    $('btn-cerrar-ticket').style.display = terminado ? 'none' : '';
+    $('reply-msg').style.display         = 'none';
+}
+
+// ── Botón volver ───────────────────────────────────────────────
+$('btn-volver-lista').addEventListener('click', () => {
+    ticketActivo = null;
+    $('ticket-detalle-panel').style.display = 'none';
+    $('tickets-lista').style.display        = '';
+    document.querySelectorAll('.ticket-item').forEach(el => el.classList.remove('activo'));
 });
+
+// ── Bind detalle ───────────────────────────────────────────────
+function bindDetalle() {
+    $('btn-enviar-reply').addEventListener('click', async () => {
+        const contenido = $('reply-contenido').value.trim();
+        const msg       = $('reply-msg');
+        if (!contenido) { setMsg(msg, 'Escribe un mensaje.', false); return; }
+
+        const btn = $('btn-enviar-reply');
+        btn.disabled = true; btn.textContent = 'Enviando…';
+        msg.style.display = 'none';
+
+        try {
+            const r = await fetch(`/api/soporte/tickets/${ticketActivo}/mensajes`, {
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ contenido }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                $('reply-contenido').value = '';
+                await abrirDetalle(ticketActivo);
+            } else {
+                setMsg(msg, data.message || 'Error al enviar.', false);
+            }
+        } catch { setMsg(msg, 'Error de conexión.', false); }
+        finally  { btn.disabled = false; btn.textContent = 'Enviar respuesta'; }
+    });
+
+    $('btn-cerrar-ticket').addEventListener('click', async () => {
+        if (!confirm('¿Cerrar este ticket?')) return;
+        try {
+            await fetch(`/api/soporte/tickets/${ticketActivo}/cerrar`, {
+                method: 'PATCH', credentials: 'include',
+            });
+            await cargarTickets();
+            await abrirDetalle(ticketActivo);
+        } catch {}
+    });
+}
+
+// ── Formulario nuevo ticket ────────────────────────────────────
+function bindFormTicket() {
+    $('form-ticket').addEventListener('submit', async e => {
+        e.preventDefault();
+        const asunto      = $('tk-asunto').value.trim();
+        const descripcion = $('tk-descripcion').value.trim();
+        const modulo      = $('tk-modulo').value;
+        const prioridad   = $('tk-prioridad').value;
+        const msgEl       = $('form-ticket-msg');
+
+        if (!asunto)      { setMsg(msgEl, 'El asunto es obligatorio.', false);      return; }
+        if (!descripcion) { setMsg(msgEl, 'La descripción es obligatoria.', false); return; }
+
+        const btn = $('btn-enviar-ticket');
+        btn.disabled = true; btn.textContent = 'Enviando…';
+        msgEl.style.display = 'none';
+
+        try {
+            const r = await fetch('/api/soporte/tickets', {
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ asunto, descripcion, modulo, prioridad }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                setMsg(msgEl, `Ticket #${data.id_ticket} creado correctamente.`, true);
+                $('form-ticket').reset();
+                await cargarTickets();
+            } else {
+                setMsg(msgEl, data.message || 'Error al crear.', false);
+            }
+        } catch { setMsg(msgEl, 'Error de conexión.', false); }
+        finally  { btn.disabled = false; btn.textContent = 'Enviar ticket'; }
+    });
+}
+
+// ── FAQ ────────────────────────────────────────────────────────
+function bindFaq() {
+    document.querySelectorAll('.faq-btn').forEach(btn => {
+        btn.addEventListener('click', () => btn.closest('.faq-item').classList.toggle('open'));
+    });
+}
+
+function setMsg(el, text, ok) {
+    el.textContent   = text;
+    el.style.color   = ok ? '#16a34a' : '#dc2626';
+    el.style.display = '';
+}
