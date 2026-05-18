@@ -211,7 +211,7 @@
             <span class="backup-head-icon">🗄️</span>
             <div>
                 <h2>Respaldo completo de Supabase</h2>
-                <p>Descarga todas las tablas del sistema en formato JSON</p>
+                <p>Descarga todas las tablas del sistema como script SQL (INSERT … ON CONFLICT)</p>
             </div>
         </div>
 
@@ -236,15 +236,21 @@
                 <div class="tabla-chip">roles</div>
                 <div class="tabla-chip">puntos_acceso</div>
                 <div class="tabla-chip">tipos_registro</div>
-                <div class="tabla-chip">horario_grupo</div>
+                <div class="tabla-chip">horarios_grupo</div>
                 <div class="tabla-chip">horario_alumno_extra</div>
                 <div class="tabla-chip">materias_acreditadas</div>
                 <div class="tabla-chip">configuracion_sistema</div>
+                <div class="tabla-chip">dias_inhabiles</div>
+                <div class="tabla-chip">tickets_soporte</div>
+                <div class="tabla-chip">mensajes_ticket</div>
+                <div class="tabla-chip">eventos_ticket</div>
             </div>
 
             <div class="info-box">
                 <strong>⚠️ Importante</strong>
-                El archivo descargado es un JSON estructurado con todos los registros de cada tabla.
+                El archivo descargado es un script <strong>.sql</strong> con sentencias
+                <code>INSERT … ON CONFLICT DO NOTHING</code>. Es seguro ejecutarlo sobre una
+                base de datos existente: no duplica registros ni destruye datos actuales.
                 Guárdalo en un lugar seguro. Si la BD tiene más de 1 000 registros por tabla,
                 se descargan en páginas automáticamente — puede tardar unos segundos.
             </div>
@@ -357,7 +363,7 @@ document.getElementById('btn-download').addEventListener('click', async () => {
 
         const ahora    = new Date();
         const fechaStr = `${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}`;
-        const filename = `respaldo_qrpass_${fechaStr}.json`;
+        const filename = `respaldo_qrpass_${fechaStr}.sql`;
 
         const url = URL.createObjectURL(blob);
         const a   = document.createElement('a');

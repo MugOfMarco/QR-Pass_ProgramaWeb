@@ -77,7 +77,7 @@ class Ticket {
         const { data: mensajes, error: em } = await supabaseAdmin
             .from('mensajes_ticket')
             .select(`
-                id_mensaje, contenido, es_nota_interna,
+                id_mensaje, contenido, es_nota_interna, url_evidencia,
                 fecha_envio,
                 usuarios_sistema ( nombre_completo, roles ( nombre_rol ) )
             `)
@@ -104,6 +104,7 @@ class Ticket {
             mensajes: (mensajes || []).map(m => ({
                 id_mensaje:    m.id_mensaje,
                 contenido:     m.contenido,
+                url_evidencia: m.url_evidencia ?? null,
                 fecha_envio:   m.fecha_envio,
                 autor:         m.usuarios_sistema?.nombre_completo ?? '—',
                 rol_autor:     m.usuarios_sistema?.roles?.nombre_rol ?? '—',
@@ -112,15 +113,18 @@ class Ticket {
     }
 
     // ─── Agregar mensaje ──────────────────────────────────────
-    static async agregarMensaje({ id_ticket, id_usuario, contenido, es_nota_interna = false }) {
+    static async agregarMensaje({ id_ticket, id_usuario, contenido, es_nota_interna = false, url_evidencia = null }) {
+        const payload = {
+            id_ticket:       parseInt(id_ticket),
+            id_usuario:      parseInt(id_usuario),
+            contenido:       contenido.trim().substring(0, 2000),
+            es_nota_interna: Boolean(es_nota_interna),
+        };
+        if (url_evidencia) payload.url_evidencia = url_evidencia;
+
         const { data, error } = await supabaseAdmin
             .from('mensajes_ticket')
-            .insert({
-                id_ticket:       parseInt(id_ticket),
-                id_usuario:      parseInt(id_usuario),
-                contenido:       contenido.trim().substring(0, 2000),
-                es_nota_interna: Boolean(es_nota_interna),
-            })
+            .insert(payload)
             .select('id_mensaje, fecha_envio')
             .single();
 
@@ -280,6 +284,7 @@ class Ticket {
                 id_mensaje:      m.id_mensaje,
                 contenido:       m.contenido,
                 es_nota_interna: m.es_nota_interna,
+                url_evidencia:   m.url_evidencia ?? null,
                 fecha_envio:     m.fecha_envio,
                 autor:           m.usuarios_sistema?.nombre_completo ?? '—',
                 rol_autor:       m.usuarios_sistema?.roles?.nombre_rol ?? '—',

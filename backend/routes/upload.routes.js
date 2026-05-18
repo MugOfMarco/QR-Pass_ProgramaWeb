@@ -19,4 +19,11 @@ router.delete('/image',
     uploadController.deleteImage
 );
 
+// Evidencia de soporte — cualquier usuario autenticado puede subir
+router.post('/evidencia',
+    requireAuth,
+    upload.single('evidencia'),
+    uploadController.uploadEvidencia
+);
+
 export default router;

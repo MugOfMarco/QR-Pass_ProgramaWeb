@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lógica de Negocio — QR Pass</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/logicaNegocio.css">
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-container">
+        <div class="Boton-nav">
+            <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <img src="../imgs/menu.png" alt="Menú">
+            </button>
+        </div>
+        <h1 class="title">Lógica de Negocio</h1>
+        <div class="logo">
+            <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+        </div>
+    </div>
+</header>
+
+<nav class="menu-navegacion" aria-label="Menú principal">
+    <ul id="lista-opciones" class="menu-lista"></ul>
+</nav>
+<div id="menu-overlay" class="menu-overlay"></div>
+
+<main class="ln-wrap">
+
+    <!-- ══ ENCABEZADO DE SECCIÓN ══════════════════════════════ -->
+    <div class="ln-section-hdr">
+        <div>
+            <h2 class="ln-section-title">📅 Días Inhábiles</h2>
+            <p class="ln-section-desc">
+                Festivos, puentes y vacaciones que el sistema <strong>no debe marcar como falta</strong>.
+                Actualiza la lista al inicio de cada ciclo escolar.
+            </p>
+        </div>
+    </div>
+
+    <!-- ══ PANEL SUPERIOR: filtros + botón reiniciar ══════════ -->
+    <div class="ln-topbar">
+        <div class="ln-filtros">
+            <label class="ln-label" for="filtro-ciclo">Ciclo escolar</label>
+            <select id="filtro-ciclo" class="ln-sel">
+                <option value="">Todos los ciclos</option>
+            </select>
+            <button class="ln-btn-sec" id="btn-refrescar" title="Recargar lista">↻ Refrescar</button>
+        </div>
+        <button class="ln-btn-danger" id="btn-abrir-reiniciar">
+            ♻ Reiniciar año escolar
+        </button>
+    </div>
+
+    <!-- ══ CUERPO: tabla + formulario lateral ═════════════════ -->
+    <div class="ln-body">
+
+        <!-- Tabla de días inhábiles -->
+        <div class="ln-tabla-wrap">
+            <table class="ln-tabla">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Descripción</th>
+                        <th>Tipo</th>
+                        <th>Ciclo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-dias"></tbody>
+            </table>
+            <p id="ln-empty" class="ln-empty" style="display:none">No hay días inhábiles registrados.</p>
+        </div>
+
+        <!-- Formulario agregar día -->
+        <aside class="ln-form-panel">
+            <h3 class="ln-form-title">Agregar día inhábil</h3>
+
+            <form id="form-dia" novalidate>
+                <div class="ln-field">
+                    <label class="ln-label" for="f-fecha">Fecha *</label>
+                    <input type="date" id="f-fecha" class="ln-input" required>
+                </div>
+
+                <div class="ln-field">
+                    <label class="ln-label" for="f-desc">Descripción *</label>
+                    <input type="text" id="f-desc" class="ln-input" maxlength="100"
+                           placeholder="Ej: Puente Revolución Mexicana">
+                </div>
+
+                <div class="ln-field">
+                    <label class="ln-label" for="f-tipo">Tipo</label>
+                    <select id="f-tipo" class="ln-sel">
+                        <option value="festivo">Festivo nacional</option>
+                        <option value="puente">Puente</option>
+                        <option value="vacaciones">Vacaciones</option>
+                        <option value="institucional">Institucional (CECyT)</option>
+                    </select>
+                </div>
+
+                <div class="ln-field">
+                    <label class="ln-label" for="f-ciclo">Ciclo escolar</label>
+                    <input type="text" id="f-ciclo" class="ln-input" maxlength="9"
+                           placeholder="Ej: 2025-2026">
+                    <small class="ln-hint">Déjalo vacío si aplica permanentemente.</small>
+                </div>
+
+                <button type="submit" class="ln-btn-primary" id="btn-agregar">Agregar</button>
+                <p id="form-dia-msg" class="ln-msg" style="display:none"></p>
+            </form>
+        </aside>
+    </div>
+
+    <!-- ══ LEYENDA de tipos ════════════════════════════════════ -->
+    <div class="ln-leyenda">
+        <span class="tipo-chip tipo-festivo">Festivo</span> Ley federal (no laborable) &nbsp;·&nbsp;
+        <span class="tipo-chip tipo-puente">Puente</span> Decretado por SEP &nbsp;·&nbsp;
+        <span class="tipo-chip tipo-vacaciones">Vacaciones</span> Receso escolar &nbsp;·&nbsp;
+        <span class="tipo-chip tipo-institucional">Institucional</span> Propio del CECyT 9
+    </div>
+
+</main>
+
+<!-- ══ MODAL: Reiniciar año escolar ══════════════════════════ -->
+<div id="modal-reiniciar" class="ln-modal-overlay" style="display:none" role="dialog"
+     aria-modal="true" aria-labelledby="modal-reiniciar-titulo">
+    <div class="ln-modal">
+        <h3 id="modal-reiniciar-titulo" class="ln-modal-title">♻ Reiniciar año escolar</h3>
+        <p class="ln-modal-desc">
+            Esta acción <strong>eliminará todos los días inhábiles del ciclo indicado</strong>
+            y cargará automáticamente los festivos por ley (Año Nuevo, Constitución,
+            Juárez, Trabajo, Independencia, Revolución, Navidad y Día del Maestro).
+        </p>
+        <p class="ln-modal-desc">
+            Después podrás agregar manualmente los puentes, vacaciones y días institucionales
+            que publica el SEP para ese ciclo.
+        </p>
+
+        <div class="ln-field" style="margin-top:1rem">
+            <label class="ln-label" for="modal-ciclo">Nuevo ciclo escolar *</label>
+            <input type="text" id="modal-ciclo" class="ln-input" maxlength="9"
+                   placeholder="Ej: 2026-2027">
+        </div>
+
+        <p id="modal-reiniciar-msg" class="ln-msg" style="display:none"></p>
+
+        <div class="ln-modal-actions">
+            <button class="ln-btn-primary" id="btn-confirmar-reiniciar">Reiniciar</button>
+            <button class="ln-btn-sec"     id="btn-cancelar-reiniciar">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<footer class="site-footer">
+    <div class="footer-container">
+        <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
+    </div>
+</footer>
+
+<script src="./JS/navigation.js"></script>
+<script src="./JS/logicaNegocio.js"></script>
+</body>
+</html>

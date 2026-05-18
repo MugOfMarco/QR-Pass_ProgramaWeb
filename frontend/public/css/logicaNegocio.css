@@ -1,0 +1,314 @@
+/* frontend/public/css/logicaNegocio.css */
+
+/* ── Contenedor principal ─────────────────────────────────── */
+.ln-wrap {
+    max-width: 1200px;
+    margin: 1.5rem auto;
+    padding: 0 1rem 3rem;
+}
+
+/* ── Encabezado de sección ───────────────────────────────── */
+.ln-section-hdr {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.ln-section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 .25rem;
+}
+
+.ln-section-desc {
+    font-size: .85rem;
+    color: #555;
+    margin: 0;
+    max-width: 640px;
+    line-height: 1.5;
+}
+
+/* ── Barra superior ──────────────────────────────────────── */
+.ln-topbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.ln-filtros {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+/* ── Cuerpo dividido: tabla + formulario ─────────────────── */
+.ln-body {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .ln-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Tabla ───────────────────────────────────────────────── */
+.ln-tabla-wrap {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow-x: auto;
+}
+
+.ln-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+
+.ln-tabla thead th {
+    background: #f3f4f6;
+    color: #374151;
+    font-weight: 700;
+    padding: .65rem .9rem;
+    text-align: left;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.ln-tabla tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background .15s;
+}
+
+.ln-tabla tbody tr:hover {
+    background: #f9fafb;
+}
+
+.ln-tabla tbody td {
+    padding: .6rem .9rem;
+    vertical-align: middle;
+    color: #374151;
+}
+
+.ln-td-fecha {
+    white-space: nowrap;
+    font-weight: 600;
+    color: #1a1a2e !important;
+}
+
+.ln-td-ciclo {
+    font-size: .78rem;
+    color: #888 !important;
+}
+
+/* ── Chips de tipo ───────────────────────────────────────── */
+.tipo-chip {
+    display: inline-block;
+    padding: .18rem .55rem;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    white-space: nowrap;
+}
+
+.tipo-festivo      { background: #fee2e2; color: #991b1b; }
+.tipo-puente       { background: #fef3c7; color: #92400e; }
+.tipo-vacaciones   { background: #d1fae5; color: #065f46; }
+.tipo-institucional{ background: #ede9fe; color: #5b21b6; }
+
+/* ── Empty state ──────────────────────────────────────────── */
+.ln-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #aaa;
+    font-size: .88rem;
+}
+
+/* ── Formulario lateral ──────────────────────────────────── */
+.ln-form-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1.25rem;
+}
+
+.ln-form-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 1rem;
+    padding-bottom: .5rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.ln-field {
+    margin-bottom: .9rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+
+.ln-label {
+    font-size: .8rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.ln-input,
+.ln-sel {
+    padding: .5rem .75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: .85rem;
+    color: #1a1a2e;
+    background: #fff;
+    transition: border-color .2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ln-input:focus,
+.ln-sel:focus {
+    outline: none;
+    border-color: #8b1a30;
+    box-shadow: 0 0 0 2px rgba(139,26,48,.12);
+}
+
+.ln-hint {
+    font-size: .72rem;
+    color: #9ca3af;
+}
+
+/* ── Botones ─────────────────────────────────────────────── */
+.ln-btn-primary {
+    background: #8b1a30;
+    color: #fff;
+    border: none;
+    padding: .55rem 1.2rem;
+    border-radius: 6px;
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-top: .25rem;
+    transition: background .2s;
+}
+.ln-btn-primary:hover:not(:disabled) { background: #6b1424; }
+.ln-btn-primary:disabled             { opacity: .6; cursor: default; }
+
+.ln-btn-sec {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    padding: .45rem 1rem;
+    border-radius: 6px;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+}
+.ln-btn-sec:hover { background: #e5e7eb; }
+
+.ln-btn-danger {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    padding: .5rem 1rem;
+    border-radius: 6px;
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s;
+}
+.ln-btn-danger:hover { background: #b91c1c; }
+
+.ln-btn-del {
+    background: none;
+    border: none;
+    color: #dc2626;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: .2rem .4rem;
+    border-radius: 4px;
+    transition: background .15s;
+}
+.ln-btn-del:hover { background: #fee2e2; }
+
+/* ── Mensaje inline ──────────────────────────────────────── */
+.ln-msg {
+    font-size: .8rem;
+    margin-top: .5rem;
+}
+
+/* ── Leyenda ─────────────────────────────────────────────── */
+.ln-leyenda {
+    margin-top: 1.25rem;
+    font-size: .78rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem;
+}
+
+/* ── Modal ───────────────────────────────────────────────── */
+.ln-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.ln-modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 480px;
+    width: 94%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+
+.ln-modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 .75rem;
+}
+
+.ln-modal-desc {
+    font-size: .85rem;
+    color: #555;
+    line-height: 1.55;
+    margin: 0 0 .5rem;
+}
+
+.ln-modal-actions {
+    display: flex;
+    gap: .75rem;
+    margin-top: 1.25rem;
+}
+
+.ln-modal-actions .ln-btn-primary {
+    flex: 1;
+    width: auto;
+    margin-top: 0;
+}
+
+.ln-modal-actions .ln-btn-sec {
+    flex: 1;
+}

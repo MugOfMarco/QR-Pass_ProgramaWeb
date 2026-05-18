@@ -13,9 +13,10 @@ const ESTADO_LABEL = {
 };
 const PRIO_LABEL = { urgente:'Urgente', alta:'Alta', media:'Media', baja:'Baja' };
 
-let ticketsData   = [];
-let ticketActivo  = null;
-let usuarioActual = null;
+let ticketsData      = [];
+let ticketActivo     = null;
+let usuarioActual    = null;
+let replyEvidenciaUrl = null;   // URL Cloudinary pendiente de adjuntar
 
 // ── Init ───────────────────────────────────────────────────────
 (async function init() {
@@ -99,10 +100,16 @@ function renderDetalle(t) {
     const lista = $('mensajes-lista');
     lista.innerHTML = t.mensajes?.length
         ? t.mensajes.map(m => {
-            const esAgente = m.rol_autor === 'Soporte' || m.rol_autor === 'Administrador';
+            const esAgente  = m.rol_autor === 'Soporte' || m.rol_autor === 'Administrador';
+            const evidencia = m.url_evidencia
+                ? `<div class="msg-evidencia">
+                       <img src="${esc(m.url_evidencia)}" alt="Evidencia adjunta"
+                            onclick="window.open('${esc(m.url_evidencia)}','_blank')">
+                       <a href="${esc(m.url_evidencia)}" target="_blank" rel="noopener">Ver imagen ↗</a>
+                   </div>` : '';
             return `<div class="msg-burbuja ${esAgente ? 'msg-agente' : 'msg-usuario'}">
                 <div class="msg-autor">${esc(m.autor)} · ${new Date(m.fecha_envio).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>
-                ${esc(m.contenido)}
+                ${esc(m.contenido)}${evidencia}
             </div>`;
         }).join('')
         : '<p class="sop-muted" style="font-size:.82rem">Sin mensajes aún.</p>';
@@ -124,6 +131,27 @@ $('btn-volver-lista').addEventListener('click', () => {
 
 // ── Bind detalle ───────────────────────────────────────────────
 function bindDetalle() {
+
+    // ── Evidencia: vista previa ──────────────────────────────────
+    $('reply-evidencia').addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            $('reply-evidencia-img').src   = e.target.result;
+            $('reply-evidencia-preview').style.display = '';
+        };
+        reader.readAsDataURL(file);
+        replyEvidenciaUrl = null;   // se sube al enviar
+    });
+
+    $('btn-quitar-evidencia').addEventListener('click', () => {
+        $('reply-evidencia').value           = '';
+        $('reply-evidencia-img').src         = '';
+        $('reply-evidencia-preview').style.display = 'none';
+        replyEvidenciaUrl = null;
+    });
+
     $('btn-enviar-reply').addEventListener('click', async () => {
         const contenido = $('reply-contenido').value.trim();
         const msg       = $('reply-msg');
@@ -134,15 +162,40 @@ function bindDetalle() {
         msg.style.display = 'none';
 
         try {
+            // 1. Subir evidencia si hay archivo seleccionado
+            const archivoEl = $('reply-evidencia');
+            if (archivoEl.files[0]) {
+                btn.textContent = 'Subiendo imagen…';
+                const fd = new FormData();
+                fd.append('evidencia', archivoEl.files[0]);
+                const upRes  = await fetch('/api/upload/evidencia', {
+                    method: 'POST', credentials: 'include', body: fd,
+                });
+                const upData = await upRes.json();
+                if (!upData.success) {
+                    setMsg(msg, 'Error al subir la imagen: ' + (upData.message || ''), false);
+                    return;
+                }
+                replyEvidenciaUrl = upData.url;
+            }
+
+            // 2. Enviar mensaje
+            const body = { contenido };
+            if (replyEvidenciaUrl) body.url_evidencia = replyEvidenciaUrl;
+
             const r = await fetch(`/api/soporte/tickets/${ticketActivo}/mensajes`, {
                 method:      'POST',
                 headers:     { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ contenido }),
+                body: JSON.stringify(body),
             });
             const data = await r.json();
             if (data.success) {
-                $('reply-contenido').value = '';
+                $('reply-contenido').value              = '';
+                $('reply-evidencia').value              = '';
+                $('reply-evidencia-img').src            = '';
+                $('reply-evidencia-preview').style.display = 'none';
+                replyEvidenciaUrl = null;
                 await abrirDetalle(ticketActivo);
             } else {
                 setMsg(msg, data.message || 'Error al enviar.', false);

@@ -17,6 +17,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import gruposRoutes    from './routes/grupos.routes.js';
 import backupRoutes    from './routes/backup.routes.js';
 import soporteRoutes   from './routes/soporte.routes.js';
+import configRoutes    from './routes/config.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -120,6 +121,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/grupos',    gruposRoutes);
 app.use('/api/backup',    backupRoutes);
 app.use('/api/soporte',   soporteRoutes);
+app.use('/api/config',    configRoutes);
 
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
     extensions: ['html', 'css', 'js'],
@@ -142,6 +144,7 @@ app.use((req, res, next) => {
         '/gestionusuarios.html',
         '/dashboard.html',
         '/gestiongrupos.html',
+        '/logicanegocio.html',
     ];
 
     const adminOSoporte = ['/soportepanel.html'];
@@ -178,6 +181,7 @@ app.get('/', (req, res) => {
     '/GestionGrupos.html',
     '/Soporte.html',
     '/SoportePanel.html',
+    '/LogicaNegocio.html',
     '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>

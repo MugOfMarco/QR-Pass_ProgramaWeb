@@ -15,9 +15,10 @@ const PRIO_LABEL   = { urgente:'Urgente', alta:'Alta', media:'Media', baja:'Baja
 
 const COLUMNAS = ['abierto', 'en_progreso', 'esperando_usuario', 'resuelto'];
 
-let ticketsData  = [];
-let ticketActivo = null;
-let tabActivo    = 'reply';
+let ticketsData      = [];
+let ticketActivo     = null;
+let tabActivo        = 'reply';
+let detEvidenciaUrl  = null;   // URL Cloudinary pendiente de adjuntar
 
 // ── Init ───────────────────────────────────────────────────────
 (async function init() {
@@ -147,11 +148,17 @@ function renderDetalle(t) {
     const mensajes = $('det-mensajes');
     mensajes.innerHTML = t.mensajes?.length
         ? t.mensajes.map(m => {
-            const esAgente = m.rol_autor === 'Soporte' || m.rol_autor === 'Administrador';
+            const esAgente  = m.rol_autor === 'Soporte' || m.rol_autor === 'Administrador';
             const notaClass = m.es_nota_interna ? 'det-msg-nota' : (esAgente ? 'det-msg-agent' : 'det-msg-user');
+            const evidencia = m.url_evidencia
+                ? `<div class="det-msg-evidencia">
+                       <img src="${esc(m.url_evidencia)}" alt="Evidencia adjunta"
+                            onclick="window.open('${esc(m.url_evidencia)}','_blank')">
+                       <a href="${esc(m.url_evidencia)}" target="_blank" rel="noopener">Ver imagen ↗</a>
+                   </div>` : '';
             return `<div class="det-msg ${notaClass}">
                 <div class="det-msg-autor">${esc(m.autor)} · ${new Date(m.fecha_envio).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>
-                ${esc(m.contenido)}
+                ${esc(m.contenido)}${evidencia}
             </div>`;
         }).join('')
         : '<p style="font-size:.8rem;color:#aaa">Sin mensajes.</p>';
@@ -235,6 +242,26 @@ function bindDetalle() {
         });
     });
 
+    // ── Evidencia (panel agente): vista previa ───────────────────
+    $('det-evidencia').addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            $('det-evidencia-img').src               = e.target.result;
+            $('det-evidencia-preview').style.display = '';
+        };
+        reader.readAsDataURL(file);
+        detEvidenciaUrl = null;
+    });
+
+    $('btn-det-quitar-evidencia').addEventListener('click', () => {
+        $('det-evidencia').value                    = '';
+        $('det-evidencia-img').src                  = '';
+        $('det-evidencia-preview').style.display    = 'none';
+        detEvidenciaUrl = null;
+    });
+
     $('btn-enviar-det-reply').addEventListener('click', async () => {
         const contenido = $('det-reply-text').value.trim();
         const msg       = $('det-reply-msg');
@@ -244,15 +271,40 @@ function bindDetalle() {
         btn.disabled = true; btn.textContent = 'Enviando…';
 
         try {
+            // 1. Subir evidencia si hay archivo seleccionado
+            const archivoEl = $('det-evidencia');
+            if (archivoEl.files[0]) {
+                btn.textContent = 'Subiendo imagen…';
+                const fd = new FormData();
+                fd.append('evidencia', archivoEl.files[0]);
+                const upRes  = await fetch('/api/upload/evidencia', {
+                    method: 'POST', credentials: 'include', body: fd,
+                });
+                const upData = await upRes.json();
+                if (!upData.success) {
+                    setMsg(msg, 'Error al subir la imagen: ' + (upData.message || ''), false);
+                    return;
+                }
+                detEvidenciaUrl = upData.url;
+            }
+
+            // 2. Enviar mensaje
+            const body = { contenido, es_nota_interna: tabActivo === 'nota' };
+            if (detEvidenciaUrl) body.url_evidencia = detEvidenciaUrl;
+
             const r = await fetch(`/api/soporte/panel/tickets/${ticketActivo}/mensajes`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ contenido, es_nota_interna: tabActivo === 'nota' }),
+                body: JSON.stringify(body),
             });
             const data = await r.json();
             if (data.success) {
-                $('det-reply-text').value = '';
+                $('det-reply-text').value               = '';
+                $('det-evidencia').value                = '';
+                $('det-evidencia-img').src              = '';
+                $('det-evidencia-preview').style.display = 'none';
+                detEvidenciaUrl = null;
                 msg.style.display = 'none';
                 await abrirDetalle(ticketActivo);
             } else {
