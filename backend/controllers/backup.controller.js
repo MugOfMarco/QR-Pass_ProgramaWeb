@@ -5,6 +5,7 @@ import { supabaseAdmin } from '../database/supabase.js';
 
 const TABLAS = [
     'configuracion_sistema',
+    'dias_inhabiles',
     'semestres',
     'carreras',
     'turnos',

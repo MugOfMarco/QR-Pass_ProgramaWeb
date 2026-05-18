@@ -60,6 +60,19 @@ CREATE TABLE puntos_acceso (
     ubicacion    VARCHAR(150) DEFAULT NULL
 );
 
+-- Días que el sistema NO debe marcar falta automáticamente (festivos, puentes, vacaciones, etc.)
+-- Se gestionan desde el módulo "Lógica de Negocio" con posibilidad de reiniciar por ciclo escolar.
+CREATE TABLE dias_inhabiles (
+    id_inhabil    INT          PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    fecha         DATE         NOT NULL UNIQUE,
+    descripcion   VARCHAR(100) NOT NULL,
+    tipo          VARCHAR(20)  NOT NULL DEFAULT 'festivo'
+                      CHECK (tipo IN ('festivo', 'puente', 'vacaciones', 'institucional')),
+    ciclo_escolar VARCHAR(10)  DEFAULT NULL   -- ej: '2025-2026'; NULL = permanente
+);
+
+CREATE INDEX idx_dias_inhabiles_fecha ON dias_inhabiles (fecha);
+
 
 -- ============================================================================================================================
 -- BLOQUE 2 — PERÍODOS ESCOLARES
@@ -472,6 +485,41 @@ INSERT INTO puntos_acceso (nombre_punto, ubicacion) VALUES
 ('Entrada Principal Norte', 'Torniquetes Puerta 1'),
 ('Entrada Principal Sur',   'Torniquetes Puerta 2');
 
+-- Días inhábiles ciclo 2025-2026 (IPN/CECyT — calendario SEP)
+-- El admin puede ajustar desde Lógica de Negocio; botón "Reiniciar año" recalcula automáticamente.
+INSERT INTO dias_inhabiles (fecha, descripcion, tipo, ciclo_escolar) VALUES
+-- ── Semestre Ago 2025 – Ene 2026 ────────────────────────────────────────────
+('2025-09-16', 'Día de la Independencia',                  'festivo',       '2025-2026'),
+('2025-11-03', 'Puente Día de Muertos',                    'puente',        '2025-2026'),
+('2025-11-17', 'Aniversario Revolución Mexicana',          'festivo',       '2025-2026'),
+('2025-12-22', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2025-12-23', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2025-12-24', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2025-12-25', 'Navidad',                                  'festivo',       '2025-2026'),
+('2025-12-26', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2025-12-29', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2025-12-30', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2025-12-31', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+-- ── Semestre Feb 2026 – Jul 2026 ────────────────────────────────────────────
+('2026-01-01', 'Año Nuevo',                                'festivo',       '2025-2026'),
+('2026-01-02', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2026-01-05', 'Vacaciones decembrinas',                   'vacaciones',    '2025-2026'),
+('2026-02-02', 'Día de la Constitución Política',          'festivo',       '2025-2026'),
+('2026-03-16', 'Natalicio de Benito Juárez',               'festivo',       '2025-2026'),
+('2026-03-30', 'Semana Santa',                             'vacaciones',    '2025-2026'),
+('2026-03-31', 'Semana Santa',                             'vacaciones',    '2025-2026'),
+('2026-04-01', 'Semana Santa',                             'vacaciones',    '2025-2026'),
+('2026-04-02', 'Semana Santa — Jueves Santo',              'vacaciones',    '2025-2026'),
+('2026-04-03', 'Semana Santa — Viernes Santo',             'vacaciones',    '2025-2026'),
+('2026-04-06', 'Semana Santa — Lunes de Pascua',           'vacaciones',    '2025-2026'),
+('2026-04-07', 'Semana Santa',                             'vacaciones',    '2025-2026'),
+('2026-04-08', 'Semana Santa',                             'vacaciones',    '2025-2026'),
+('2026-04-09', 'Semana Santa',                             'vacaciones',    '2025-2026'),
+('2026-04-10', 'Semana Santa',                             'vacaciones',    '2025-2026'),
+('2026-05-01', 'Día del Trabajo',                          'festivo',       '2025-2026'),
+('2026-05-15', 'Día del Maestro',                          'institucional', '2025-2026')
+ON CONFLICT (fecha) DO NOTHING;
+
 INSERT INTO usuarios_sistema (usuario, password_hash, nombre_completo, email, id_rol) VALUES
 ('admin',
  '$2b$10$bpNkCs4E0oeGTGPf.QlWUuMOrepW0bAIQX/A3r7g9m05GYxdynO3q',
@@ -668,7 +716,7 @@ ON CONFLICT (boleta, id_materia) DO NOTHING;
 -- ============================================================================================================================
 -- RESUMEN v3.0:
 --   CATÁLOGOS   → configuracion_sistema, roles, tipos_registro, estado_academico,
---                 turnos, carreras, materias, puntos_acceso
+--                 turnos, carreras, materias, puntos_acceso, dias_inhabiles
 --   TEMPORAL    → semestres
 --   PERSONAL    → usuarios_sistema  (columna email integrada + índice único parcial)
 --   SESIONES    → sessions          (persistencia de sesiones en Supabase)
@@ -687,7 +735,7 @@ ON CONFLICT (boleta, id_materia) DO NOTHING;
 --
 --   DATOS PRUEBA → Grupo 6IV7 con 11 alumnos, 10 materias y horario completo
 --
---   TOTAL: 23 tablas | 6 triggers | 8 índices | 3FN | PostgreSQL / Supabase
+--   TOTAL: 24 tablas | 6 triggers | 9 índices | 3FN | PostgreSQL / Supabase
 --
 --   CAMBIOS v2.1 (Paso 1 — bugfix correos):
 --     · email integrado directamente en CREATE TABLE usuarios_sistema (sin ALTER TABLE suelto)
@@ -713,4 +761,11 @@ ON CONFLICT (boleta, id_materia) DO NOTHING;
 --         - Tablas: tickets_soporte, mensajes_ticket (+ url_evidencia), eventos_ticket
 --         - Índices: idx_tickets_usuario, idx_tickets_estado_prio
 --         - Evidencia adjunta: columna url_evidencia TEXT NULL en mensajes_ticket (URL Cloudinary)
+--     · Paso 5 — Días Inhábiles:
+--         - Tabla dias_inhabiles (fecha UNIQUE, descripcion, tipo, ciclo_escolar)
+--         - Índice idx_dias_inhabiles_fecha
+--         - Seed ciclo 2025-2026: 28 registros (festivos + puentes + vacaciones + institucionales)
+--         - UI en módulo "Lógica de Negocio" con botón "Reiniciar año escolar"
+--         - El reinicio elimina el ciclo anterior y recalcula festivos por ley (Constitución = 1er
+--           lunes feb, Juárez = 3er lunes mar, Revolución = 3er lunes nov)
 -- ============================================================================================================================
