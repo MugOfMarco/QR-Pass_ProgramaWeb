@@ -155,6 +155,10 @@ app.use((req, res, next) => {
     if (adminOSoporte.includes(ruta.toLowerCase()) && !['Administrador', 'Soporte'].includes(tipo)) {
         return res.status(403).send('<h1>Acceso Denegado</h1><a href="/">Volver</a>');
     }
+    // Rol Soporte: acceso exclusivo a SoportePanel.html
+    if (tipo === 'Soporte' && !adminOSoporte.includes(ruta.toLowerCase())) {
+        return res.redirect('/SoportePanel.html');
+    }
     next();
 });
 

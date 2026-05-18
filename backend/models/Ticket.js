@@ -63,6 +63,7 @@ class Ticket {
                 id_ticket, asunto, descripcion, estado, prioridad, modulo,
                 fecha_creacion, fecha_actualizacion, fecha_cierre,
                 id_usuario, id_agente,
+                calificacion, comentario_calificacion, fecha_calificacion,
                 usuarios_sistema!tickets_soporte_id_usuario_fkey ( nombre_completo ),
                 agente:usuarios_sistema!tickets_soporte_id_agente_fkey ( nombre_completo )
             `)
@@ -88,19 +89,22 @@ class Ticket {
         if (em) throw em;
 
         return {
-            id_ticket:           ticket.id_ticket,
-            asunto:              ticket.asunto,
-            descripcion:         ticket.descripcion,
-            estado:              ticket.estado,
-            prioridad:           ticket.prioridad,
-            modulo:              ticket.modulo,
-            fecha_creacion:      ticket.fecha_creacion,
-            fecha_actualizacion: ticket.fecha_actualizacion,
-            fecha_cierre:        ticket.fecha_cierre,
-            id_usuario:          ticket.id_usuario,
-            id_agente:           ticket.id_agente,
-            solicitante:         ticket.usuarios_sistema?.nombre_completo ?? '—',
-            agente:              ticket.agente?.nombre_completo ?? null,
+            id_ticket:              ticket.id_ticket,
+            asunto:                 ticket.asunto,
+            descripcion:            ticket.descripcion,
+            estado:                 ticket.estado,
+            prioridad:              ticket.prioridad,
+            modulo:                 ticket.modulo,
+            fecha_creacion:         ticket.fecha_creacion,
+            fecha_actualizacion:    ticket.fecha_actualizacion,
+            fecha_cierre:           ticket.fecha_cierre,
+            id_usuario:             ticket.id_usuario,
+            id_agente:              ticket.id_agente,
+            calificacion:           ticket.calificacion ?? null,
+            comentario_calificacion:ticket.comentario_calificacion ?? null,
+            fecha_calificacion:     ticket.fecha_calificacion ?? null,
+            solicitante:            ticket.usuarios_sistema?.nombre_completo ?? '—',
+            agente:                 ticket.agente?.nombre_completo ?? null,
             mensajes: (mensajes || []).map(m => ({
                 id_mensaje:    m.id_mensaje,
                 contenido:     m.contenido,
@@ -236,6 +240,7 @@ class Ticket {
                 id_ticket, asunto, descripcion, estado, prioridad, modulo,
                 fecha_creacion, fecha_actualizacion, fecha_cierre,
                 id_usuario, id_agente,
+                calificacion, comentario_calificacion, fecha_calificacion,
                 usuarios_sistema!tickets_soporte_id_usuario_fkey ( nombre_completo, usuario, roles(nombre_rol) ),
                 agente:usuarios_sistema!tickets_soporte_id_agente_fkey ( nombre_completo )
             `)
@@ -265,21 +270,24 @@ class Ticket {
             .limit(20);
 
         return {
-            id_ticket:           ticket.id_ticket,
-            asunto:              ticket.asunto,
-            descripcion:         ticket.descripcion,
-            estado:              ticket.estado,
-            prioridad:           ticket.prioridad,
-            modulo:              ticket.modulo,
-            fecha_creacion:      ticket.fecha_creacion,
-            fecha_actualizacion: ticket.fecha_actualizacion,
-            fecha_cierre:        ticket.fecha_cierre,
-            id_usuario:          ticket.id_usuario,
-            id_agente:           ticket.id_agente,
-            solicitante:         ticket.usuarios_sistema?.nombre_completo ?? '—',
-            usuario_sistema:     ticket.usuarios_sistema?.usuario ?? '—',
-            rol_solicitante:     ticket.usuarios_sistema?.roles?.nombre_rol ?? '—',
-            agente:              ticket.agente?.nombre_completo ?? null,
+            id_ticket:              ticket.id_ticket,
+            asunto:                 ticket.asunto,
+            descripcion:            ticket.descripcion,
+            estado:                 ticket.estado,
+            prioridad:              ticket.prioridad,
+            modulo:                 ticket.modulo,
+            fecha_creacion:         ticket.fecha_creacion,
+            fecha_actualizacion:    ticket.fecha_actualizacion,
+            fecha_cierre:           ticket.fecha_cierre,
+            id_usuario:             ticket.id_usuario,
+            id_agente:              ticket.id_agente,
+            calificacion:           ticket.calificacion ?? null,
+            comentario_calificacion:ticket.comentario_calificacion ?? null,
+            fecha_calificacion:     ticket.fecha_calificacion ?? null,
+            solicitante:            ticket.usuarios_sistema?.nombre_completo ?? '—',
+            usuario_sistema:        ticket.usuarios_sistema?.usuario ?? '—',
+            rol_solicitante:        ticket.usuarios_sistema?.roles?.nombre_rol ?? '—',
+            agente:                 ticket.agente?.nombre_completo ?? null,
             mensajes: (mensajes || []).map(m => ({
                 id_mensaje:      m.id_mensaje,
                 contenido:       m.contenido,
@@ -312,19 +320,67 @@ class Ticket {
     static async obtenerMetricas() {
         const { data, error } = await supabaseAdmin
             .from('tickets_soporte')
-            .select('estado, prioridad, fecha_creacion, fecha_cierre');
+            .select('estado, prioridad, fecha_creacion, fecha_cierre, calificacion');
 
         if (error) throw error;
         const tickets = data || [];
 
+        const calificados = tickets.filter(t => t.calificacion !== null);
+        const promedio = calificados.length
+            ? (calificados.reduce((s, t) => s + t.calificacion, 0) / calificados.length).toFixed(1)
+            : null;
+
         return {
-            total:           tickets.length,
-            abiertos:        tickets.filter(t => t.estado === 'abierto').length,
-            en_progreso:     tickets.filter(t => t.estado === 'en_progreso').length,
-            esperando:       tickets.filter(t => t.estado === 'esperando_usuario').length,
-            resueltos:       tickets.filter(t => t.estado === 'resuelto' || t.estado === 'cerrado').length,
-            urgentes:        tickets.filter(t => t.prioridad === 'urgente').length,
+            total:                tickets.length,
+            abiertos:             tickets.filter(t => t.estado === 'abierto').length,
+            en_progreso:          tickets.filter(t => t.estado === 'en_progreso').length,
+            esperando:            tickets.filter(t => t.estado === 'esperando_usuario').length,
+            resueltos:            tickets.filter(t => t.estado === 'resuelto' || t.estado === 'cerrado').length,
+            urgentes:             tickets.filter(t => t.prioridad === 'urgente').length,
+            calificados:          calificados.length,
+            promedio_calificacion: promedio,
         };
+    }
+
+    // ─── Calificar ticket ─────────────────────────────────────
+    static async calificar(id_ticket, id_usuario, calificacion, comentario = null) {
+        // Verificar que el ticket existe y pertenece al usuario
+        const { data: ticket, error: et } = await supabaseAdmin
+            .from('tickets_soporte')
+            .select('id_usuario, estado, calificacion')
+            .eq('id_ticket', parseInt(id_ticket))
+            .maybeSingle();
+
+        if (et) throw et;
+        if (!ticket) return { success: false, message: 'Ticket no encontrado.' };
+        if (ticket.id_usuario !== parseInt(id_usuario)) {
+            return { success: false, message: 'Solo el solicitante puede calificar el ticket.' };
+        }
+        if (!['resuelto', 'cerrado'].includes(ticket.estado)) {
+            return { success: false, message: 'Solo puedes calificar tickets resueltos o cerrados.' };
+        }
+        if (ticket.calificacion !== null) {
+            return { success: false, message: 'Este ticket ya fue calificado.' };
+        }
+
+        const cal = parseInt(calificacion);
+        if (!cal || cal < 1 || cal > 5) {
+            return { success: false, message: 'La calificación debe ser entre 1 y 5 estrellas.' };
+        }
+
+        const { error } = await supabaseAdmin
+            .from('tickets_soporte')
+            .update({
+                calificacion:            cal,
+                comentario_calificacion: comentario ? String(comentario).trim().substring(0, 500) : null,
+                fecha_calificacion:      new Date().toISOString(),
+            })
+            .eq('id_ticket', parseInt(id_ticket));
+
+        if (error) return { success: false, message: error.message };
+
+        await Ticket._registrarEvento(id_ticket, id_usuario, 'calificado', `Calificación: ${cal}/5 estrellas`);
+        return { success: true };
     }
 
     // ─── Evento interno (privado) ─────────────────────────────

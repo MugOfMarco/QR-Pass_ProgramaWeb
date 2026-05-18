@@ -13,10 +13,11 @@ const ESTADO_LABEL = {
 };
 const PRIO_LABEL = { urgente:'Urgente', alta:'Alta', media:'Media', baja:'Baja' };
 
-let ticketsData      = [];
-let ticketActivo     = null;
-let usuarioActual    = null;
+let ticketsData       = [];
+let ticketActivo      = null;
+let usuarioActual     = null;
 let replyEvidenciaUrl = null;   // URL Cloudinary pendiente de adjuntar
+let starSeleccionada  = 0;      // Calificación seleccionada (0 = ninguna)
 
 // ── Init ───────────────────────────────────────────────────────
 (async function init() {
@@ -24,13 +25,15 @@ let replyEvidenciaUrl = null;   // URL Cloudinary pendiente de adjuntar
         const r    = await fetch('/api/auth/check', { credentials: 'include' });
         const data = await r.json();
         if (!data.isAuthenticated) { location.href = '/login.html'; return; }
-        usuarioActual = data;
+        // Normalizar: la sesión devuelve data.user.id (número de id_usuario)
+        usuarioActual = { ...data, id: parseInt(data.user?.id ?? 0) };
     } catch { location.href = '/login.html'; return; }
 
     await cargarTickets();
     bindFaq();
     bindFormTicket();
     bindDetalle();
+    bindCalificacion();
 })();
 
 // ── Cargar mis tickets ─────────────────────────────────────────
@@ -119,6 +122,30 @@ function renderDetalle(t) {
     const terminado = t.estado === 'cerrado' || t.estado === 'resuelto';
     $('btn-cerrar-ticket').style.display = terminado ? 'none' : '';
     $('reply-msg').style.display         = 'none';
+
+    // ── Widget de calificación ────────────────────────────────
+    const esOwner   = usuarioActual && (t.id_usuario === usuarioActual.id);
+    const calWrap   = $('calificacion-wrap');
+    const calYa     = $('calificacion-ya');
+
+    if (terminado && esOwner) {
+        if (t.calificacion) {
+            // Ya calificado → mostrar readonly
+            calWrap.style.display = 'none';
+            calYa.style.display   = '';
+            $('stars-readonly').textContent = '★'.repeat(t.calificacion) + '☆'.repeat(5 - t.calificacion);
+            $('cal-valor').textContent      = `${t.calificacion}/5`;
+            $('cal-comentario-readonly').textContent = t.comentario_calificacion || '';
+        } else {
+            // No calificado → mostrar widget interactivo
+            calWrap.style.display = '';
+            calYa.style.display   = 'none';
+            initStarWidget();
+        }
+    } else {
+        calWrap.style.display = 'none';
+        calYa.style.display   = 'none';
+    }
 }
 
 // ── Botón volver ───────────────────────────────────────────────
@@ -264,4 +291,87 @@ function setMsg(el, text, ok) {
     el.textContent   = text;
     el.style.color   = ok ? '#16a34a' : '#dc2626';
     el.style.display = '';
+}
+
+// ── Estrellas interactivas ─────────────────────────────────────
+function initStarWidget() {
+    starSeleccionada = 0;
+    $('btn-calificar').disabled  = true;
+    $('star-hint').textContent   = 'Selecciona una calificación';
+    $('cal-comentario').value    = '';
+    $('cal-msg').style.display   = 'none';
+
+    const labels = ['', 'Muy malo', 'Malo', 'Regular', 'Bueno', 'Excelente'];
+    const stars  = document.querySelectorAll('#stars-widget .star');
+
+    stars.forEach(btn => {
+        btn.classList.remove('active');
+        // Clonar para eliminar listeners viejos
+        const clone = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clone, btn);
+    });
+
+    // Re-seleccionar tras clonar
+    document.querySelectorAll('#stars-widget .star').forEach(btn => {
+        const val = parseInt(btn.dataset.val);
+
+        btn.addEventListener('mouseenter', () => {
+            document.querySelectorAll('#stars-widget .star').forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+            });
+            $('star-hint').textContent = labels[val];
+        });
+
+        btn.addEventListener('mouseleave', () => {
+            document.querySelectorAll('#stars-widget .star').forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.val) <= starSeleccionada);
+            });
+            $('star-hint').textContent = starSeleccionada ? labels[starSeleccionada] : 'Selecciona una calificación';
+        });
+
+        btn.addEventListener('click', () => {
+            starSeleccionada = val;
+            $('btn-calificar').disabled = false;
+            $('star-hint').textContent  = `${labels[val]} (${val}/5)`;
+            document.querySelectorAll('#stars-widget .star').forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+            });
+        });
+    });
+}
+
+// ── Bind: envío de calificación ────────────────────────────────
+function bindCalificacion() {
+    $('btn-calificar').addEventListener('click', async () => {
+        if (!starSeleccionada || !ticketActivo) return;
+        const msg        = $('cal-msg');
+        const btn        = $('btn-calificar');
+        const comentario = $('cal-comentario').value.trim();
+
+        btn.disabled = true; btn.textContent = 'Enviando…';
+        msg.style.display = 'none';
+
+        try {
+            const r = await fetch(`/api/soporte/tickets/${ticketActivo}/calificar`, {
+                method:      'PATCH',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ calificacion: starSeleccionada, comentario }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                setMsg(msg, '¡Gracias por tu calificación!', true);
+                await cargarTickets();
+                setTimeout(() => abrirDetalle(ticketActivo), 800);
+            } else {
+                setMsg(msg, data.message || 'Error al calificar.', false);
+                btn.disabled = false;
+                btn.textContent = 'Enviar calificación';
+            }
+        } catch {
+            setMsg(msg, 'Error de conexión.', false);
+            btn.disabled = false;
+            btn.textContent = 'Enviar calificación';
+        }
+    });
 }

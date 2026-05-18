@@ -146,6 +146,23 @@ export const eliminarTicket = async (req, res) => {
     }
 };
 
+// ── PATCH /api/soporte/tickets/:id/calificar ─────────────────
+export const calificarTicket = async (req, res) => {
+    try {
+        const { calificacion, comentario } = req.body;
+        const r = await Ticket.calificar(
+            req.params.id,
+            uid(req),
+            calificacion,
+            comentario ? s(comentario) : null,
+        );
+        return r.success ? res.json(r) : res.status(400).json(r);
+    } catch (err) {
+        console.error('calificarTicket:', err);
+        return res.status(500).json({ success: false, message: 'Error al calificar el ticket.' });
+    }
+};
+
 // ── GET /api/soporte/panel/metricas ──────────────────────────
 export const metricas = async (req, res) => {
     try {
