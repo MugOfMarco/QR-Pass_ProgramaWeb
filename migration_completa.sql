@@ -12,6 +12,48 @@
 
 
 -- ============================================================================================================================
+-- BLOQUE 0 — LIMPIEZA COMPLETA (DROP IF EXISTS … CASCADE)
+-- Elimina todas las tablas, funciones y triggers del esquema anterior.
+-- CASCADE resuelve automáticamente FKs, índices, triggers y secuencias.
+-- ¡ADVERTENCIA! Esto borra TODOS los datos existentes sin recuperación.
+-- ============================================================================================================================
+
+-- ── Tablas (orden: hijos antes que padres) ────────────────────────────────────
+DROP TABLE IF EXISTS eventos_ticket          CASCADE;
+DROP TABLE IF EXISTS mensajes_ticket         CASCADE;
+DROP TABLE IF EXISTS tickets_soporte         CASCADE;
+DROP TABLE IF EXISTS bitacora_auditoria      CASCADE;
+DROP TABLE IF EXISTS justificaciones         CASCADE;
+DROP TABLE IF EXISTS registros_acceso        CASCADE;
+DROP TABLE IF EXISTS horario_alumno_extra    CASCADE;
+DROP TABLE IF EXISTS materias_acreditadas    CASCADE;
+DROP TABLE IF EXISTS info_alumno             CASCADE;
+DROP TABLE IF EXISTS alumnos                 CASCADE;
+DROP TABLE IF EXISTS horarios_grupo          CASCADE;
+DROP TABLE IF EXISTS grupos                  CASCADE;
+DROP TABLE IF EXISTS usuarios_sistema        CASCADE;
+DROP TABLE IF EXISTS semestres               CASCADE;
+DROP TABLE IF EXISTS dias_inhabiles          CASCADE;
+DROP TABLE IF EXISTS puntos_acceso           CASCADE;
+DROP TABLE IF EXISTS materias                CASCADE;
+DROP TABLE IF EXISTS carreras                CASCADE;
+DROP TABLE IF EXISTS turnos                  CASCADE;
+DROP TABLE IF EXISTS estado_academico        CASCADE;
+DROP TABLE IF EXISTS tipos_registro          CASCADE;
+DROP TABLE IF EXISTS roles                   CASCADE;
+DROP TABLE IF EXISTS configuracion_sistema   CASCADE;
+DROP TABLE IF EXISTS sessions                CASCADE;
+
+-- ── Funciones (CASCADE elimina los triggers que las referencian) ──────────────
+DROP FUNCTION IF EXISTS fn_actualizar_ultima_modificacion() CASCADE;
+DROP FUNCTION IF EXISTS fn_bloqueo_automatico_credencial()  CASCADE;
+DROP FUNCTION IF EXISTS fn_incrementar_sin_credencial()     CASCADE;
+DROP FUNCTION IF EXISTS fn_incrementar_retardo()            CASCADE;
+DROP FUNCTION IF EXISTS fn_un_semestre_activo()             CASCADE;
+DROP FUNCTION IF EXISTS fn_incrementar_falta()              CASCADE;
+
+
+-- ============================================================================================================================
 -- BLOQUE 1 — CATÁLOGOS DEL SISTEMA
 -- ============================================================================================================================
 
