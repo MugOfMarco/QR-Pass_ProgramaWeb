@@ -83,36 +83,98 @@
             <div class="faq-item">
                 <button class="faq-btn" type="button">¿Qué hacer si olvido mi contraseña?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
-                    Si eres <strong>vigilante</strong>, solicítalo a tu administrador.
-                    Si eres <strong>administrador</strong>, usa la opción <em>"¿Olvidaste tu contraseña?"</em> en el login.
+                    Si eres <strong>vigilante o prefecto</strong>, solicítalo a tu administrador desde Gestión de Usuarios.
+                    Si eres <strong>administrador</strong>, usa la opción <em>"¿Olvidaste tu contraseña?"</em> en el login; recibirás un correo de recuperación.
                 </div>
             </div>
 
             <div class="faq-item">
                 <button class="faq-btn" type="button">El código QR no es reconocido<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
-                    Verifica que el código pertenezca a un alumno registrado. Si el problema persiste, contacta al administrador para revisar el estado de la cuenta del alumno.
+                    Verifica que el código pertenezca a un alumno registrado y que sus puertas estén habilitadas.
+                    Si el problema persiste, contacta al administrador para revisar el estado de la cuenta del alumno.
+                    También puede ocurrir si el lector está sucio o hay mala iluminación.
                 </div>
             </div>
 
             <div class="faq-item">
                 <button class="faq-btn" type="button">¿Cómo agregar alumnos masivamente?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
-                    Desde <strong>Gestión de Grupos</strong>, usa la sección <em>"Carga masiva desde Excel"</em>. Descarga la plantilla, llénala y sube el archivo .xlsx. El sistema insertará o actualizará cada alumno automáticamente.
+                    Desde <strong>Gestión de Grupos</strong>, usa la sección <em>"Carga masiva desde Excel"</em>.
+                    Descarga la plantilla, llénala con boleta y nombre y sube el archivo <code>.xlsx</code>.
+                    El sistema insertará o actualizará cada alumno automáticamente.
                 </div>
             </div>
 
             <div class="faq-item">
                 <button class="faq-btn" type="button">¿Cómo consultar el historial de un alumno?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
-                    Ve a <strong>Buscar Alumno</strong>, ingresa la boleta y podrás ver todos sus registros de entrada/salida con fecha y hora.
+                    Ve a <strong>Buscar Alumno</strong>, ingresa la boleta y podrás ver todos sus registros de entrada/salida con fecha, hora y tipo.
+                    Para ver incidencias de varios alumnos a la vez usa <strong>Filtrar Alumnos</strong> → pestaña "Incidencias" → selecciona rango de fechas → descarga el PDF con gráfica.
                 </div>
             </div>
 
             <div class="faq-item">
                 <button class="faq-btn" type="button">Un alumno aparece como "bloqueado"<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
-                    El sistema bloquea automáticamente a alumnos con demasiados retardos o sin credencial. Un administrador puede desbloquearlo desde <strong>Gestión de Grupos</strong> → seleccionar alumno → Desbloquear.
+                    El sistema bloquea automáticamente a alumnos que superan el máximo de retardos o de entradas sin credencial configurado.
+                    Un administrador puede desbloquearlo desde <strong>Gestión de Grupos</strong> → seleccionar alumno → Desbloquear.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Cómo funciona el registro de falta manual?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Los roles <strong>Prefecto</strong> y <strong>Administrador</strong> pueden registrar una falta manualmente desde <strong>Entrada/Salida</strong>.
+                    Despliega la sección "⚠ Registrar falta manual", ingresa la boleta y el motivo.
+                    El contador de faltas del alumno se actualiza automáticamente en la base de datos.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Cómo genero un reporte PDF?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Ve a <strong>Filtrar Alumnos</strong>. Aplica los filtros que necesites (grupo, turno, situación…).
+                    Para reporte de datos usa el botón <em>"Descargar PDF"</em>.
+                    Para incidencias selecciona la pestaña <em>"Incidencias"</em>, elige el rango de fechas y usa <em>"PDF Incidencias"</em>; el archivo incluye una gráfica de pastel con el resumen del grupo.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Cómo agregar horarios a un grupo?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Desde <strong>Gestión de Grupos</strong>, haz clic en el botón <em>"📅 Horario"</em> de la tarjeta del grupo.
+                    En el modal, selecciona la materia, el semestre, marca uno o varios días de la semana y define la hora de inicio y fin.
+                    Puedes agregar varios días en una sola operación.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Cómo descargar un respaldo de la base de datos?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Desde el menú lateral, ve a <strong>Descargar Respaldo</strong> (solo visible para administradores).
+                    El sistema genera un script <code>.sql</code> con todos los datos actuales usando sentencias <code>INSERT … ON CONFLICT DO NOTHING</code>.
+                    Es seguro ejecutarlo sobre una base de datos existente sin borrar datos previos.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Qué significan los estados de un ticket?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    <strong>Abierto:</strong> recién creado, sin agente asignado.<br>
+                    <strong>En progreso:</strong> un agente lo tomó y está trabajando en él.<br>
+                    <strong>Esperando usuario:</strong> el agente necesita información adicional de tu parte.<br>
+                    <strong>Resuelto:</strong> el problema fue atendido; puedes cerrarlo o responder si persiste.<br>
+                    <strong>Cerrado:</strong> ticket finalizado y archivado.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-btn" type="button">¿Puedo adjuntar evidencia a un ticket?<span class="faq-arrow">▼</span></button>
+                <div class="faq-body">
+                    Sí. Al responder un ticket, verás un campo para adjuntar una imagen (<code>.jpg</code>, <code>.png</code>, <code>.webp</code>).
+                    La imagen se sube automáticamente y el agente de soporte podrá verla junto a tu mensaje.
+                    Esto es útil para mostrar capturas de pantalla del error.
                 </div>
             </div>
         </section>
@@ -151,6 +213,19 @@
                 <textarea id="reply-contenido" rows="3" maxlength="2000"
                           placeholder="Escribe tu respuesta…"
                           class="sop-textarea"></textarea>
+
+                <!-- Adjuntar evidencia -->
+                <div class="sop-evidencia-wrap" style="margin-top:.5rem">
+                    <label class="sop-evidencia-label" for="reply-evidencia">
+                        📎 Adjuntar imagen (opcional)
+                    </label>
+                    <input type="file" id="reply-evidencia" accept="image/*" class="sop-file-input">
+                    <div id="reply-evidencia-preview" class="sop-evidencia-preview" style="display:none">
+                        <img id="reply-evidencia-img" src="" alt="Vista previa">
+                        <button type="button" id="btn-quitar-evidencia" class="sop-btn-quitar">✕</button>
+                    </div>
+                </div>
+
                 <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
                     <button class="sop-btn-primary" id="btn-enviar-reply">Enviar respuesta</button>
                     <button class="sop-btn-danger"  id="btn-cerrar-ticket" style="display:none">Cerrar ticket</button>

@@ -285,6 +285,7 @@ CREATE TABLE mensajes_ticket (
     id_usuario       INT       NOT NULL,
     contenido        TEXT      NOT NULL,
     es_nota_interna  BOOLEAN   NOT NULL DEFAULT FALSE,
+    url_evidencia    TEXT      NULL     DEFAULT NULL,   -- URL Cloudinary de imagen adjunta (opcional)
     fecha_envio      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_msg_ticket  FOREIGN KEY (id_ticket)
         REFERENCES tickets_soporte(id_ticket) ON DELETE RESTRICT,
@@ -709,6 +710,7 @@ ON CONFLICT (boleta, id_materia) DO NOTHING;
 --     · Paso 4 — Sistema de Soporte:
 --         - Rol 'Soporte' añadido a la tabla roles
 --         - Límite de usuarios: 20 → 30
---         - Tablas: tickets_soporte, mensajes_ticket, eventos_ticket
+--         - Tablas: tickets_soporte, mensajes_ticket (+ url_evidencia), eventos_ticket
 --         - Índices: idx_tickets_usuario, idx_tickets_estado_prio
+--         - Evidencia adjunta: columna url_evidencia TEXT NULL en mensajes_ticket (URL Cloudinary)
 -- ============================================================================================================================

@@ -84,6 +84,26 @@ export const uploadImage = async (req, res) => {
     }
 };
 
+// ── POST /api/upload/evidencia (cualquier usuario autenticado) ──
+export const uploadEvidencia = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No se proporcionó ninguna imagen.' });
+        }
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder:        'qrpass/evidencias',
+            resource_type: 'image',
+        });
+        const url = cloudinary.url(result.public_id, {
+            quality: 'auto', fetch_format: 'auto', secure: true,
+        });
+        return res.json({ success: true, url, public_id: result.public_id });
+    } catch (error) {
+        console.error('Error subiendo evidencia:', error);
+        return res.status(500).json({ success: false, message: 'Error subiendo evidencia: ' + error.message });
+    }
+};
+
 export const deleteImage = async (req, res) => {
     try {
         const { public_id } = req.body;

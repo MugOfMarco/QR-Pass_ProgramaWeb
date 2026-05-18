@@ -109,22 +109,45 @@ export const listarHorarios = async (req, res) => {
 };
 
 // ── POST /api/grupos/:id/horarios ─────────────────────────────
+// Acepta:
+//   · dias_semana: [1,3,5]   → crea N registros (uno por día)
+//   · dia_semana:  3         → compatibilidad hacia atrás (crea 1 registro)
 export const crearHorario = async (req, res) => {
     try {
-        const { id_materia, id_semestre, dia_semana, hora_inicio, hora_fin } = req.body;
-        if (!id_materia || !id_semestre || dia_semana === undefined || !hora_inicio || !hora_fin) {
+        const { id_materia, id_semestre, hora_inicio, hora_fin } = req.body;
+        // Normalizar días: puede llegar como array o valor único
+        const raw  = req.body.dias_semana ?? req.body.dia_semana;
+        const dias = Array.isArray(raw) ? raw.map(Number) : [Number(raw)];
+
+        if (!id_materia || !id_semestre || !dias.length || dias.some(isNaN) || !hora_inicio || !hora_fin) {
             return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
         }
         if (hora_fin <= hora_inicio) {
             return res.status(400).json({ success: false, message: 'La hora de fin debe ser mayor que la de inicio.' });
         }
-        const r = await Grupo.crearHorario({
-            id_grupo:    req.params.id,
-            id_materia, id_semestre, dia_semana,
-            hora_inicio: s(hora_inicio),
-            hora_fin:    s(hora_fin),
+        if (dias.some(d => d < 1 || d > 7)) {
+            return res.status(400).json({ success: false, message: 'Día de semana inválido (1-7).' });
+        }
+
+        // Crear un horario por cada día seleccionado
+        const resultados = await Promise.all(
+            dias.map(dia_semana => Grupo.crearHorario({
+                id_grupo: req.params.id,
+                id_materia, id_semestre, dia_semana,
+                hora_inicio: s(hora_inicio),
+                hora_fin:    s(hora_fin),
+            }))
+        );
+
+        const errores = resultados.filter(r => !r.success);
+        if (errores.length) {
+            return res.status(400).json({ success: false, message: errores[0].message });
+        }
+        return res.status(201).json({
+            success: true,
+            creados: resultados.length,
+            message: `${resultados.length} horario${resultados.length !== 1 ? 's' : ''} creado${resultados.length !== 1 ? 's' : ''} correctamente.`,
         });
-        return r.success ? res.status(201).json(r) : res.status(400).json(r);
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Error al crear horario.' });
     }

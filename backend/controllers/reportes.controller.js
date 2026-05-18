@@ -308,22 +308,83 @@ export const generarReporteAlumnos = async (req, res) => {
     }
 };
 
+// ── Formato de fecha en zona horaria MX ──────────────────────
+function fmtFechaMX(isoStr) {
+    const d  = new Date(isoStr);
+    return d.toLocaleDateString('es-MX', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function fmtHoraMX(isoStr) {
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString('es-MX', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Gráfica de pastel (PDFKit path SVG) ──────────────────────
+function dibujarPastel(doc, cx, cy, radio, segmentos) {
+    // segmentos: [{pct, color, label}]  pct en 0..100
+    let angulo = -Math.PI / 2;          // empieza desde arriba
+
+    for (const seg of segmentos) {
+        if (seg.pct < 0.5) continue;    // slice demasiado pequeño
+        const delta = (seg.pct / 100) * 2 * Math.PI;
+        const fin   = angulo + delta;
+
+        const x1 = cx + radio * Math.cos(angulo);
+        const y1 = cy + radio * Math.sin(angulo);
+        const x2 = cx + radio * Math.cos(fin);
+        const y2 = cy + radio * Math.sin(fin);
+        const gran = delta > Math.PI ? 1 : 0;
+
+        doc.save()
+           .path(`M ${cx} ${cy} L ${x1} ${y1} A ${radio} ${radio} 0 ${gran} 1 ${x2} ${y2} Z`)
+           .fill(seg.color)
+           .restore();
+
+        angulo = fin;
+    }
+
+    // Borde del pastel
+    doc.save()
+       .circle(cx, cy, radio)
+       .lineWidth(0.6)
+       .strokeColor('#cccccc')
+       .stroke()
+       .restore();
+}
+
+function dibujarLeyendaPastel(doc, cx, cy, radio, segmentos) {
+    const startX = cx + radio + 18;
+    let   startY = cy - radio * 0.5;
+    const boxSize = 10;
+
+    for (const seg of segmentos) {
+        if (seg.pct < 0.5) continue;
+        doc.save().rect(startX, startY, boxSize, boxSize).fill(seg.color).restore();
+        doc.fontSize(8.5).font('Helvetica').fillColor('#333')
+           .text(`${seg.label} (${seg.pct.toFixed(1)} %)`, startX + boxSize + 5, startY + 1);
+        startY += 16;
+    }
+}
+
 // ─────────────────────────────────────────────────────────────
 // GET /api/reportes/incidencias-pdf
+// Parámetros opcionales: fecha_inicio=YYYY-MM-DD & fecha_fin=YYYY-MM-DD
 // ─────────────────────────────────────────────────────────────
 export const generarReporteIncidencias = async (req, res) => {
     try {
         // ── 1. Leer y sanitizar filtros ───────────────────────
-        const q        = sanitize(req.query.q        || '');
-        const puertas  = sanitize(req.query.puertas  || '');
-        const turno    = sanitize(req.query.turno    || '');
-        const estado   = sanitize(req.query.estado   || '');
-        const grupo    = sanitize(req.query.grupo    || '');
-        const dentro   = sanitize(req.query.dentro   || '');
-        const bloqueado = sanitize(req.query.bloqueado || '');
-        const boletas  = sanitize(req.query.boletas  || '');
+        const q          = sanitize(req.query.q          || '');
+        const puertas    = sanitize(req.query.puertas    || '');
+        const turno      = sanitize(req.query.turno      || '');
+        const estado     = sanitize(req.query.estado     || '');
+        const grupo      = sanitize(req.query.grupo      || '');
+        const dentro     = sanitize(req.query.dentro     || '');
+        const bloqueado  = sanitize(req.query.bloqueado  || '');
+        const boletas    = sanitize(req.query.boletas    || '');
+        // Rango de fechas (opcionales)
+        const fechaInicio = sanitize(req.query.fecha_inicio || '');
+        const fechaFin    = sanitize(req.query.fecha_fin    || '');
 
-        // ── 2. Obtener alumnos filtrados (mismo flujo que alumnos-pdf) ──
+        // ── 2. Obtener alumnos filtrados ──────────────────────
         let query = supabaseAdmin
             .from('alumnos')
             .select(`
@@ -378,15 +439,16 @@ export const generarReporteIncidencias = async (req, res) => {
             return res.status(404).json({ success: false, message: 'No se encontraron alumnos con los filtros aplicados.' });
         }
 
-        // ── 3. Obtener todos los registros de los alumnos filtrados ──
+        // ── 3. Obtener registros con filtro de fechas ─────────
         const boletasArray = alumnos.map(a => a.boleta);
 
-        const { data: registrosRaw, error: regErr } = await supabaseAdmin
+        let regQuery = supabaseAdmin
             .from('registros_acceso')
             .select(`
                 id_registro,
                 boleta,
                 fecha_hora,
+                id_tipo_registro,
                 tipos_registro (descripcion),
                 puntos_acceso  (nombre_punto),
                 justificaciones (motivo)
@@ -394,20 +456,43 @@ export const generarReporteIncidencias = async (req, res) => {
             .in('boleta', boletasArray)
             .order('fecha_hora', { ascending: false });
 
+        if (fechaInicio) regQuery = regQuery.gte('fecha_hora', `${fechaInicio}T00:00:00-06:00`);
+        if (fechaFin)    regQuery = regQuery.lte('fecha_hora', `${fechaFin}T23:59:59-06:00`);
+
+        const { data: registrosRaw, error: regErr } = await regQuery;
         if (regErr) throw regErr;
 
         const registrosPorBoleta = {};
+        // Contadores para gráfica de pastel
+        const conRetardo  = new Set();
+        const conFalta    = new Set();
+
         for (const r of (registrosRaw || [])) {
             if (!registrosPorBoleta[r.boleta]) registrosPorBoleta[r.boleta] = [];
             registrosPorBoleta[r.boleta].push({
                 fecha_hora:    r.fecha_hora,
                 tipo:          r.tipos_registro?.descripcion || '—',
+                id_tipo:       r.id_tipo_registro,
                 punto_acceso:  normalizarPuerta(r.puntos_acceso?.nombre_punto),
                 justificacion: r.justificaciones?.motivo || null,
             });
+            if (r.id_tipo_registro === 3) conRetardo.add(r.boleta);
+            if (r.id_tipo_registro === 5) conFalta.add(r.boleta);
         }
 
-        // ── 4. Generar PDF ────────────────────────────────────
+        // ── 4. Calcular datos para la gráfica ─────────────────
+        const total     = alumnos.length;
+        const nFaltas   = [...conFalta].filter(b => alumnos.some(a => a.boleta === b)).length;
+        const nRetardos = [...conRetardo].filter(b => !conFalta.has(b) && alumnos.some(a => a.boleta === b)).length;
+        const nNormales = total - nFaltas - nRetardos;
+
+        const segmentos = [
+            { pct: (nNormales / total) * 100, color: '#4caf50', label: 'Sin incidencias' },
+            { pct: (nRetardos / total) * 100, color: '#f59e0b', label: 'Con retardo(s)'  },
+            { pct: (nFaltas   / total) * 100, color: '#dc2626', label: 'Con falta(s)'    },
+        ];
+
+        // ── 5. Generar PDF ────────────────────────────────────
         const ahora   = new Date();
         const fechaMX = ahora.toLocaleDateString('es-MX', {
             timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric',
@@ -420,10 +505,7 @@ export const generarReporteIncidencias = async (req, res) => {
         const doc = new PDFDocument({
             size:    'LETTER',
             margins: { top: 70, bottom: 70, left: 85, right: 85 },
-            info:    {
-                Title:  'Reporte de Incidencias — QR Pass',
-                Author: 'CECyT 9 — IPN',
-            },
+            info:    { Title: 'Reporte de Incidencias — QR Pass', Author: 'CECyT 9 — IPN' },
         });
 
         const chunks = [];
@@ -456,17 +538,52 @@ export const generarReporteIncidencias = async (req, res) => {
 
         doc.fontSize(11).font('Helvetica').fillColor('black')
            .text(`Emitido el: ${fechaMX}, ${horaMX} hrs`);
+        if (fechaInicio || fechaFin) {
+            const desde = fechaInicio || 'inicio';
+            const hasta = fechaFin    || 'hoy';
+            doc.fontSize(9).fillColor('#1a5e20')
+               .text(`📅 Período: ${desde}  →  ${hasta}`);
+        }
         doc.fontSize(9).fillColor('#666666')
            .text(describir_filtros({ q, turno, estado, grupo, puertas, dentro, bloqueado }));
-        doc.moveDown(0.8);
+        doc.moveDown(0.6);
+
+        // ── Gráfica de pastel ─────────────────────────────────
+        const radioP = 48;
+        const cxP    = x0 + radioP + 2;
+        const cyP    = doc.y + radioP + 8;
+
+        dibujarPastel(doc, cxP, cyP, radioP, segmentos);
+        dibujarLeyendaPastel(doc, cxP, cyP, radioP, segmentos);
+
+        // Estadísticas numéricas junto al pastel
+        const statsX = cxP + radioP + 130;
+        const statsY = cyP - radioP + 4;
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#333')
+           .text('Resumen del período:', statsX, statsY);
+        doc.fontSize(9).font('Helvetica').fillColor('#333')
+           .text(`Total alumnos:     ${total}`,    statsX, statsY + 14)
+           .text(`Sin incidencias:   ${nNormales}`, statsX, statsY + 26)
+           .text(`Con retardo(s):    ${nRetardos}`, statsX, statsY + 38)
+           .text(`Con falta(s):      ${nFaltas}`,   statsX, statsY + 50);
+
+        doc.y = cyP + radioP + 14;
+        doc.moveDown(0.4);
+
+        // Separador
+        doc.save()
+           .moveTo(x0, doc.y).lineTo(x0 + pageW, doc.y)
+           .strokeColor('#dddddd').lineWidth(0.5).stroke()
+           .restore();
+        doc.moveDown(0.5);
 
         // ── Columnas de la tabla de registros ────────────────
         const colWidths = [
-            pageW * 0.14,   // Fecha
-            pageW * 0.11,   // Hora
-            pageW * 0.22,   // Puerta
-            pageW * 0.23,   // Tipo
-            pageW * 0.30,   // Justificación
+            pageW * 0.13,   // Fecha
+            pageW * 0.10,   // Hora
+            pageW * 0.21,   // Puerta
+            pageW * 0.24,   // Tipo
+            pageW * 0.32,   // Justificación
         ];
         const alignments = ['center', 'center', 'left', 'left', 'left'];
         const headers    = ['Fecha', 'Hora', 'Puerta', 'Tipo', 'Justificación'];
@@ -476,11 +593,9 @@ export const generarReporteIncidencias = async (req, res) => {
         for (const alumno of alumnos) {
             const registros = registrosPorBoleta[alumno.boleta] || [];
 
-            if (doc.y + 60 > bottomLimit) {
-                doc.addPage();
-            }
+            if (doc.y + 60 > bottomLimit) doc.addPage();
 
-            // Barra de encabezado del alumno
+            // Barra del alumno
             const barY = doc.y;
             doc.save().rect(x0, barY, pageW, 22).fill(COLOR_GUINDA).restore();
             doc.fontSize(9.5).font('Helvetica-Bold').fillColor('white')
@@ -493,22 +608,18 @@ export const generarReporteIncidencias = async (req, res) => {
 
             if (!registros.length) {
                 doc.fontSize(9).font('Helvetica').fillColor('#888888')
-                   .text('Sin registros de acceso.', x0 + 5, doc.y);
+                   .text('Sin registros en el período seleccionado.', x0 + 5, doc.y);
                 doc.moveDown(0.9);
                 continue;
             }
 
-            const filas = registros.map(r => {
-                const d   = new Date(r.fecha_hora);
-                const dMX = new Date(d.getTime() - 6 * 60 * 60 * 1000);
-                return [
-                    `${String(dMX.getUTCDate()).padStart(2,'0')}/${String(dMX.getUTCMonth()+1).padStart(2,'0')}/${dMX.getUTCFullYear()}`,
-                    `${String(dMX.getUTCHours()).padStart(2,'0')}:${String(dMX.getUTCMinutes()).padStart(2,'0')}`,
-                    r.punto_acceso,
-                    r.tipo,
-                    r.justificacion || '—',
-                ];
-            });
+            const filas = registros.map(r => [
+                fmtFechaMX(r.fecha_hora),
+                fmtHoraMX(r.fecha_hora),
+                r.punto_acceso,
+                r.tipo,
+                r.justificacion || '—',
+            ]);
 
             dibujarTabla(doc, headers, filas, colWidths, alignments);
             doc.moveDown(0.9);
@@ -524,7 +635,6 @@ export const generarReporteIncidencias = async (req, res) => {
         doc.end();
         await pdfFin;
 
-        // ── 5. Enviar respuesta ───────────────────────────────
         const pdfBuffer = Buffer.concat(chunks);
         const filename  = `incidencias_alumnos_${fechaStr}.pdf`;
 

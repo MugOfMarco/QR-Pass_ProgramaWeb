@@ -333,6 +333,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (seleccionados.size > 0) {
                 params.append('boletas', Array.from(seleccionados).join(','));
             }
+            // Pasar rango de fechas si está activo
+            if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+            if (fechaFin)    params.append('fecha_fin',    fechaFin);
+
             const url = `/api/reportes/incidencias-pdf?${params}`;
 
             const res = await fetch(url, { credentials: 'include' });

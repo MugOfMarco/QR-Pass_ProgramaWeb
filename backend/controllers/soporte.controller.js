@@ -58,18 +58,19 @@ export const detalleTicket = async (req, res) => {
 // ── POST /api/soporte/tickets/:id/mensajes ────────────────────
 export const responderTicket = async (req, res) => {
     try {
-        const { contenido, es_nota_interna } = req.body;
+        const { contenido, es_nota_interna, url_evidencia } = req.body;
         if (!contenido?.trim()) {
             return res.status(400).json({ success: false, message: 'El mensaje no puede estar vacío.' });
         }
-        const esAgente       = ['Soporte', 'Administrador'].includes(rol(req));
-        const notaInterna    = esAgente && Boolean(es_nota_interna);
+        const esAgente    = ['Soporte', 'Administrador'].includes(rol(req));
+        const notaInterna = esAgente && Boolean(es_nota_interna);
 
         const r = await Ticket.agregarMensaje({
             id_ticket:       req.params.id,
             id_usuario:      uid(req),
             contenido:       s(contenido),
             es_nota_interna: notaInterna,
+            url_evidencia:   url_evidencia ? s(url_evidencia) : null,
         });
         return r.success ? res.status(201).json(r) : res.status(400).json(r);
     } catch (err) {

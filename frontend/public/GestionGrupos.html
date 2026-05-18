@@ -516,6 +516,36 @@
         }
         .btn-edit-horario:hover { opacity: .7; }
 
+        .hf-dias-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .25rem .4rem;
+            padding: .3rem 0 .1rem;
+        }
+        .hf-dia-label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            font-size: .82rem;
+            cursor: pointer;
+            padding: .2rem .35rem;
+            border-radius: 4px;
+            transition: background .15s;
+        }
+        .hf-dia-label:hover { background: #f5f0f2; }
+        .hf-dia-label input[type="checkbox"] {
+            accent-color: #5c1f33;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+        .hf-dias-hint {
+            font-size: .72rem;
+            color: #888;
+            margin: .1rem 0 .3rem;
+            font-style: italic;
+        }
+
         .horario-subtitulo {
             font-size: .88rem;
             font-weight: 700;
@@ -707,16 +737,18 @@
                 </select>
             </div>
             <div>
-                <label for="hf-dia">Día de la semana *</label>
-                <select id="hf-dia">
-                    <option value="">— Selecciona —</option>
-                    <option value="1">Lunes</option>
-                    <option value="2">Martes</option>
-                    <option value="3">Miércoles</option>
-                    <option value="4">Jueves</option>
-                    <option value="5">Viernes</option>
-                    <option value="6">Sábado</option>
-                </select>
+                <label>Día(s) de la semana *</label>
+                <p id="hf-dias-hint" class="hf-dias-hint" style="display:none">
+                    En edición solo puedes cambiar el día de este horario.
+                </p>
+                <div class="hf-dias-grid">
+                    <label class="hf-dia-label"><input type="checkbox" class="hf-dia-chk" value="1"> Lunes</label>
+                    <label class="hf-dia-label"><input type="checkbox" class="hf-dia-chk" value="2"> Martes</label>
+                    <label class="hf-dia-label"><input type="checkbox" class="hf-dia-chk" value="3"> Miércoles</label>
+                    <label class="hf-dia-label"><input type="checkbox" class="hf-dia-chk" value="4"> Jueves</label>
+                    <label class="hf-dia-label"><input type="checkbox" class="hf-dia-chk" value="5"> Viernes</label>
+                    <label class="hf-dia-label"><input type="checkbox" class="hf-dia-chk" value="6"> Sábado</label>
+                </div>
             </div>
             <div style="display:flex;gap:.5rem">
                 <div style="flex:1">
@@ -1364,12 +1396,16 @@ function iniciarEditHorario(id) {
     const h = horariosActivos.find(x => x.id_horario === id);
     if (!h) return;
     editandoHorario = id;
-    $('hf-id').value      = id;
-    $('hf-materia').value = h.id_materia;
-    $('hf-semestre').value= h.id_semestre;
-    $('hf-dia').value     = h.dia_semana;
-    $('hf-inicio').value  = h.hora_inicio;
-    $('hf-fin').value     = h.hora_fin;
+    $('hf-id').value       = id;
+    $('hf-materia').value  = h.id_materia;
+    $('hf-semestre').value = h.id_semestre;
+    $('hf-inicio').value   = h.hora_inicio;
+    $('hf-fin').value      = h.hora_fin;
+    // Checkboxes: marcar solo el día de este horario
+    document.querySelectorAll('.hf-dia-chk').forEach(c => {
+        c.checked = parseInt(c.value) === h.dia_semana;
+    });
+    $('hf-dias-hint').style.display = '';
     $('horario-form-titulo').textContent = 'Editar horario';
     $('btn-guardar-horario').textContent = 'Guardar cambios';
     $('btn-cancelar-horario-edit').style.display = '';
@@ -1377,12 +1413,13 @@ function iniciarEditHorario(id) {
 }
 
 function limpiarFormHorario() {
-    $('hf-id').value = '';
+    $('hf-id').value       = '';
     $('hf-materia').value  = '';
     $('hf-semestre').value = '';
-    $('hf-dia').value      = '';
     $('hf-inicio').value   = '';
     $('hf-fin').value      = '';
+    document.querySelectorAll('.hf-dia-chk').forEach(c => c.checked = false);
+    $('hf-dias-hint').style.display = 'none';
 }
 
 $('btn-cancelar-horario-edit').addEventListener('click', () => {
@@ -1396,22 +1433,32 @@ $('btn-cancelar-horario-edit').addEventListener('click', () => {
 $('btn-guardar-horario').addEventListener('click', async () => {
     const id_materia  = $('hf-materia').value;
     const id_semestre = $('hf-semestre').value;
-    const dia_semana  = $('hf-dia').value;
     const hora_inicio = $('hf-inicio').value;
     const hora_fin    = $('hf-fin').value;
 
-    if (!id_materia || !id_semestre || !dia_semana || !hora_inicio || !hora_fin) {
-        toast('Completa todos los campos del horario', 'err'); return;
+    // Recoger días seleccionados
+    const diasSeleccionados = Array.from(document.querySelectorAll('.hf-dia-chk:checked'))
+        .map(c => parseInt(c.value));
+
+    if (!id_materia || !id_semestre || !diasSeleccionados.length || !hora_inicio || !hora_fin) {
+        toast('Completa todos los campos y selecciona al menos un día', 'err'); return;
     }
     if (hora_fin <= hora_inicio) {
         toast('La hora de fin debe ser mayor que la de inicio', 'err'); return;
+    }
+    if (editandoHorario && diasSeleccionados.length > 1) {
+        toast('En edición solo puedes seleccionar un día', 'err'); return;
     }
 
     const btn = $('btn-guardar-horario');
     btn.disabled = true; btn.textContent = 'Guardando…';
 
     try {
-        const body = { id_materia, id_semestre, dia_semana, hora_inicio, hora_fin };
+        // En edición: PUT con un solo día
+        // En alta:    POST con array de días (el backend crea N registros)
+        const body = editandoHorario
+            ? { id_materia, id_semestre, dia_semana: diasSeleccionados[0], hora_inicio, hora_fin }
+            : { id_materia, id_semestre, dias_semana: diasSeleccionados, hora_inicio, hora_fin };
         let url, method;
 
         if (editandoHorario) {

@@ -223,3 +223,69 @@
 .faq-item.open .faq-body { display: block; }
 
 .sop-right { display: flex; flex-direction: column; }
+
+/* ── Evidencia / adjunto ────────────────────────────────────── */
+.sop-evidencia-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+.sop-evidencia-label {
+    font-size: .76rem;
+    font-weight: 700;
+    color: #666;
+    cursor: pointer;
+}
+.sop-file-input {
+    font-size: .8rem;
+    color: #555;
+    padding: .2rem 0;
+}
+.sop-evidencia-preview {
+    position: relative;
+    display: inline-block;
+    margin-top: .3rem;
+    max-width: 160px;
+}
+.sop-evidencia-preview img {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--color-border-light);
+    display: block;
+}
+.sop-btn-quitar {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: .65rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ── Evidencia en mensajes ──────────────────────────────────── */
+.msg-evidencia {
+    margin-top: .4rem;
+}
+.msg-evidencia img {
+    max-width: 200px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,.1);
+    display: block;
+    cursor: pointer;
+}
+.msg-evidencia a {
+    font-size: .72rem;
+    color: #555;
+    text-decoration: none;
+}
+.msg-evidencia a:hover { text-decoration: underline; }

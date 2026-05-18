@@ -19,9 +19,12 @@ const TABLAS = [
     'tipos_registro',
     'registros_acceso',
     'justificaciones',
-    'horario_grupo',
+    'horarios_grupo',
     'horario_alumno_extra',
     'materias_acreditadas',
+    'tickets_soporte',
+    'mensajes_ticket',
+    'eventos_ticket',
 ];
 
 // ── Paginación para tablas grandes ────────────────────────────

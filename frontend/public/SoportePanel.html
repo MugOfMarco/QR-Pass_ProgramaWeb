@@ -141,6 +141,19 @@
                 </div>
                 <textarea id="det-reply-text" rows="3" class="det-textarea"
                           placeholder="Escribe tu respuesta…"></textarea>
+
+                <!-- Adjuntar evidencia -->
+                <div class="det-evidencia-wrap">
+                    <label class="det-evidencia-label" for="det-evidencia">
+                        📎 Adjuntar imagen (opcional)
+                    </label>
+                    <input type="file" id="det-evidencia" accept="image/*" class="det-file-input">
+                    <div id="det-evidencia-preview" class="det-evidencia-preview" style="display:none">
+                        <img id="det-evidencia-img" src="" alt="Vista previa">
+                        <button type="button" id="btn-det-quitar-evidencia" class="det-btn-quitar">✕</button>
+                    </div>
+                </div>
+
                 <div style="display:flex;gap:.5rem;margin-top:.4rem">
                     <button class="sop-btn-primary" id="btn-enviar-det-reply">Enviar</button>
                 </div>
