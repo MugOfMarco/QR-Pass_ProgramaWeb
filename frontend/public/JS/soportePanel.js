@@ -67,6 +67,9 @@ async function cargarMetricas() {
         $('met-espera').textContent   = `${m.esperando} esperando`;
         $('met-resueltos').textContent= `${m.resueltos} resueltos`;
         $('met-urgentes').textContent = `${m.urgentes} urgentes`;
+        $('met-rating').textContent   = m.promedio_calificacion
+            ? `⭐ ${m.promedio_calificacion}/5 (${m.calificados})`
+            : '⭐ Sin calificaciones';
     } catch {}
 }
 
@@ -139,6 +142,17 @@ function renderDetalle(t) {
     `;
 
     $('det-descripcion').textContent = t.descripcion;
+
+    // Calificación del usuario
+    const calWrap = $('det-calificacion-wrap');
+    if (t.calificacion) {
+        calWrap.style.display       = '';
+        $('det-cal-stars').textContent  = '★'.repeat(t.calificacion) + '☆'.repeat(5 - t.calificacion);
+        $('det-cal-valor').textContent  = ` ${t.calificacion}/5`;
+        $('det-cal-comentario').textContent = t.comentario_calificacion || '';
+    } else {
+        calWrap.style.display = 'none';
+    }
 
     // Botón tomar
     const btnTomar = $('btn-tomar-ticket');

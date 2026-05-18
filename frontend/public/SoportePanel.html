@@ -34,11 +34,12 @@
     <div class="panel-topbar">
         <div class="metricas-row" id="metricas-row">
             <div class="metrica-chip" id="met-total">— total</div>
-            <div class="metrica-chip chip-open"  id="met-abiertos">— abiertos</div>
-            <div class="metrica-chip chip-prog"  id="met-progreso">— en progreso</div>
-            <div class="metrica-chip chip-wait"  id="met-espera">— esperando</div>
-            <div class="metrica-chip chip-done"  id="met-resueltos">— resueltos</div>
-            <div class="metrica-chip chip-urg"   id="met-urgentes">— urgentes</div>
+            <div class="metrica-chip chip-open"   id="met-abiertos">— abiertos</div>
+            <div class="metrica-chip chip-prog"   id="met-progreso">— en progreso</div>
+            <div class="metrica-chip chip-wait"   id="met-espera">— esperando</div>
+            <div class="metrica-chip chip-done"   id="met-resueltos">— resueltos</div>
+            <div class="metrica-chip chip-urg"    id="met-urgentes">— urgentes</div>
+            <div class="metrica-chip chip-rating" id="met-rating" title="Calificación promedio">⭐ —</div>
         </div>
         <div class="panel-filtros">
             <select id="filtro-estado" class="filtro-sel">
@@ -99,6 +100,14 @@
 
             <p class="det-desc-label">Descripción</p>
             <div class="det-desc-box" id="det-descripcion"></div>
+
+            <!-- Calificación del usuario (si existe) -->
+            <div id="det-calificacion-wrap" style="display:none" class="det-calificacion">
+                <p class="det-cal-label">Calificación del usuario</p>
+                <span class="det-cal-stars" id="det-cal-stars"></span>
+                <span style="font-size:.78rem;color:#92400e;font-weight:700" id="det-cal-valor"></span>
+                <p id="det-cal-comentario" style="font-size:.78rem;color:#666;margin-top:.2rem;line-height:1.4"></p>
+            </div>
 
             <!-- Acciones de agente -->
             <div class="det-acciones">

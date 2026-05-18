@@ -289,3 +289,47 @@
     text-decoration: none;
 }
 .msg-evidencia a:hover { text-decoration: underline; }
+
+/* ── Sistema de calificación ─────────────────────────────────── */
+.star-rating-wrap { display: flex; flex-direction: column; gap: .3rem; }
+
+.stars { display: flex; gap: .15rem; }
+
+.star {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #d1d5db;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color .12s, transform .1s;
+    font-family: inherit;
+}
+.star.active, .star:hover { color: #f59e0b; transform: scale(1.15); }
+
+.star-hint {
+    font-size: .78rem;
+    color: #888;
+    min-height: 1.2em;
+    margin: 0;
+}
+
+.star-readonly {
+    font-size: 1.5rem;
+    color: #f59e0b;
+    letter-spacing: .08rem;
+    line-height: 1;
+}
+
+.cal-resumen {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.star-val {
+    font-size: .85rem;
+    font-weight: 700;
+    color: #92400e;
+}

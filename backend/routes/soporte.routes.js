@@ -7,6 +7,7 @@ import {
     detalleTicket,
     responderTicket,
     cerrarTicket,
+    calificarTicket,
     todosTickets,
     tomarTicket,
     cambiarEstado,
@@ -19,11 +20,12 @@ const router = express.Router();
 router.use(requireAuth);
 
 // ── Rutas de usuario (cualquier rol autenticado) ───────────────
-router.post('/tickets',               crearTicket);
-router.get('/tickets',                misTickets);
-router.get('/tickets/:id',            detalleTicket);
-router.post('/tickets/:id/mensajes',  responderTicket);
-router.patch('/tickets/:id/cerrar',   cerrarTicket);
+router.post('/tickets',                  crearTicket);
+router.get('/tickets',                   misTickets);
+router.get('/tickets/:id',               detalleTicket);
+router.post('/tickets/:id/mensajes',     responderTicket);
+router.patch('/tickets/:id/cerrar',      cerrarTicket);
+router.patch('/tickets/:id/calificar',   calificarTicket);
 
 // ── Rutas del panel de agente (Soporte / Administrador) ────────
 router.get('/panel/tickets',                      requireRole('Soporte', 'Administrador'), todosTickets);

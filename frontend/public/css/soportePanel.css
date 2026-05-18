@@ -443,3 +443,31 @@
     display: block;
     cursor: pointer;
 }
+
+/* ── Rating chip en métricas ─────────────────────────────────── */
+.chip-rating { background: #fffbeb; color: #92400e; }
+
+/* ── Calificación en panel de detalle ────────────────────────── */
+.det-calificacion {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-sm);
+    padding: .55rem .75rem;
+    margin-bottom: .8rem;
+    font-size: .82rem;
+}
+
+.det-cal-label {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #92400e;
+    margin: 0 0 .2rem;
+}
+
+.det-cal-stars {
+    color: #f59e0b;
+    font-size: 1.05rem;
+    letter-spacing: .05rem;
+}

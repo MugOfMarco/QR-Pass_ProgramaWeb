@@ -47,10 +47,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             { href: '/BuscarAlumnoVigilante.html', label: 'Buscar alumno' },
             { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
             { href: '/Soporte.html',               label: 'Soporte QRPASS' },
-
         ];
 
-        const items = userTipo === 'Administrador' ? menuAdmin : menuVigilante;
+        const menuSoporte = [
+            { href: '/SoportePanel.html', label: 'Panel de Soporte' },
+        ];
+
+        const items = userTipo === 'Administrador' ? menuAdmin
+                    : userTipo === 'Soporte'       ? menuSoporte
+                    : menuVigilante;
 
         listaOpciones.innerHTML = '';
 

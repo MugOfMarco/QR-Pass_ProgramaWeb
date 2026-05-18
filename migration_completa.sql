@@ -325,9 +325,13 @@ CREATE TABLE tickets_soporte (
                              CHECK (prioridad IN ('urgente','alta','media','baja')),
     estado               VARCHAR(25)  NOT NULL DEFAULT 'abierto'
                              CHECK (estado IN ('abierto','en_progreso','esperando_usuario','resuelto','cerrado')),
-    fecha_creacion       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    fecha_cierre         TIMESTAMP    DEFAULT NULL,
+    fecha_creacion          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_cierre            TIMESTAMP    DEFAULT NULL,
+    -- Calificación del servicio (1-5 estrellas, solo tras resuelto/cerrado)
+    calificacion            SMALLINT     DEFAULT NULL CHECK (calificacion BETWEEN 1 AND 5),
+    comentario_calificacion TEXT         DEFAULT NULL,
+    fecha_calificacion      TIMESTAMP    DEFAULT NULL,
     CONSTRAINT fk_ticket_usuario FOREIGN KEY (id_usuario)
         REFERENCES usuarios_sistema(id_usuario) ON DELETE RESTRICT,
     CONSTRAINT fk_ticket_agente  FOREIGN KEY (id_agente)
