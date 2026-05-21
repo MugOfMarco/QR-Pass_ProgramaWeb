@@ -44,8 +44,13 @@ class RegistroSystem {
         });
 
         // Re-enfocar si el usuario hace clic fuera del input
+        // EXCEPCIÓN: no robamos el foco cuando el clic es dentro del panel de falta manual
         document.addEventListener('click', (e) => {
-            if (e.target !== input) input.focus();
+            const panelFalta = document.getElementById('panel-falta');
+            const dentroFalta = panelFalta && panelFalta.contains(e.target);
+            if (e.target !== input && !dentroFalta) {
+                input.focus();
+            }
         });
     }
 

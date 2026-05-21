@@ -37,7 +37,7 @@ class Ticket {
             .select(`
                 id_ticket, asunto, estado, prioridad, modulo,
                 fecha_creacion, fecha_actualizacion,
-                usuarios_sistema!tickets_soporte_id_agente_fkey ( nombre_completo )
+                agente:usuarios_sistema!fk_ticket_agente ( nombre_completo )
             `)
             .eq('id_usuario', parseInt(id_usuario))
             .order('fecha_creacion', { ascending: false });
@@ -51,7 +51,7 @@ class Ticket {
             modulo:              t.modulo,
             fecha_creacion:      t.fecha_creacion,
             fecha_actualizacion: t.fecha_actualizacion,
-            agente:              t.usuarios_sistema?.nombre_completo ?? null,
+            agente:              t.agente?.nombre_completo ?? null,
         }));
     }
 
@@ -64,8 +64,8 @@ class Ticket {
                 fecha_creacion, fecha_actualizacion, fecha_cierre,
                 id_usuario, id_agente,
                 calificacion, comentario_calificacion, fecha_calificacion,
-                usuarios_sistema!tickets_soporte_id_usuario_fkey ( nombre_completo ),
-                agente:usuarios_sistema!tickets_soporte_id_agente_fkey ( nombre_completo )
+                solicitante:usuarios_sistema!fk_ticket_usuario ( nombre_completo ),
+                agente:usuarios_sistema!fk_ticket_agente ( nombre_completo )
             `)
             .eq('id_ticket', parseInt(id_ticket));
 
@@ -103,7 +103,7 @@ class Ticket {
             calificacion:           ticket.calificacion ?? null,
             comentario_calificacion:ticket.comentario_calificacion ?? null,
             fecha_calificacion:     ticket.fecha_calificacion ?? null,
-            solicitante:            ticket.usuarios_sistema?.nombre_completo ?? '—',
+            solicitante:            ticket.solicitante?.nombre_completo ?? '—',
             agente:                 ticket.agente?.nombre_completo ?? null,
             mensajes: (mensajes || []).map(m => ({
                 id_mensaje:    m.id_mensaje,
@@ -149,8 +149,8 @@ class Ticket {
             .select(`
                 id_ticket, asunto, estado, prioridad, modulo,
                 fecha_creacion, fecha_actualizacion,
-                usuarios_sistema!tickets_soporte_id_usuario_fkey ( nombre_completo ),
-                agente:usuarios_sistema!tickets_soporte_id_agente_fkey ( nombre_completo )
+                solicitante:usuarios_sistema!fk_ticket_usuario ( nombre_completo ),
+                agente:usuarios_sistema!fk_ticket_agente ( nombre_completo )
             `)
             .order('fecha_creacion', { ascending: false });
 
@@ -168,7 +168,7 @@ class Ticket {
             modulo:              t.modulo,
             fecha_creacion:      t.fecha_creacion,
             fecha_actualizacion: t.fecha_actualizacion,
-            solicitante:         t.usuarios_sistema?.nombre_completo ?? '—',
+            solicitante:         t.solicitante?.nombre_completo ?? '—',
             agente:              t.agente?.nombre_completo ?? null,
         }));
     }
@@ -241,8 +241,8 @@ class Ticket {
                 fecha_creacion, fecha_actualizacion, fecha_cierre,
                 id_usuario, id_agente,
                 calificacion, comentario_calificacion, fecha_calificacion,
-                usuarios_sistema!tickets_soporte_id_usuario_fkey ( nombre_completo, usuario, roles(nombre_rol) ),
-                agente:usuarios_sistema!tickets_soporte_id_agente_fkey ( nombre_completo )
+                solicitante:usuarios_sistema!fk_ticket_usuario ( nombre_completo, usuario, roles(nombre_rol) ),
+                agente:usuarios_sistema!fk_ticket_agente ( nombre_completo )
             `)
             .eq('id_ticket', parseInt(id_ticket))
             .maybeSingle();
@@ -284,9 +284,9 @@ class Ticket {
             calificacion:           ticket.calificacion ?? null,
             comentario_calificacion:ticket.comentario_calificacion ?? null,
             fecha_calificacion:     ticket.fecha_calificacion ?? null,
-            solicitante:            ticket.usuarios_sistema?.nombre_completo ?? '—',
-            usuario_sistema:        ticket.usuarios_sistema?.usuario ?? '—',
-            rol_solicitante:        ticket.usuarios_sistema?.roles?.nombre_rol ?? '—',
+            solicitante:            ticket.solicitante?.nombre_completo ?? '—',
+            usuario_sistema:        ticket.solicitante?.usuario ?? '—',
+            rol_solicitante:        ticket.solicitante?.roles?.nombre_rol ?? '—',
             agente:                 ticket.agente?.nombre_completo ?? null,
             mensajes: (mensajes || []).map(m => ({
                 id_mensaje:      m.id_mensaje,

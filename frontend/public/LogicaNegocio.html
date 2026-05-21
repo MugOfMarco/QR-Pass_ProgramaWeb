@@ -154,6 +154,87 @@
     </div>
 </div>
 
+<!-- ══ SECCIÓN: Mantenimiento de BD ══════════════════════════ -->
+<section id="seccion-reset" style="max-width:860px;margin:2rem auto 0;padding:0 1rem">
+    <div style="background:#fff;border:2px solid #e5c0c8;border-radius:12px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#7a2a3e,#3d1422);color:#fff;padding:.9rem 1.3rem;display:flex;align-items:center;gap:.6rem">
+            <span style="font-size:1.1rem">⚠</span>
+            <h3 style="margin:0;font-size:.95rem;font-weight:700">Mantenimiento de Base de Datos</h3>
+        </div>
+        <div style="padding:1.2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.2rem">
+
+            <!-- Reset contadores -->
+            <div style="border:1px solid #e5dde0;border-radius:8px;padding:1rem">
+                <h4 style="margin:0 0 .4rem;font-size:.9rem;color:#5c1f33">Reiniciar contadores</h4>
+                <p style="font-size:.78rem;color:#666;margin:0 0 .8rem">
+                    Pone a 0 retardos, faltas y olvidos de credencial. Desbloquea a todos los alumnos.
+                    Elimina registros de acceso, tickets y bitácora. <strong>Los alumnos y horarios se conservan.</strong>
+                </p>
+                <button id="btn-abrir-reset-contadores" class="ln-btn-danger" style="font-size:.82rem">
+                    Reiniciar contadores
+                </button>
+            </div>
+
+            <!-- Reset completo -->
+            <div style="border:1px solid #e5dde0;border-radius:8px;padding:1rem">
+                <h4 style="margin:0 0 .4rem;font-size:.9rem;color:#5c1f33">Borrar todo (inicio de ciclo)</h4>
+                <p style="font-size:.78rem;color:#666;margin:0 0 .8rem">
+                    Elimina <strong>todos</strong> los alumnos, grupos, horarios y registros.
+                    Los usuarios del sistema y los catálogos base se conservan.
+                    Usa esto al inicio de un nuevo ciclo escolar.
+                </p>
+                <button id="btn-abrir-reset-completo" class="ln-btn-danger" style="font-size:.82rem">
+                    Borrar todo y empezar de cero
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Modal reset contadores ───────────────────────────────── -->
+<div id="modal-reset-cont" class="ln-modal-overlay" style="display:none" role="dialog" aria-modal="true">
+    <div class="ln-modal">
+        <h3 class="ln-modal-title" style="color:#b91c1c">Reiniciar contadores</h3>
+        <p class="ln-modal-desc">
+            Esta acción reiniciará los contadores de <strong>todos los alumnos</strong> (retardos, faltas, sin credencial)
+            y eliminará los registros de acceso, tickets y bitácora del ciclo actual.
+            Los alumnos, grupos y horarios <strong>no se eliminan</strong>.
+        </p>
+        <p class="ln-modal-desc" style="color:#b91c1c;font-weight:700">Esta acción no se puede deshacer.</p>
+        <div class="ln-field" style="margin-top:.8rem">
+            <label class="ln-label" for="conf-reset-cont">Escribe <strong>REINICIAR</strong> para confirmar</label>
+            <input type="text" id="conf-reset-cont" class="ln-input" placeholder="REINICIAR" autocomplete="off">
+        </div>
+        <p id="msg-reset-cont" class="ln-msg" style="display:none"></p>
+        <div class="ln-modal-actions">
+            <button class="ln-btn-danger"  id="btn-confirmar-reset-cont">Confirmar reinicio</button>
+            <button class="ln-btn-sec"     id="btn-cancelar-reset-cont">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Modal reset completo ──────────────────────────────────── -->
+<div id="modal-reset-comp" class="ln-modal-overlay" style="display:none" role="dialog" aria-modal="true">
+    <div class="ln-modal">
+        <h3 class="ln-modal-title" style="color:#b91c1c">Borrar todo — inicio de ciclo</h3>
+        <p class="ln-modal-desc">
+            Esta acción eliminará de forma <strong>permanente</strong>: todos los alumnos registrados,
+            sus grupos, horarios, registros de acceso, tickets de soporte y bitácora.
+        </p>
+        <p class="ln-modal-desc">Se conservarán: usuarios del sistema, turnos, carreras, materias, puntos de acceso y configuración.</p>
+        <p class="ln-modal-desc" style="color:#b91c1c;font-weight:700">ESTA ACCIÓN NO SE PUEDE DESHACER. Descarga un respaldo primero.</p>
+        <div class="ln-field" style="margin-top:.8rem">
+            <label class="ln-label" for="conf-reset-comp">Escribe <strong>BORRAR TODO</strong> para confirmar</label>
+            <input type="text" id="conf-reset-comp" class="ln-input" placeholder="BORRAR TODO" autocomplete="off">
+        </div>
+        <p id="msg-reset-comp" class="ln-msg" style="display:none"></p>
+        <div class="ln-modal-actions">
+            <button class="ln-btn-danger"  id="btn-confirmar-reset-comp">Confirmar borrado total</button>
+            <button class="ln-btn-sec"     id="btn-cancelar-reset-comp">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <footer class="site-footer">
     <div class="footer-container">
         <p>© 2025 Sistema de Control Escolar — CECyT 9</p>
