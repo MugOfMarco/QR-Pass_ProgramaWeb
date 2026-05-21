@@ -97,7 +97,7 @@ function renderKanban() {
 
 function crearKCard(t) {
     return `
-        <div class="kcard" data-id="${t.id_ticket}" onclick="abrirDetalle(${t.id_ticket})">
+        <div class="kcard" data-id="${t.id_ticket}" data-prio="${esc(t.prioridad)}" onclick="abrirDetalle(${t.id_ticket})">
             <div class="kcard-asunto">${esc(t.asunto)}</div>
             <div class="kcard-meta">
                 <span class="prio-badge prio-${esc(t.prioridad)}">${esc(PRIO_LABEL[t.prioridad] || t.prioridad)}</span>

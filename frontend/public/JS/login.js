@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok && data.success) {
                     switch (data.tipo) {
                         case 'Administrador': window.location.href = '/Dashboard.html';      break;
+                        case 'Soporte':        window.location.href = '/SoportePanel.html';   break;
                         case 'Prefecto':       window.location.href = '/Entrada_Salida.html'; break;
                         case 'Vigilante':      window.location.href = '/Entrada_Salida.html'; break;
                         default:               window.location.href = '/Entrada_Salida.html';
