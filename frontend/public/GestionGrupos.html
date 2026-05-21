@@ -623,8 +623,8 @@
 
             <div class="formato-hint">
                 📋 <strong>Formato requerido (primera fila = encabezados):</strong><br>
-                <code>boleta</code> · <code>nombre_completo</code> · <code>nombre_grupo</code> · <code>estado_academico</code> · <code>puertas_abiertas</code><br>
-                El campo <code>puertas_abiertas</code> acepta: <code>SI</code>, <code>NO</code>, <code>TRUE</code>, <code>FALSE</code>.<br>
+                <code>boleta</code> · <code>nombre_completo</code> · <code>nombre_grupo</code> · <code>estado_academico</code> · <code>puertas_abiertas</code> · <code>foto</code> (opcional)<br>
+                El campo <code>puertas_abiertas</code> acepta: <code>SI</code>, <code>NO</code>, <code>TRUE</code>, <code>FALSE</code>. El campo <code>foto</code> acepta una URL pública (Google Drive o directa).<br>
                 Si la boleta ya existe en el sistema, sus datos serán <strong>actualizados</strong>. Si no existe, se <strong>insertará</strong> como alumno nuevo.
             </div>
 
@@ -1180,6 +1180,7 @@ function procesarExcel(file) {
                     nombre_grupo:     String(norm.nombre_grupo || norm.grupo || '').trim(),
                     estado_academico: String(norm.estado_academico || norm.estado || 'Regular').trim(),
                     puertas_abiertas: String(norm.puertas_abiertas || norm.puertas || 'NO').trim(),
+                    foto:             String(norm.foto || norm.url_foto || norm.foto_url || '').trim(),
                 };
             }).filter(r => r.boleta);
 
@@ -1203,7 +1204,7 @@ function mostrarPreview() {
 
     head.innerHTML = `<tr>
         <th>#</th><th>Boleta</th><th>Nombre</th><th>Grupo</th>
-        <th>Estado</th><th>Puertas</th>
+        <th>Estado</th><th>Puertas</th><th>Foto</th>
     </tr>`;
 
     const max = Math.min(excelFilas.length, 20);
@@ -1215,10 +1216,11 @@ function mostrarPreview() {
             <td>${esc(f.nombre_grupo)}</td>
             <td>${esc(f.estado_academico)}</td>
             <td>${esc(f.puertas_abiertas)}</td>
+            <td>${f.foto ? '<span style="color:var(--success,green)" title="'+esc(f.foto)+'">✓ URL</span>' : '<span style="color:var(--muted)">—</span>'}</td>
         </tr>`).join('');
 
     if (excelFilas.length > 20) {
-        body.innerHTML += `<tr><td colspan="6" style="text-align:center;color:var(--muted);font-size:.78rem">
+        body.innerHTML += `<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.78rem">
             … y ${excelFilas.length - 20} filas más</td></tr>`;
     }
 
@@ -1519,11 +1521,11 @@ $('modal-horario').addEventListener('click', e => {
 // ── Descargar plantilla Excel ──────────────────────────────────
 $('btn-descargar-plantilla').addEventListener('click', () => {
     const ws = XLSX.utils.aoa_to_sheet([
-        ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas'],
-        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO', '1CV1', 'Regular', 'NO'],
-        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '2BN2', 'Regular', 'NO'],
+        ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas', 'foto'],
+        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO', '1CV1', 'Regular', 'NO', ''],
+        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '2BN2', 'Regular', 'NO', 'https://drive.google.com/file/d/XXXX/view'],
     ]);
-    ws['!cols'] = [12, 35, 10, 15, 15].map(wch => ({ wch }));
+    ws['!cols'] = [12, 35, 10, 15, 15, 45].map(wch => ({ wch }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Alumnos');
     XLSX.writeFile(wb, 'plantilla_alumnos_qrpass.xlsx');
