@@ -18,6 +18,7 @@ import gruposRoutes    from './routes/grupos.routes.js';
 import backupRoutes    from './routes/backup.routes.js';
 import soporteRoutes   from './routes/soporte.routes.js';
 import configRoutes    from './routes/config.routes.js';
+import faqRoutes       from './routes/faq.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -122,6 +123,7 @@ app.use('/api/grupos',    gruposRoutes);
 app.use('/api/backup',    backupRoutes);
 app.use('/api/soporte',   soporteRoutes);
 app.use('/api/config',    configRoutes);
+app.use('/api/faq',       faqRoutes);
 
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
     extensions: ['html', 'css', 'js'],
