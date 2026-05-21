@@ -571,6 +571,17 @@
                     </div>
                     <a href="/BuscarAlumno.html" class="card-action">Ver todos</a>
                 </div>
+                <!-- Selector de fecha + descarga PDF -->
+                <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 1.2rem;border-bottom:1px solid var(--border)">
+                    <label style="font-size:.78rem;color:var(--muted);white-space:nowrap">Reporte del día:</label>
+                    <input type="date" id="input-fecha-reporte"
+                           style="border:1px solid var(--border);border-radius:6px;padding:.28rem .5rem;font-size:.78rem;font-family:inherit;background:#fff;color:var(--text)">
+                    <button id="btn-pdf-dia" onclick="descargarPDFDia()"
+                            style="background:var(--ipn);color:#fff;border:none;border-radius:6px;padding:.3rem .9rem;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap">
+                        📄 Descargar PDF
+                    </button>
+                    <span id="pdf-dia-msg" style="font-size:.75rem;color:var(--muted)"></span>
+                </div>
                 <div class="card-body" style="padding:0">
                     <div id="ultimos-registros">
                         <p style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem">Cargando…</p>
@@ -1082,6 +1093,48 @@ document.getElementById('btn-refresh').addEventListener('click', () => {
 
 // Auto-refresh cada 60 seg
 setInterval(cargarDashboard, 60_000);
+
+// ── PDF Registros del Dia ──────────────────────────────────
+(function initFechaReporte() {
+    const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+    document.getElementById('input-fecha-reporte').value = hoy;
+})();
+
+async function descargarPDFDia() {
+    const fecha = document.getElementById('input-fecha-reporte').value;
+    const msg   = document.getElementById('pdf-dia-msg');
+    const btn   = document.getElementById('btn-pdf-dia');
+    if (!fecha) { msg.textContent = 'Selecciona una fecha.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Generando...';
+    msg.textContent = '';
+
+    try {
+        const r = await fetch(`/api/reportes/registros-dia-pdf?fecha=${fecha}`, {
+            credentials: 'include',
+        });
+        if (!r.ok) {
+            const d = await r.json().catch(() => ({}));
+            msg.textContent = d.message || 'Error al generar PDF.';
+            return;
+        }
+        const blob = await r.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `registros_${fecha.replace(/-/g, '')}.pdf`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        msg.textContent = 'Descargado correctamente.';
+        setTimeout(() => { msg.textContent = ''; }, 3000);
+    } catch {
+        msg.textContent = 'Error de conexion.';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Descargar PDF';
+    }
+}
 
 // ── Verificar sesión y arrancar ────────────────────────────
 (async function() {

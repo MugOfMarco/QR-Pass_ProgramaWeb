@@ -366,6 +366,147 @@ function dibujarLeyendaPastel(doc, cx, cy, radio, segmentos) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// GET /api/reportes/registros-dia-pdf?fecha=YYYY-MM-DD
+// Descarga PDF con TODOS los registros de acceso de un día.
+// Columnas: Hora | Boleta | Nombre | Puertas | Puerta | Tipo
+// ─────────────────────────────────────────────────────────────
+export const generarRegistrosDia = async (req, res) => {
+    try {
+        // ── 1. Fecha objetivo (default: hoy en MX) ─────────────
+        const rawFecha = sanitize(req.query.fecha || '');
+        const fecha = rawFecha.match(/^\d{4}-\d{2}-\d{2}$/)
+            ? rawFecha
+            : new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
+
+        // ── 2. Consultar registros del día ─────────────────────
+        const { data: registros, error } = await supabaseAdmin
+            .from('registros_acceso')
+            .select(`
+                id_registro,
+                boleta,
+                fecha_hora,
+                id_tipo_registro,
+                tipos_registro  ( descripcion ),
+                puntos_acceso   ( nombre_punto ),
+                alumnos         ( nombre_completo, puertas_abiertas )
+            `)
+            .gte('fecha_hora', `${fecha}T00:00:00-06:00`)
+            .lte('fecha_hora', `${fecha}T23:59:59-06:00`)
+            .order('fecha_hora', { ascending: true });
+
+        if (error) throw error;
+
+        const filas = (registros || []).map(r => [
+            fmtHoraMX(r.fecha_hora),
+            String(r.boleta),
+            r.alumnos?.nombre_completo  || '—',
+            r.alumnos?.puertas_abiertas ? 'Sí' : 'No',
+            normalizarPuerta(r.puntos_acceso?.nombre_punto),
+            r.tipos_registro?.descripcion || '—',
+        ]);
+
+        // ── 3. Datos del encabezado ────────────────────────────
+        const ahora   = new Date();
+        const [yy, mm, dd] = fecha.split('-');
+        const fechaLegible = new Date(fecha + 'T12:00:00').toLocaleDateString('es-MX', {
+            day: 'numeric', month: 'long', year: 'numeric',
+        });
+        const horaMX  = ahora.toLocaleTimeString('es-MX', {
+            timeZone: TZ, hour: '2-digit', minute: '2-digit',
+        });
+        const fechaStr = fecha.replace(/-/g, '');
+
+        // ── 4. Generar PDF ─────────────────────────────────────
+        const doc = new PDFDocument({
+            size:    'LETTER',
+            margins: { top: 70, bottom: 70, left: 60, right: 60 },
+            info:    { Title: `Registros del ${fechaLegible} — QR Pass`, Author: 'CECyT 9 — IPN' },
+        });
+
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        const pdfFin = new Promise((resolve, reject) => {
+            doc.on('end',   resolve);
+            doc.on('error', reject);
+        });
+
+        const x0    = doc.page.margins.left;
+        const pageW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+        // Encabezado institucional
+        doc.fontSize(15).font('Helvetica-Bold').fillColor(COLOR_GUINDA)
+           .text('INSTITUTO POLITECNICO NACIONAL', { align: 'center' });
+        doc.fontSize(13).font('Helvetica').fillColor('black')
+           .text('CECyT 9 "JUAN DE DIOS BATIZ"', { align: 'center' });
+        doc.fontSize(11)
+           .text('SISTEMA DE CONTROL DE ACCESO — QR PASS', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(COLOR_GUINDA)
+           .text('REGISTRO DIARIO DE ACCESOS', { align: 'center', underline: true });
+        doc.moveDown(0.35);
+
+        // Línea separadora
+        doc.save()
+           .moveTo(x0, doc.y).lineTo(x0 + pageW, doc.y)
+           .strokeColor(COLOR_GUINDA).lineWidth(1.2).stroke()
+           .restore();
+        doc.moveDown(0.6);
+
+        // Subtítulo fecha
+        doc.fontSize(11).font('Helvetica').fillColor('black')
+           .text(`Fecha del reporte: `, { continued: true })
+           .font('Helvetica-Bold').text(fechaLegible);
+        doc.font('Helvetica').fontSize(9).fillColor('#666')
+           .text(`Generado: ${ahora.toLocaleDateString('es-MX', { timeZone: TZ })} ${horaMX} hrs`);
+        doc.moveDown(0.6);
+
+        // ── Tabla principal ────────────────────────────────────
+        const colWidths = [
+            pageW * 0.10,   // Hora
+            pageW * 0.14,   // Boleta
+            pageW * 0.30,   // Nombre
+            pageW * 0.10,   // Puertas
+            pageW * 0.18,   // Puerta acceso
+            pageW * 0.18,   // Tipo
+        ];
+        const alignments = ['center', 'center', 'left', 'center', 'left', 'left'];
+        const headers    = ['Hora', 'Boleta', 'Nombre alumno', 'Puertas', 'Puerta acceso', 'Tipo'];
+
+        const filasRender = filas.length
+            ? filas
+            : [['—', '—', 'Sin registros para este dia', '—', '—', '—']];
+
+        dibujarTabla(doc, headers, filasRender, colWidths, alignments);
+
+        // Total
+        doc.moveDown(0.5)
+           .fontSize(11).font('Helvetica').fillColor('black')
+           .text('Total de registros: ', { continued: true })
+           .font('Helvetica-Bold').text(String(filas.length));
+
+        doc.end();
+        await pdfFin;
+
+        const pdfBuffer = Buffer.concat(chunks);
+        const filename  = `registros_${fechaStr}.pdf`;
+
+        res.set({
+            'Content-Type':        'application/pdf',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+            'Content-Length':      pdfBuffer.length,
+        });
+        return res.send(pdfBuffer);
+
+    } catch (err) {
+        console.error('Error generando registros dia:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error al generar el PDF: ' + err.message,
+        });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
 // GET /api/reportes/incidencias-pdf
 // Parámetros opcionales: fecha_inicio=YYYY-MM-DD & fecha_fin=YYYY-MM-DD
 // ─────────────────────────────────────────────────────────────
