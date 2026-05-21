@@ -79,6 +79,134 @@ function tablaSql(nombre, rows) {
     ].join('\n');
 }
 
+// ── Orden de borrado (respeta FK RESTRICT) ────────────────────
+// Primero tablas hijas, luego padres
+const ORDEN_BORRADO = [
+    'eventos_ticket',
+    'mensajes_ticket',
+    'tickets_soporte',
+    'bitacora_auditoria',
+    'justificaciones',
+    'registros_acceso',
+    'horario_alumno_extra',
+    'materias_acreditadas',
+    'info_alumno',
+    'alumnos',
+    'horarios_grupo',
+];
+
+// ── POST /api/backup/reset-contadores ─────────────────────────
+// Reinicia contadores e incidencias sin borrar alumnos
+export const resetearContadores = async (req, res) => {
+    try {
+        const { confirmacion } = req.body;
+        if (confirmacion !== 'REINICIAR') {
+            return res.status(400).json({
+                success: false,
+                message: 'Escribe REINICIAR como confirmación.',
+            });
+        }
+
+        // 1. Resetear todos los contadores de info_alumno
+        const { error: e1 } = await supabaseAdmin
+            .from('info_alumno')
+            .update({
+                contador_retardos:       0,
+                contador_sin_credencial: 0,
+                contador_faltas:         0,
+                bloqueado_manual:        false,
+                bloqueado_sistema:       false,
+            })
+            .gte('boleta', 0);   // afecta todas las filas
+
+        if (e1) throw new Error(`info_alumno: ${e1.message}`);
+
+        // 2. Borrar solo registros operativos (no alumnos)
+        const operativas = [
+            'eventos_ticket',
+            'mensajes_ticket',
+            'tickets_soporte',
+            'bitacora_auditoria',
+            'justificaciones',
+            'registros_acceso',
+        ];
+        for (const tabla of operativas) {
+            const { error } = await supabaseAdmin
+                .from(tabla)
+                .delete()
+                .gte('id_' + (tabla === 'registros_acceso' ? 'registro'
+                             : tabla === 'tickets_soporte'  ? 'ticket'
+                             : tabla === 'mensajes_ticket'  ? 'mensaje'
+                             : tabla === 'eventos_ticket'   ? 'evento'
+                             : tabla === 'justificaciones'  ? 'justificacion'
+                             : 'auditoria'), 0);
+            if (error) throw new Error(`${tabla}: ${error.message}`);
+        }
+
+        console.log(`✅ Reset de contadores ejecutado por ${req.session.user?.usuario}`);
+        return res.json({
+            success: true,
+            message: 'Contadores reiniciados y registros operativos eliminados. Los alumnos y horarios se conservaron.',
+        });
+    } catch (err) {
+        console.error('Error en resetearContadores:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// ── POST /api/backup/reset-completo ──────────────────────────
+// Borra alumnos, registros, horarios — conserva catálogos y usuarios
+export const resetearCompleto = async (req, res) => {
+    try {
+        const { confirmacion } = req.body;
+        if (confirmacion !== 'BORRAR TODO') {
+            return res.status(400).json({
+                success: false,
+                message: 'Escribe BORRAR TODO como confirmación.',
+            });
+        }
+
+        for (const tabla of ORDEN_BORRADO) {
+            // Buscamos la columna PK de cada tabla para el filtro
+            const pkMap = {
+                eventos_ticket:     'id_evento',
+                mensajes_ticket:    'id_mensaje',
+                tickets_soporte:    'id_ticket',
+                bitacora_auditoria: 'id_auditoria',
+                justificaciones:    'id_justificacion',
+                registros_acceso:   'id_registro',
+                horario_alumno_extra:'id_extra',
+                materias_acreditadas:'id_acreditada',
+                info_alumno:        'boleta',
+                alumnos:            'boleta',
+                horarios_grupo:     'id_horario',
+            };
+            const pk = pkMap[tabla];
+            const { error } = await supabaseAdmin
+                .from(tabla)
+                .delete()
+                .gte(pk, 0);
+            if (error) throw new Error(`${tabla}: ${error.message}`);
+        }
+
+        // Borrar también grupos después de alumnos y horarios
+        const { error: eg } = await supabaseAdmin
+            .from('grupos')
+            .delete()
+            .gte('id_grupo', 0);
+        if (eg) throw new Error(`grupos: ${eg.message}`);
+
+        console.log(`🗑  Reset COMPLETO ejecutado por ${req.session.user?.usuario}`);
+        return res.json({
+            success: true,
+            message: 'Todos los alumnos, registros, horarios y grupos fueron eliminados. Los usuarios y catálogos se conservaron.',
+        });
+    } catch (err) {
+        console.error('Error en resetearCompleto:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // ── Controlador principal ─────────────────────────────────────
 export const descargarRespaldo = async (req, res) => {
     try {

@@ -542,7 +542,7 @@ export const generarReporteIncidencias = async (req, res) => {
             const desde = fechaInicio || 'inicio';
             const hasta = fechaFin    || 'hoy';
             doc.fontSize(9).fillColor('#1a5e20')
-               .text(`📅 Período: ${desde}  →  ${hasta}`);
+               .text(`Periodo: ${desde}  →  ${hasta}`);
         }
         doc.fontSize(9).fillColor('#666666')
            .text(describir_filtros({ q, turno, estado, grupo, puertas, dentro, bloqueado }));
