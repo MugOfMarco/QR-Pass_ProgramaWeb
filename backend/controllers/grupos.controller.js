@@ -48,11 +48,11 @@ export const listarTurnos = async (_req, res) => {
 // ── POST /api/grupos ──────────────────────────────────────────
 export const crearGrupo = async (req, res) => {
     try {
-        const { nombre_grupo, id_turno } = req.body;
-        if (!nombre_grupo || !id_turno) {
-            return res.status(400).json({ success: false, message: 'Nombre y turno son obligatorios.' });
+        const { nombre_grupo, id_turno, id_carrera } = req.body;
+        if (!nombre_grupo || !id_turno || !id_carrera) {
+            return res.status(400).json({ success: false, message: 'Nombre, turno y carrera son obligatorios.' });
         }
-        const r = await Grupo.crear(s(nombre_grupo), id_turno);
+        const r = await Grupo.crear(s(nombre_grupo), id_turno, id_carrera);
         return r.success
             ? res.status(201).json(r)
             : res.status(400).json(r);
@@ -64,11 +64,11 @@ export const crearGrupo = async (req, res) => {
 // ── PUT /api/grupos/:id ───────────────────────────────────────
 export const editarGrupo = async (req, res) => {
     try {
-        const { nombre_grupo, id_turno } = req.body;
-        if (!nombre_grupo || !id_turno) {
-            return res.status(400).json({ success: false, message: 'Nombre y turno son obligatorios.' });
+        const { nombre_grupo, id_turno, id_carrera } = req.body;
+        if (!nombre_grupo || !id_turno || !id_carrera) {
+            return res.status(400).json({ success: false, message: 'Nombre, turno y carrera son obligatorios.' });
         }
-        const r = await Grupo.editar(req.params.id, s(nombre_grupo), id_turno);
+        const r = await Grupo.editar(req.params.id, s(nombre_grupo), id_turno, id_carrera);
         return r.success ? res.json(r) : res.status(400).json(r);
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Error al editar grupo.' });

@@ -72,8 +72,7 @@ class Grupo {
     }
 
     // ─── Crear grupo ──────────────────────────────────────────
-    // id_carrera se fija en 1 (único plantel — la "I" del nombre es constante)
-    static async crear(nombre_grupo, id_turno) {
+    static async crear(nombre_grupo, id_turno, id_carrera) {
         const { data: existe } = await supabaseAdmin
             .from('grupos')
             .select('id_grupo')
@@ -83,7 +82,7 @@ class Grupo {
 
         const { data, error } = await supabaseAdmin
             .from('grupos')
-            .insert({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno), id_carrera: 1 })
+            .insert({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno), id_carrera: parseInt(id_carrera) })
             .select('id_grupo')
             .single();
         if (error) return { success: false, message: error.message };
@@ -91,10 +90,10 @@ class Grupo {
     }
 
     // ─── Editar grupo ─────────────────────────────────────────
-    static async editar(id_grupo, nombre_grupo, id_turno) {
+    static async editar(id_grupo, nombre_grupo, id_turno, id_carrera) {
         const { error } = await supabaseAdmin
             .from('grupos')
-            .update({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno) })
+            .update({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno), id_carrera: parseInt(id_carrera) })
             .eq('id_grupo', parseInt(id_grupo));
         if (error) return { success: false, message: error.message };
         return { success: true, message: 'Grupo actualizado correctamente.' };

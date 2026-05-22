@@ -704,6 +704,10 @@
                            style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;font-family:inherit;text-align:center">
                 </div>
             </div>
+            <label for="mg-carrera" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem;margin-top:.1rem">Carrera *</label>
+            <select id="mg-carrera" style="width:100%;padding:.42rem .6rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;margin-bottom:.5rem">
+                <option value="">Cargando…</option>
+            </select>
             <div style="background:#f5f5f5;border:2px solid var(--border);border-radius:var(--radius-sm);padding:.45rem .8rem;font-size:.88rem">
                 Nombre generado:&nbsp;<strong id="mg-nombre-preview" style="font-family:monospace;letter-spacing:.05em;color:var(--primary,#7c2020)">—</strong>
                 <small style="color:#999;margin-left:.3rem">formato: semestre·I·M/V·número</small>
@@ -1125,11 +1129,13 @@ function abrirModalGrupo(id = null) {
         const match = grupo.nombre.match(/^(\d+)I[MV](\d+)$/i);
         $('mg-semestre').value = match ? match[1] : '';
         $('mg-numero').value   = match ? match[2] : '';
-        $('mg-turno').value    = grupo.id_turno || '';
+        $('mg-turno').value    = grupo.id_turno   || '';
+        $('mg-carrera').value  = grupo.id_carrera || '';
     } else {
         $('mg-semestre').value = '';
         $('mg-turno').value    = '';
         $('mg-numero').value   = '';
+        $('mg-carrera').value  = '';
     }
 
     actualizarPreviewGrupo();
@@ -1159,13 +1165,15 @@ $('errores-detalle-toggle').addEventListener('click', () => {
 });
 
 $('btn-guardar-grupo').addEventListener('click', async () => {
-    const sem     = parseInt($('mg-semestre').value);
-    const idTurno = $('mg-turno').value;
-    const num     = parseInt($('mg-numero').value);
-    const turno   = turnosData.find(t => t.id_turno == idTurno);
+    const sem       = parseInt($('mg-semestre').value);
+    const idTurno   = $('mg-turno').value;
+    const idCarrera = $('mg-carrera').value;
+    const num       = parseInt($('mg-numero').value);
+    const turno     = turnosData.find(t => t.id_turno == idTurno);
 
     if (!sem || sem < 1 || sem > 6)  { toast('El semestre debe ser entre 1 y 6', 'err'); return; }
     if (!idTurno)                     { toast('Selecciona un turno', 'err'); return; }
+    if (!idCarrera)                   { toast('Selecciona una carrera', 'err'); return; }
     if (!num || num < 1 || num > 99) { toast('El número de grupo debe ser entre 1 y 99', 'err'); return; }
 
     const turnoCode   = turno.nombre_turno[0].toUpperCase(); // M o V
@@ -1181,7 +1189,7 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
             method,
             headers:     { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ nombre_grupo: nombreGrupo, id_turno: idTurno }),
+            body: JSON.stringify({ nombre_grupo: nombreGrupo, id_turno: idTurno, id_carrera: idCarrera }),
         });
         const data = await r.json();
 
