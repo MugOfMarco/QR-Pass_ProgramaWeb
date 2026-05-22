@@ -11,7 +11,7 @@ class Grupo {
         // 1. Grupos + turno
         const { data: grupos, error: eg } = await supabaseAdmin
             .from('grupos')
-            .select('id_grupo, nombre_grupo, turnos(nombre_turno)')
+            .select('id_grupo, nombre_grupo, id_turno, id_carrera, turnos(nombre_turno)')
             .order('nombre_grupo');
         if (eg) throw eg;
 
@@ -54,13 +54,25 @@ class Grupo {
             id_grupo:    g.id_grupo,
             nombre:      g.nombre_grupo,
             turno:       g.turnos?.nombre_turno || '—',
+            id_turno:    g.id_turno,
+            id_carrera:  g.id_carrera,
             alumnos:     alumnosPorGrupo[g.id_grupo] || [],
             total:       (alumnosPorGrupo[g.id_grupo] || []).length,
         }));
     }
 
+    // ─── Listar carreras ──────────────────────────────────────
+    static async listarCarreras() {
+        const { data, error } = await supabaseAdmin
+            .from('carreras')
+            .select('id_carrera, nombre_carrera, codigo_carrera')
+            .order('nombre_carrera');
+        if (error) throw error;
+        return data || [];
+    }
+
     // ─── Crear grupo ──────────────────────────────────────────
-    static async crear(nombre_grupo, id_turno) {
+    static async crear(nombre_grupo, id_turno, id_carrera) {
         const { data: existe } = await supabaseAdmin
             .from('grupos')
             .select('id_grupo')
@@ -70,7 +82,7 @@ class Grupo {
 
         const { data, error } = await supabaseAdmin
             .from('grupos')
-            .insert({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno) })
+            .insert({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno), id_carrera: parseInt(id_carrera) })
             .select('id_grupo')
             .single();
         if (error) return { success: false, message: error.message };
@@ -78,10 +90,10 @@ class Grupo {
     }
 
     // ─── Editar grupo ─────────────────────────────────────────
-    static async editar(id_grupo, nombre_grupo, id_turno) {
+    static async editar(id_grupo, nombre_grupo, id_turno, id_carrera) {
         const { error } = await supabaseAdmin
             .from('grupos')
-            .update({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno) })
+            .update({ nombre_grupo: nombre_grupo.trim(), id_turno: parseInt(id_turno), id_carrera: parseInt(id_carrera) })
             .eq('id_grupo', parseInt(id_grupo));
         if (error) return { success: false, message: error.message };
         return { success: true, message: 'Grupo actualizado correctamente.' };

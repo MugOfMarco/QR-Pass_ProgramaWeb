@@ -682,17 +682,36 @@
     <div class="modal">
         <h3 id="modal-grupo-titulo">Nuevo grupo</h3>
         <div class="modal-form">
-            <label for="mg-nombre">
-                Nombre del grupo *
-                <small style="font-weight:400;color:#999">(máx. 20 caracteres, sin caracteres especiales)</small>
+            <label style="margin-bottom:.35rem">
+                Datos del grupo *
+                <small style="font-weight:400;color:#999">(el nombre se genera automáticamente)</small>
             </label>
-            <input type="text" id="mg-nombre" maxlength="20"
-                   placeholder="Ej. 1CV1" autocomplete="off">
-            <div class="char-counter" id="mg-nombre-counter">0 / 20</div>
-            <label for="mg-turno">Turno *</label>
-            <select id="mg-turno">
+            <div style="display:grid;grid-template-columns:65px 1fr 65px;gap:.5rem;margin-bottom:.5rem">
+                <div>
+                    <label for="mg-semestre" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Semestre</label>
+                    <input type="number" id="mg-semestre" min="1" max="6" placeholder="1–6"
+                           style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;font-family:inherit;text-align:center">
+                </div>
+                <div>
+                    <label for="mg-turno" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Turno</label>
+                    <select id="mg-turno" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem;font-family:inherit">
+                        <option value="">Cargando…</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="mg-numero" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Nº grp</label>
+                    <input type="number" id="mg-numero" min="1" max="99" placeholder="1–99"
+                           style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;font-family:inherit;text-align:center">
+                </div>
+            </div>
+            <label for="mg-carrera" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem;margin-top:.1rem">Carrera *</label>
+            <select id="mg-carrera" style="width:100%;padding:.42rem .6rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;margin-bottom:.5rem">
                 <option value="">Cargando…</option>
             </select>
+            <div style="background:#f5f5f5;border:2px solid var(--border);border-radius:var(--radius-sm);padding:.45rem .8rem;font-size:.88rem">
+                Nombre generado:&nbsp;<strong id="mg-nombre-preview" style="font-family:monospace;letter-spacing:.05em;color:var(--primary,#7c2020)">—</strong>
+                <small style="color:#999;margin-left:.3rem">formato: semestre·I·M/V·número</small>
+            </div>
         </div>
         <div class="modal-actions" style="margin-top:1.2rem">
             <button class="btn-primary" id="btn-guardar-grupo">Crear grupo</button>
@@ -780,6 +799,7 @@
 
 let gruposData    = [];
 let turnosData    = [];
+let carrerasData  = [];
 let estadosData   = [];
 let excelFilas    = [];
 let modoEditGrupo = null;
@@ -804,7 +824,7 @@ function toast(msg, tipo = 'ok') {
         if (!data.isAuthenticated) { location.href = '/login.html'; return; }
         if (data.tipo !== 'Administrador') { location.href = '/Entrada_Salida.html'; return; }
     } catch { location.href = '/login.html'; return; }
-    await Promise.all([ cargarGrupos(), cargarTurnos(), cargarEstados(), cargarHorariosDatos() ]);
+    await Promise.all([ cargarGrupos(), cargarTurnos(), cargarCarreras(), cargarEstados(), cargarHorariosDatos() ]);
 })();
 
 async function cargarGrupos() {
@@ -835,6 +855,39 @@ async function cargarTurnos() {
             });
         }
     } catch {}
+}
+
+async function cargarCarreras() {
+    try {
+        const r    = await fetch('/api/grupos/carreras', { credentials: 'include' });
+        const data = await r.json();
+        if (data.success) {
+            carrerasData = data.carreras;
+            const sel = $('mg-carrera');
+            sel.innerHTML = '<option value="">— Carrera —</option>';
+            carrerasData.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id_carrera;
+                opt.textContent = c.nombre_carrera;
+                sel.appendChild(opt);
+            });
+        }
+    } catch {}
+}
+
+function actualizarPreviewGrupo() {
+    const sem   = parseInt($('mg-semestre')?.value) || null;
+    const turno = turnosData.find(t => t.id_turno == $('mg-turno')?.value);
+    const num   = parseInt($('mg-numero')?.value)   || null;
+    const preview = $('mg-nombre-preview');
+    if (!preview) return;
+
+    if (sem && turno && num) {
+        const tc = turno.nombre_turno[0].toUpperCase(); // M o V
+        preview.textContent = `${sem}I${tc}${num}`;
+    } else {
+        preview.textContent = '—';
+    }
 }
 
 async function cargarEstados() {
@@ -1068,23 +1121,26 @@ function abrirModalGrupo(id = null) {
     modoEditGrupo = id;
     const grupo = id ? gruposData.find(g => g.id_grupo === id) : null;
 
-    $('modal-grupo-titulo').textContent  = grupo ? 'Editar grupo' : 'Nuevo grupo';
-    $('btn-guardar-grupo').textContent   = grupo ? 'Guardar cambios' : 'Crear grupo';
-    $('mg-nombre').value = grupo?.nombre || '';
-
-    // Actualizar contador
-    const len = (grupo?.nombre || '').length;
-    if (mgCounter) mgCounter.textContent = `${len} / 20`;
+    $('modal-grupo-titulo').textContent = grupo ? 'Editar grupo' : 'Nuevo grupo';
+    $('btn-guardar-grupo').textContent  = grupo ? 'Guardar cambios' : 'Crear grupo';
 
     if (grupo) {
-        const turno = turnosData.find(t => t.nombre_turno === grupo.turno);
-        $('mg-turno').value = turno?.id_turno || '';
+        // Formato fijo: {semestre}I{M/V}{numero}  →  ej. 6IV7
+        const match = grupo.nombre.match(/^(\d+)I[MV](\d+)$/i);
+        $('mg-semestre').value = match ? match[1] : '';
+        $('mg-numero').value   = match ? match[2] : '';
+        $('mg-turno').value    = grupo.id_turno   || '';
+        $('mg-carrera').value  = grupo.id_carrera || '';
     } else {
-        $('mg-turno').value = '';
+        $('mg-semestre').value = '';
+        $('mg-turno').value    = '';
+        $('mg-numero').value   = '';
+        $('mg-carrera').value  = '';
     }
 
+    actualizarPreviewGrupo();
     $('modal-grupo').classList.add('visible');
-    setTimeout(() => $('mg-nombre').focus(), 100);
+    setTimeout(() => $('mg-semestre').focus(), 100);
 }
 
 function abrirEditarGrupo(id) { abrirModalGrupo(id); }
@@ -1092,6 +1148,12 @@ function abrirEditarGrupo(id) { abrirModalGrupo(id); }
 $('btn-nuevo-grupo').addEventListener('click', () => abrirModalGrupo());
 $('btn-cancelar-grupo').addEventListener('click', () => $('modal-grupo').classList.remove('visible'));
 $('modal-grupo').addEventListener('click', e => { if (e.target === $('modal-grupo')) $('modal-grupo').classList.remove('visible'); });
+
+// Actualizar preview al cambiar cualquiera de los 3 campos
+['mg-semestre', 'mg-turno', 'mg-numero'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', actualizarPreviewGrupo);
+});
 
 // Toggle detalle de errores
 $('errores-detalle-toggle').addEventListener('click', () => {
@@ -1103,15 +1165,19 @@ $('errores-detalle-toggle').addEventListener('click', () => {
 });
 
 $('btn-guardar-grupo').addEventListener('click', async () => {
-    const nombre = $('mg-nombre').value.trim();
-    const turno  = $('mg-turno').value;
+    const sem       = parseInt($('mg-semestre').value);
+    const idTurno   = $('mg-turno').value;
+    const idCarrera = $('mg-carrera').value;
+    const num       = parseInt($('mg-numero').value);
+    const turno     = turnosData.find(t => t.id_turno == idTurno);
 
-    if (!nombre) { toast('El nombre del grupo es obligatorio', 'err'); return; }
-    if (nombre.length < 2) { toast('El nombre debe tener al menos 2 caracteres', 'err'); return; }
-    if (!REGEX_GRUPO.test(nombre)) {
-        toast('El nombre solo puede contener letras, números, espacios y guiones', 'err'); return;
-    }
-    if (!turno) { toast('Selecciona un turno', 'err'); return; }
+    if (!sem || sem < 1 || sem > 6)  { toast('El semestre debe ser entre 1 y 6', 'err'); return; }
+    if (!idTurno)                     { toast('Selecciona un turno', 'err'); return; }
+    if (!idCarrera)                   { toast('Selecciona una carrera', 'err'); return; }
+    if (!num || num < 1 || num > 99) { toast('El número de grupo debe ser entre 1 y 99', 'err'); return; }
+
+    const turnoCode   = turno.nombre_turno[0].toUpperCase(); // M o V
+    const nombreGrupo = `${sem}I${turnoCode}${num}`;
 
     const btn = $('btn-guardar-grupo');
     btn.disabled = true; btn.textContent = 'Guardando…';
@@ -1123,7 +1189,7 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
             method,
             headers:     { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ nombre_grupo: nombre, id_turno: turno }),
+            body: JSON.stringify({ nombre_grupo: nombreGrupo, id_turno: idTurno, id_carrera: idCarrera }),
         });
         const data = await r.json();
 
