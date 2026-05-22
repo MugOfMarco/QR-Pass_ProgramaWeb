@@ -65,7 +65,7 @@ class Grupo {
     static async listarCarreras() {
         const { data, error } = await supabaseAdmin
             .from('carreras')
-            .select('id_carrera, nombre_carrera, codigo_carrera')
+            .select('id_carrera, nombre_carrera')
             .order('nombre_carrera');
         if (error) throw error;
         return data || [];
