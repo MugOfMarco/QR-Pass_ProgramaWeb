@@ -686,22 +686,40 @@
                 Datos del grupo *
                 <small style="font-weight:400;color:#999">(el nombre se genera automáticamente)</small>
             </label>
-            <div style="display:grid;grid-template-columns:65px 1fr 65px;gap:.5rem;margin-bottom:.5rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.5rem">
                 <div>
                     <label for="mg-semestre" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Semestre</label>
-                    <input type="number" id="mg-semestre" min="1" max="6" placeholder="1–6"
-                           style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;font-family:inherit;text-align:center">
+                    <select id="mg-semestre" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit">
+                        <option value="">—</option>
+                        <option value="1">1°</option>
+                        <option value="2">2°</option>
+                        <option value="3">3°</option>
+                        <option value="4">4°</option>
+                        <option value="5">5°</option>
+                        <option value="6">6°</option>
+                    </select>
                 </div>
                 <div>
                     <label for="mg-turno" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Turno</label>
-                    <select id="mg-turno" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem;font-family:inherit">
+                    <select id="mg-turno" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit">
                         <option value="">Cargando…</option>
                     </select>
                 </div>
                 <div>
-                    <label for="mg-numero" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Nº grp</label>
-                    <input type="number" id="mg-numero" min="1" max="99" placeholder="1–99"
-                           style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;font-family:inherit;text-align:center">
+                    <label for="mg-numero" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Nº de grupo</label>
+                    <select id="mg-numero" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit">
+                        <option value="">—</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
                 </div>
             </div>
             <label for="mg-carrera" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem;margin-top:.1rem">Carrera *</label>
@@ -1171,10 +1189,10 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
     const num       = parseInt($('mg-numero').value);
     const turno     = turnosData.find(t => t.id_turno == idTurno);
 
-    if (!sem || sem < 1 || sem > 6)  { toast('El semestre debe ser entre 1 y 6', 'err'); return; }
-    if (!idTurno)                     { toast('Selecciona un turno', 'err'); return; }
-    if (!idCarrera)                   { toast('Selecciona una carrera', 'err'); return; }
-    if (!num || num < 1 || num > 99) { toast('El número de grupo debe ser entre 1 y 99', 'err'); return; }
+    if (!sem)      { toast('Selecciona el semestre', 'err'); return; }
+    if (!idTurno)  { toast('Selecciona un turno', 'err'); return; }
+    if (!idCarrera){ toast('Selecciona una carrera', 'err'); return; }
+    if (!num)      { toast('Selecciona el número de grupo', 'err'); return; }
 
     const turnoCode   = turno.nombre_turno[0].toUpperCase(); // M o V
     const nombreGrupo = `${sem}I${turnoCode}${num}`;
