@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
 import {
     listarGrupos,
     listarTurnos,
+    listarCarreras,
     listarMaterias,
     listarSemestres,
     listarHorarios,
@@ -22,6 +23,7 @@ router.use(requireAuth);
 // Cualquier usuario autenticado puede ver grupos y catálogos
 router.get('/',           listarGrupos);
 router.get('/turnos',     listarTurnos);
+router.get('/carreras',   listarCarreras);
 router.get('/materias',   listarMaterias);
 router.get('/semestres',  listarSemestres);
 
