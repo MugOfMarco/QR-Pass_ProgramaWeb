@@ -1604,16 +1604,58 @@ $('modal-horario').addEventListener('click', e => {
 
 // ── Descargar plantilla Excel ──────────────────────────────────
 $('btn-descargar-plantilla').addEventListener('click', () => {
+
+    // ── Hoja 1: datos (la que se sube al sistema) ──────────────
     const ws = XLSX.utils.aoa_to_sheet([
         ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas', 'foto'],
-        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO', '1CV1', 'Regular', 'NO', ''],
-        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '2BN2', 'Regular', 'NO', 'https://drive.google.com/file/d/XXXX/view'],
+        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO',   '6IM7', 'Regular',   'NO', ''],
+        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '6IV7', 'Irregular', 'NO', 'https://drive.google.com/file/d/XXXX/view'],
     ]);
-    ws['!cols'] = [12, 35, 10, 15, 15, 45].map(wch => ({ wch }));
+    ws['!cols'] = [12, 35, 8, 16, 14, 48].map(wch => ({ wch }));
+
+    // ── Hoja 2: referencia de valores válidos ──────────────────
+    // Usa estadosData cargado desde la BD para listar estados reales
+    const estadosValidos = estadosData.length
+        ? estadosData.map(e => e.estado)
+        : ['Regular', 'Irregular', 'Baja Temporal', 'Baja Definitiva'];
+
+    // Fila(s) de estado_academico: primera con etiqueta, resto vacío en col A
+    const filasEstado = estadosValidos.map((e, i) =>
+        i === 0
+            ? ['estado_academico', e, 'Elige exactamente uno de los valores de esta lista (no distingue mayusculas)']
+            : ['', e, '']
+    );
+
+    const wsRef = XLSX.utils.aoa_to_sheet([
+        ['REFERENCIA — Valores validos por columna (esta hoja es solo informativa, no la subas)'],
+        [],
+        ['COLUMNA', 'VALOR(ES) ACEPTADO(S)', 'NOTAS'],
+        // boleta
+        ['boleta', 'Numero entero de 5 o mas digitos',
+         'Si la boleta ya existe en el sistema → se ACTUALIZA. Si no existe → se INSERTA.'],
+        // nombre_completo
+        ['nombre_completo', 'Texto libre (maximo 200 caracteres)',
+         'Escribe apellidos y nombre en mayusculas. Ej: GARCIA LOPEZ JUAN'],
+        // nombre_grupo
+        ['nombre_grupo', 'Nombre exacto del grupo registrado en el sistema',
+         'Debe coincidir exactamente. Ej: 6IM7 (Matutino), 6IV7 (Vespertino)'],
+        // estado_academico — filas dinámicas
+        ...filasEstado,
+        // puertas_abiertas
+        ['puertas_abiertas', 'SI  /  NO', 'Tambien acepta: TRUE, FALSE, 1, 0. Por defecto si se omite: NO'],
+        // foto — dos filas
+        ['foto', 'URL publica directa: https://ejemplo.com/foto.jpg',
+         'Opcional. Dejar la celda vacia si el alumno no tiene foto.'],
+        ['', 'URL de Google Drive: https://drive.google.com/file/d/FILE_ID/view',
+         'La imagen debe tener acceso publico o "cualquier persona con el enlace".'],
+    ]);
+    wsRef['!cols'] = [18, 58, 58].map(wch => ({ wch }));
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Alumnos');
+    XLSX.utils.book_append_sheet(wb, ws,    'Alumnos');
+    XLSX.utils.book_append_sheet(wb, wsRef, 'Referencia');
     XLSX.writeFile(wb, 'plantilla_alumnos_qrpass.xlsx');
-    toast('Plantilla descargada', 'ok');
+    toast('Plantilla descargada. Revisa la hoja "Referencia" para ver los valores validos.', 'ok');
 });
 </script>
 </body>
