@@ -58,6 +58,18 @@
                 <option value="baja">Baja</option>
             </select>
             <button class="filtro-btn" id="btn-refrescar">↻ Refrescar</button>
+            <button class="filtro-btn filtro-btn-faq" id="btn-toggle-faq-stats" title="Ver clics en preguntas frecuentes">📊 FAQ</button>
+        </div>
+    </div>
+
+    <!-- ── Panel FAQ Stats (oculto por defecto) ──────────────── -->
+    <div class="faq-stats-panel" id="faq-stats-panel" style="display:none">
+        <div class="faq-stats-header">
+            <span>📊 Preguntas frecuentes — clics por pregunta</span>
+            <button class="faq-stats-close" id="btn-cerrar-faq-stats">✕</button>
+        </div>
+        <div class="faq-stats-list" id="faq-stats-list">
+            <p style="font-size:.82rem;color:#aaa;text-align:center;padding:.5rem">Cargando…</p>
         </div>
     </div>
 
