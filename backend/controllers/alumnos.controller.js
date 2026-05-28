@@ -42,11 +42,13 @@ export const obtenerAlumno = async (req, res) => {
         const { data: alumnoRaw } = await supabaseAdmin
             .from('alumnos').select('id_grupo_base').eq('boleta', parseInt(boleta)).single();
 
+        const DIA_MAP = { 1:'lunes', 2:'martes', 3:'miércoles', 4:'jueves', 5:'viernes', 6:'sábado', 7:'domingo' };
+
         let horario = [];
         if (semestre && alumnoRaw) {
             const { data: base } = await supabaseAdmin
-                .from('horario_grupo')
-                .select('id_horario_grupo, dia, hora_inicio, hora_fin, id_materia, materias(nombre_materia)')
+                .from('horarios_grupo')
+                .select('id_horario, dia_semana, hora_inicio, hora_fin, id_materia, materias(nombre_materia)')
                 .eq('id_grupo', alumnoRaw.id_grupo_base)
                 .eq('id_semestre', semestre.id_semestre);
 
@@ -56,17 +58,17 @@ export const obtenerAlumno = async (req, res) => {
 
             const { data: extras } = await supabaseAdmin
                 .from('horario_alumno_extra')
-                .select('horario_grupo(id_horario_grupo, dia, hora_inicio, hora_fin, id_materia, materias(nombre_materia))')
+                .select('horarios_grupo(id_horario, dia_semana, hora_inicio, hora_fin, id_materia, materias(nombre_materia))')
                 .eq('boleta', parseInt(boleta));
 
             const baseMap = (base || [])
                 .filter(h => !idsAcred.includes(h.id_materia))
-                .map(h => ({ id_horario_grupo: h.id_horario_grupo, dia: h.dia,
+                .map(h => ({ id_horario: h.id_horario, dia: DIA_MAP[h.dia_semana] || String(h.dia_semana),
                              inicio: h.hora_inicio, fin: h.hora_fin,
                              materia: h.materias?.nombre_materia }));
 
-            const extraMap = (extras || []).map(e => e.horario_grupo).filter(Boolean)
-                .map(h => ({ id_horario_grupo: h.id_horario_grupo, dia: h.dia,
+            const extraMap = (extras || []).map(e => e.horarios_grupo).filter(Boolean)
+                .map(h => ({ id_horario: h.id_horario, dia: DIA_MAP[h.dia_semana] || String(h.dia_semana),
                              inicio: h.hora_inicio, fin: h.hora_fin,
                              materia: h.materias?.nombre_materia }));
 

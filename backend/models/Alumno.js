@@ -211,6 +211,7 @@ class Alumno {
         }
 
         if (Array.isArray(horario)) {
+            const DIA_STR_TO_NUM = { 'lunes':1, 'martes':2, 'miércoles':3, 'jueves':4, 'viernes':5, 'sábado':6, 'domingo':7 };
             await supabaseAdmin.from('horario_alumno_extra').delete().eq('boleta', boletaInt);
 
             for (const clase of horario) {
@@ -221,17 +222,18 @@ class Alumno {
                 const { data: sem } = await supabaseAdmin.from('semestres')
                     .select('id_semestre').eq('activo', true).maybeSingle();
                 if (!sem) continue;
-                const { data: slot } = await supabaseAdmin.from('horario_grupo')
-                    .select('id_horario_grupo')
+                const diaN = DIA_STR_TO_NUM[clase.dia?.toLowerCase()] ?? clase.dia;
+                const { data: slot } = await supabaseAdmin.from('horarios_grupo')
+                    .select('id_horario')
                     .eq('id_grupo', idGrupo).eq('id_materia', mat.id_materia)
-                    .eq('id_semestre', sem.id_semestre).eq('dia', clase.dia)
+                    .eq('id_semestre', sem.id_semestre).eq('dia_semana', diaN)
                     .eq('hora_inicio', clase.inicio).eq('hora_fin', clase.fin)
                     .maybeSingle();
                 if (!slot) continue;
                 await supabaseAdmin.from('horario_alumno_extra').upsert(
-                    { boleta: boletaInt, id_horario_grupo: slot.id_horario_grupo,
+                    { boleta: boletaInt, id_horario: slot.id_horario,
                       fecha_asignacion: new Date().toISOString().split('T')[0] },
-                    { onConflict: 'boleta,id_horario_grupo' }
+                    { onConflict: 'boleta,id_horario' }
                 );
             }
         }
