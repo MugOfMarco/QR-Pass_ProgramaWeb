@@ -88,15 +88,22 @@ const PORT = process.env.SERVER_PORT || 3000;
 
 app.set('trust proxy', 1);
 
+const origenesPermitidos = new Set([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+]);
+
 app.use(cors({
     origin: (origin, callback) => {
-        const permitidos = [
-            process.env.FRONTEND_URL || 'http://localhost:3000',
-            'http://127.0.0.1:3000',
-        ];
-        // Apps nativas (React Native / Expo) no envían Origin header
-        if (!origin || permitidos.includes(origin)) return callback(null, true);
-        callback(new Error('CORS: origen no permitido'));
+        // Sin Origin = app nativa (React Native/Expo) o curl — permitir
+        if (!origin) return callback(null, true);
+        if (origenesPermitidos.has(origin)) return callback(null, true);
+        // En producción, permitir cualquier subdominio de onrender.com
+        if (process.env.NODE_ENV === 'production' && origin.endsWith('.onrender.com')) {
+            return callback(null, true);
+        }
+        callback(new Error(`CORS: origen no permitido — ${origin}`));
     },
     credentials: true,
 }));
@@ -111,7 +118,7 @@ app.use(session({
     saveUninitialized: false,       // no crear sesiones vacías
     cookie: {
         httpOnly: true,
-        secure:   false,
+        secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge:   1000 * 60 * 60 * 8,  // 8 horas
     },
