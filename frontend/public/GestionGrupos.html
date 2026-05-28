@@ -464,7 +464,7 @@
         }
 
         /* ── Modal horario ───────────────────────────────────── */
-        .modal-lg { max-width: 760px; width: 98%; }
+        .modal-lg { max-width: 760px; width: 98%; max-height: 88vh; overflow-y: auto; }
 
         .horario-table { width: 100%; font-size: .82rem; border-collapse: collapse; margin-bottom: .8rem; }
         .horario-table th,
@@ -623,8 +623,8 @@
 
             <div class="formato-hint">
                 📋 <strong>Formato requerido (primera fila = encabezados):</strong><br>
-                <code>boleta</code> · <code>nombre_completo</code> · <code>nombre_grupo</code> · <code>estado_academico</code> · <code>puertas_abiertas</code><br>
-                El campo <code>puertas_abiertas</code> acepta: <code>SI</code>, <code>NO</code>, <code>TRUE</code>, <code>FALSE</code>.<br>
+                <code>boleta</code> · <code>nombre_completo</code> · <code>nombre_grupo</code> · <code>estado_academico</code> · <code>puertas_abiertas</code> · <code>foto</code> (opcional)<br>
+                El campo <code>puertas_abiertas</code> acepta: <code>SI</code>, <code>NO</code>, <code>TRUE</code>, <code>FALSE</code>. El campo <code>foto</code> acepta una URL pública (Google Drive o directa).<br>
                 Si la boleta ya existe en el sistema, sus datos serán <strong>actualizados</strong>. Si no existe, se <strong>insertará</strong> como alumno nuevo.
             </div>
 
@@ -682,17 +682,54 @@
     <div class="modal">
         <h3 id="modal-grupo-titulo">Nuevo grupo</h3>
         <div class="modal-form">
-            <label for="mg-nombre">
-                Nombre del grupo *
-                <small style="font-weight:400;color:#999">(máx. 20 caracteres, sin caracteres especiales)</small>
+            <label style="margin-bottom:.35rem">
+                Datos del grupo *
+                <small style="font-weight:400;color:#999">(el nombre se genera automáticamente)</small>
             </label>
-            <input type="text" id="mg-nombre" maxlength="20"
-                   placeholder="Ej. 1CV1" autocomplete="off">
-            <div class="char-counter" id="mg-nombre-counter">0 / 20</div>
-            <label for="mg-turno">Turno *</label>
-            <select id="mg-turno">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+                <div>
+                    <label for="mg-semestre" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Semestre</label>
+                    <select id="mg-semestre" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit">
+                        <option value="">—</option>
+                        <option value="1">1°</option>
+                        <option value="2">2°</option>
+                        <option value="3">3°</option>
+                        <option value="4">4°</option>
+                        <option value="5">5°</option>
+                        <option value="6">6°</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="mg-turno" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Turno</label>
+                    <select id="mg-turno" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit">
+                        <option value="">Cargando…</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="mg-numero" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem">Nº de grupo</label>
+                    <select id="mg-numero" style="width:100%;padding:.42rem .4rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit">
+                        <option value="">—</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+            </div>
+            <label for="mg-carrera" style="font-size:.72rem;font-weight:600;color:#777;display:block;margin-bottom:.2rem;margin-top:.1rem">Carrera *</label>
+            <select id="mg-carrera" style="width:100%;padding:.42rem .6rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;margin-bottom:.5rem">
                 <option value="">Cargando…</option>
             </select>
+            <div style="background:#f5f5f5;border:2px solid var(--border);border-radius:var(--radius-sm);padding:.45rem .8rem;font-size:.88rem">
+                Nombre generado:&nbsp;<strong id="mg-nombre-preview" style="font-family:monospace;letter-spacing:.05em;color:var(--primary,#7c2020)">—</strong>
+                <small style="color:#999;margin-left:.3rem">formato: semestre·I·M/V·número</small>
+            </div>
         </div>
         <div class="modal-actions" style="margin-top:1.2rem">
             <button class="btn-primary" id="btn-guardar-grupo">Crear grupo</button>
@@ -780,6 +817,7 @@
 
 let gruposData    = [];
 let turnosData    = [];
+let carrerasData  = [];
 let estadosData   = [];
 let excelFilas    = [];
 let modoEditGrupo = null;
@@ -804,7 +842,7 @@ function toast(msg, tipo = 'ok') {
         if (!data.isAuthenticated) { location.href = '/login.html'; return; }
         if (data.tipo !== 'Administrador') { location.href = '/Entrada_Salida.html'; return; }
     } catch { location.href = '/login.html'; return; }
-    await Promise.all([ cargarGrupos(), cargarTurnos(), cargarEstados(), cargarHorariosDatos() ]);
+    await Promise.all([ cargarGrupos(), cargarTurnos(), cargarCarreras(), cargarEstados(), cargarHorariosDatos() ]);
 })();
 
 async function cargarGrupos() {
@@ -835,6 +873,39 @@ async function cargarTurnos() {
             });
         }
     } catch {}
+}
+
+async function cargarCarreras() {
+    try {
+        const r    = await fetch('/api/grupos/carreras', { credentials: 'include' });
+        const data = await r.json();
+        if (data.success) {
+            carrerasData = data.carreras;
+            const sel = $('mg-carrera');
+            sel.innerHTML = '<option value="">— Carrera —</option>';
+            carrerasData.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id_carrera;
+                opt.textContent = c.nombre_carrera;
+                sel.appendChild(opt);
+            });
+        }
+    } catch {}
+}
+
+function actualizarPreviewGrupo() {
+    const sem   = parseInt($('mg-semestre')?.value) || null;
+    const turno = turnosData.find(t => t.id_turno == $('mg-turno')?.value);
+    const num   = parseInt($('mg-numero')?.value)   || null;
+    const preview = $('mg-nombre-preview');
+    if (!preview) return;
+
+    if (sem && turno && num) {
+        const tc = turno.nombre_turno[0].toUpperCase(); // M o V
+        preview.textContent = `${sem}I${tc}${num}`;
+    } else {
+        preview.textContent = '—';
+    }
 }
 
 async function cargarEstados() {
@@ -1068,23 +1139,26 @@ function abrirModalGrupo(id = null) {
     modoEditGrupo = id;
     const grupo = id ? gruposData.find(g => g.id_grupo === id) : null;
 
-    $('modal-grupo-titulo').textContent  = grupo ? 'Editar grupo' : 'Nuevo grupo';
-    $('btn-guardar-grupo').textContent   = grupo ? 'Guardar cambios' : 'Crear grupo';
-    $('mg-nombre').value = grupo?.nombre || '';
-
-    // Actualizar contador
-    const len = (grupo?.nombre || '').length;
-    if (mgCounter) mgCounter.textContent = `${len} / 20`;
+    $('modal-grupo-titulo').textContent = grupo ? 'Editar grupo' : 'Nuevo grupo';
+    $('btn-guardar-grupo').textContent  = grupo ? 'Guardar cambios' : 'Crear grupo';
 
     if (grupo) {
-        const turno = turnosData.find(t => t.nombre_turno === grupo.turno);
-        $('mg-turno').value = turno?.id_turno || '';
+        // Formato fijo: {semestre}I{M/V}{numero}  →  ej. 6IV7
+        const match = grupo.nombre.match(/^(\d+)I[MV](\d+)$/i);
+        $('mg-semestre').value = match ? match[1] : '';
+        $('mg-numero').value   = match ? match[2] : '';
+        $('mg-turno').value    = grupo.id_turno   || '';
+        $('mg-carrera').value  = grupo.id_carrera || '';
     } else {
-        $('mg-turno').value = '';
+        $('mg-semestre').value = '';
+        $('mg-turno').value    = '';
+        $('mg-numero').value   = '';
+        $('mg-carrera').value  = '';
     }
 
+    actualizarPreviewGrupo();
     $('modal-grupo').classList.add('visible');
-    setTimeout(() => $('mg-nombre').focus(), 100);
+    setTimeout(() => $('mg-semestre').focus(), 100);
 }
 
 function abrirEditarGrupo(id) { abrirModalGrupo(id); }
@@ -1092,6 +1166,12 @@ function abrirEditarGrupo(id) { abrirModalGrupo(id); }
 $('btn-nuevo-grupo').addEventListener('click', () => abrirModalGrupo());
 $('btn-cancelar-grupo').addEventListener('click', () => $('modal-grupo').classList.remove('visible'));
 $('modal-grupo').addEventListener('click', e => { if (e.target === $('modal-grupo')) $('modal-grupo').classList.remove('visible'); });
+
+// Actualizar preview al cambiar cualquiera de los 3 campos
+['mg-semestre', 'mg-turno', 'mg-numero'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', actualizarPreviewGrupo);
+});
 
 // Toggle detalle de errores
 $('errores-detalle-toggle').addEventListener('click', () => {
@@ -1103,15 +1183,19 @@ $('errores-detalle-toggle').addEventListener('click', () => {
 });
 
 $('btn-guardar-grupo').addEventListener('click', async () => {
-    const nombre = $('mg-nombre').value.trim();
-    const turno  = $('mg-turno').value;
+    const sem       = parseInt($('mg-semestre').value);
+    const idTurno   = $('mg-turno').value;
+    const idCarrera = $('mg-carrera').value;
+    const num       = parseInt($('mg-numero').value);
+    const turno     = turnosData.find(t => t.id_turno == idTurno);
 
-    if (!nombre) { toast('El nombre del grupo es obligatorio', 'err'); return; }
-    if (nombre.length < 2) { toast('El nombre debe tener al menos 2 caracteres', 'err'); return; }
-    if (!REGEX_GRUPO.test(nombre)) {
-        toast('El nombre solo puede contener letras, números, espacios y guiones', 'err'); return;
-    }
-    if (!turno) { toast('Selecciona un turno', 'err'); return; }
+    if (!sem)      { toast('Selecciona el semestre', 'err'); return; }
+    if (!idTurno)  { toast('Selecciona un turno', 'err'); return; }
+    if (!idCarrera){ toast('Selecciona una carrera', 'err'); return; }
+    if (!num)      { toast('Selecciona el número de grupo', 'err'); return; }
+
+    const turnoCode   = turno.nombre_turno[0].toUpperCase(); // M o V
+    const nombreGrupo = `${sem}I${turnoCode}${num}`;
 
     const btn = $('btn-guardar-grupo');
     btn.disabled = true; btn.textContent = 'Guardando…';
@@ -1123,7 +1207,7 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
             method,
             headers:     { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ nombre_grupo: nombre, id_turno: turno }),
+            body: JSON.stringify({ nombre_grupo: nombreGrupo, id_turno: idTurno, id_carrera: idCarrera }),
         });
         const data = await r.json();
 
@@ -1180,6 +1264,7 @@ function procesarExcel(file) {
                     nombre_grupo:     String(norm.nombre_grupo || norm.grupo || '').trim(),
                     estado_academico: String(norm.estado_academico || norm.estado || 'Regular').trim(),
                     puertas_abiertas: String(norm.puertas_abiertas || norm.puertas || 'NO').trim(),
+                    foto:             String(norm.foto || norm.url_foto || norm.foto_url || '').trim(),
                 };
             }).filter(r => r.boleta);
 
@@ -1203,7 +1288,7 @@ function mostrarPreview() {
 
     head.innerHTML = `<tr>
         <th>#</th><th>Boleta</th><th>Nombre</th><th>Grupo</th>
-        <th>Estado</th><th>Puertas</th>
+        <th>Estado</th><th>Puertas</th><th>Foto</th>
     </tr>`;
 
     const max = Math.min(excelFilas.length, 20);
@@ -1215,10 +1300,11 @@ function mostrarPreview() {
             <td>${esc(f.nombre_grupo)}</td>
             <td>${esc(f.estado_academico)}</td>
             <td>${esc(f.puertas_abiertas)}</td>
+            <td>${f.foto ? '<span style="color:var(--success,green)" title="'+esc(f.foto)+'">✓ URL</span>' : '<span style="color:var(--muted)">—</span>'}</td>
         </tr>`).join('');
 
     if (excelFilas.length > 20) {
-        body.innerHTML += `<tr><td colspan="6" style="text-align:center;color:var(--muted);font-size:.78rem">
+        body.innerHTML += `<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.78rem">
             … y ${excelFilas.length - 20} filas más</td></tr>`;
     }
 
@@ -1518,16 +1604,58 @@ $('modal-horario').addEventListener('click', e => {
 
 // ── Descargar plantilla Excel ──────────────────────────────────
 $('btn-descargar-plantilla').addEventListener('click', () => {
+
+    // ── Hoja 1: datos (la que se sube al sistema) ──────────────
     const ws = XLSX.utils.aoa_to_sheet([
-        ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas'],
-        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO', '1CV1', 'Regular', 'NO'],
-        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '2BN2', 'Regular', 'NO'],
+        ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas', 'foto'],
+        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO',   '6IM7', 'Regular',   'NO', ''],
+        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '6IV7', 'Irregular', 'NO', 'https://drive.google.com/file/d/XXXX/view'],
     ]);
-    ws['!cols'] = [12, 35, 10, 15, 15].map(wch => ({ wch }));
+    ws['!cols'] = [12, 35, 8, 16, 14, 48].map(wch => ({ wch }));
+
+    // ── Hoja 2: referencia de valores válidos ──────────────────
+    // Usa estadosData cargado desde la BD para listar estados reales
+    const estadosValidos = estadosData.length
+        ? estadosData.map(e => e.estado)
+        : ['Regular', 'Irregular', 'Baja Temporal', 'Baja Definitiva'];
+
+    // Fila(s) de estado_academico: primera con etiqueta, resto vacío en col A
+    const filasEstado = estadosValidos.map((e, i) =>
+        i === 0
+            ? ['estado_academico', e, 'Elige exactamente uno de los valores de esta lista (no distingue mayusculas)']
+            : ['', e, '']
+    );
+
+    const wsRef = XLSX.utils.aoa_to_sheet([
+        ['REFERENCIA — Valores validos por columna (esta hoja es solo informativa, no la subas)'],
+        [],
+        ['COLUMNA', 'VALOR(ES) ACEPTADO(S)', 'NOTAS'],
+        // boleta
+        ['boleta', 'Numero entero de 5 o mas digitos',
+         'Si la boleta ya existe en el sistema → se ACTUALIZA. Si no existe → se INSERTA.'],
+        // nombre_completo
+        ['nombre_completo', 'Texto libre (maximo 200 caracteres)',
+         'Escribe apellidos y nombre en mayusculas. Ej: GARCIA LOPEZ JUAN'],
+        // nombre_grupo
+        ['nombre_grupo', 'Nombre exacto del grupo registrado en el sistema',
+         'Debe coincidir exactamente. Ej: 6IM7 (Matutino), 6IV7 (Vespertino)'],
+        // estado_academico — filas dinámicas
+        ...filasEstado,
+        // puertas_abiertas
+        ['puertas_abiertas', 'SI  /  NO', 'Tambien acepta: TRUE, FALSE, 1, 0. Por defecto si se omite: NO'],
+        // foto — dos filas
+        ['foto', 'URL publica directa: https://ejemplo.com/foto.jpg',
+         'Opcional. Dejar la celda vacia si el alumno no tiene foto.'],
+        ['', 'URL de Google Drive: https://drive.google.com/file/d/FILE_ID/view',
+         'La imagen debe tener acceso publico o "cualquier persona con el enlace".'],
+    ]);
+    wsRef['!cols'] = [18, 58, 58].map(wch => ({ wch }));
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Alumnos');
+    XLSX.utils.book_append_sheet(wb, ws,    'Alumnos');
+    XLSX.utils.book_append_sheet(wb, wsRef, 'Referencia');
     XLSX.writeFile(wb, 'plantilla_alumnos_qrpass.xlsx');
-    toast('Plantilla descargada', 'ok');
+    toast('Plantilla descargada. Revisa la hoja "Referencia" para ver los valores validos.', 'ok');
 });
 </script>
 </body>

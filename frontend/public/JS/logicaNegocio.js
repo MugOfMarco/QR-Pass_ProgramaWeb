@@ -24,6 +24,7 @@ const TIPO_LABEL = {
     bindForm();
     bindReiniciar();
     bindFiltros();
+    bindReset();
 })();
 
 // ── Cargar lista ────────────────────────────────────────────
@@ -194,6 +195,87 @@ function cerrarModal() {
 function bindFiltros() {
     $('btn-refrescar').addEventListener('click', cargarDias);
     $('filtro-ciclo').addEventListener('change',   cargarDias);
+}
+
+// ── Mantenimiento de BD ──────────────────────────────────────
+function bindReset() {
+    // ── Modal reset contadores ──────────────────────────────
+    $('btn-abrir-reset-contadores').addEventListener('click', () => {
+        $('conf-reset-cont').value = '';
+        $('msg-reset-cont').style.display = 'none';
+        $('modal-reset-cont').style.display = 'flex';
+        $('conf-reset-cont').focus();
+    });
+    $('btn-cancelar-reset-cont').addEventListener('click', () => {
+        $('modal-reset-cont').style.display = 'none';
+    });
+    $('modal-reset-cont').addEventListener('click', e => {
+        if (e.target === $('modal-reset-cont')) $('modal-reset-cont').style.display = 'none';
+    });
+    $('btn-confirmar-reset-cont').addEventListener('click', async () => {
+        const confirmacion = $('conf-reset-cont').value.trim();
+        const msgEl = $('msg-reset-cont');
+        const btn   = $('btn-confirmar-reset-cont');
+
+        btn.disabled = true; btn.textContent = 'Reiniciando…';
+        msgEl.style.display = 'none';
+
+        try {
+            const r    = await fetch('/api/backup/reset-contadores', {
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ confirmacion }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                $('modal-reset-cont').style.display = 'none';
+                alert('✅ ' + data.message);
+            } else {
+                setMsg(msgEl, data.message || 'Error.', false);
+            }
+        } catch { setMsg(msgEl, 'Error de conexión.', false); }
+        finally  { btn.disabled = false; btn.textContent = 'Confirmar reinicio'; }
+    });
+
+    // ── Modal reset completo ────────────────────────────────
+    $('btn-abrir-reset-completo').addEventListener('click', () => {
+        $('conf-reset-comp').value = '';
+        $('msg-reset-comp').style.display = 'none';
+        $('modal-reset-comp').style.display = 'flex';
+        $('conf-reset-comp').focus();
+    });
+    $('btn-cancelar-reset-comp').addEventListener('click', () => {
+        $('modal-reset-comp').style.display = 'none';
+    });
+    $('modal-reset-comp').addEventListener('click', e => {
+        if (e.target === $('modal-reset-comp')) $('modal-reset-comp').style.display = 'none';
+    });
+    $('btn-confirmar-reset-comp').addEventListener('click', async () => {
+        const confirmacion = $('conf-reset-comp').value.trim();
+        const msgEl = $('msg-reset-comp');
+        const btn   = $('btn-confirmar-reset-comp');
+
+        btn.disabled = true; btn.textContent = 'Borrando…';
+        msgEl.style.display = 'none';
+
+        try {
+            const r    = await fetch('/api/backup/reset-completo', {
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ confirmacion }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                $('modal-reset-comp').style.display = 'none';
+                alert('✅ ' + data.message);
+            } else {
+                setMsg(msgEl, data.message || 'Error.', false);
+            }
+        } catch { setMsg(msgEl, 'Error de conexión.', false); }
+        finally  { btn.disabled = false; btn.textContent = 'Confirmar borrado total'; }
+    });
 }
 
 // ── Helper ──────────────────────────────────────────────────

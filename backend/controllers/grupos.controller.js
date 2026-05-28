@@ -8,6 +8,7 @@ import Grupo from '../models/Grupo.js';
 import Alumno from '../models/Alumno.js';
 import sanitizeHtml from 'sanitize-html';
 import { supabaseAdmin } from '../database/supabase.js';
+import { cloudinary } from '../database/cloudinary.js';
 
 const s = (v) => typeof v === 'string'
     ? sanitizeHtml(v, { allowedTags: [], allowedAttributes: {} }).trim()
@@ -24,6 +25,16 @@ export const listarGrupos = async (_req, res) => {
     }
 };
 
+// ── GET /api/grupos/carreras ──────────────────────────────────
+export const listarCarreras = async (_req, res) => {
+    try {
+        const carreras = await Grupo.listarCarreras();
+        return res.json({ success: true, carreras });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al cargar carreras.' });
+    }
+};
+
 // ── GET /api/grupos/turnos ────────────────────────────────────
 export const listarTurnos = async (_req, res) => {
     try {
@@ -37,11 +48,11 @@ export const listarTurnos = async (_req, res) => {
 // ── POST /api/grupos ──────────────────────────────────────────
 export const crearGrupo = async (req, res) => {
     try {
-        const { nombre_grupo, id_turno } = req.body;
-        if (!nombre_grupo || !id_turno) {
-            return res.status(400).json({ success: false, message: 'Nombre y turno son obligatorios.' });
+        const { nombre_grupo, id_turno, id_carrera } = req.body;
+        if (!nombre_grupo || !id_turno || !id_carrera) {
+            return res.status(400).json({ success: false, message: 'Nombre, turno y carrera son obligatorios.' });
         }
-        const r = await Grupo.crear(s(nombre_grupo), id_turno);
+        const r = await Grupo.crear(s(nombre_grupo), id_turno, id_carrera);
         return r.success
             ? res.status(201).json(r)
             : res.status(400).json(r);
@@ -53,11 +64,11 @@ export const crearGrupo = async (req, res) => {
 // ── PUT /api/grupos/:id ───────────────────────────────────────
 export const editarGrupo = async (req, res) => {
     try {
-        const { nombre_grupo, id_turno } = req.body;
-        if (!nombre_grupo || !id_turno) {
-            return res.status(400).json({ success: false, message: 'Nombre y turno son obligatorios.' });
+        const { nombre_grupo, id_turno, id_carrera } = req.body;
+        if (!nombre_grupo || !id_turno || !id_carrera) {
+            return res.status(400).json({ success: false, message: 'Nombre, turno y carrera son obligatorios.' });
         }
-        const r = await Grupo.editar(req.params.id, s(nombre_grupo), id_turno);
+        const r = await Grupo.editar(req.params.id, s(nombre_grupo), id_turno, id_carrera);
         return r.success ? res.json(r) : res.status(400).json(r);
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Error al editar grupo.' });
@@ -184,8 +195,38 @@ export const eliminarHorario = async (req, res) => {
     }
 };
 
+// ── Helpers: procesamiento de foto desde URL ──────────────────
+// Convierte URL de Google Drive a enlace de descarga directa
+function gdriveToDirect(url) {
+    // /file/d/FILE_ID/view  →  direct
+    const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (m1) return `https://drive.google.com/uc?export=download&id=${m1[1]}`;
+    // ?id=FILE_ID  →  direct
+    const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m2) return `https://drive.google.com/uc?export=download&id=${m2[1]}`;
+    return url;
+}
+
+// Sube una URL de foto a Cloudinary; devuelve URL segura o null si falla
+async function procesarFoto(urlFoto) {
+    if (!urlFoto || typeof urlFoto !== 'string') return null;
+    const url = urlFoto.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) return null;
+    try {
+        const src    = url.includes('drive.google.com') ? gdriveToDirect(url) : url;
+        const result = await cloudinary.uploader.upload(src, {
+            folder:        'qrpass/alumnos',
+            resource_type: 'image',
+            timeout:       20000,   // 20 s máx por foto
+        });
+        return result.secure_url || null;
+    } catch {
+        return null;   // fallo silencioso → se usa el avatar por defecto
+    }
+}
+
 // ── POST /api/grupos/carga-masiva ─────────────────────────────
-// Body: { alumnos: [ { boleta, nombre_completo, nombre_grupo, estado_academico, puertas_abiertas } ] }
+// Body: { alumnos: [ { boleta, nombre_completo, nombre_grupo, estado_academico, puertas_abiertas, foto? } ] }
 // Hace upsert: si boleta existe → UPDATE, si no → INSERT
 export const cargaMasiva = async (req, res) => {
     try {
@@ -225,11 +266,12 @@ export const cargaMasiva = async (req, res) => {
         const boletasExistentes = new Set((existentes || []).map(e => e.boleta));
 
         // ── 3. Procesar fila por fila ─────────────────────────
-        const resultados = { insertados: 0, actualizados: 0, errores: [] };
+        const resultados = { insertados: 0, actualizados: 0, errores: [], fotos_ok: 0, fotos_omitidas: 0 };
 
-        const URL_FOTO_DEFAULT = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp';
+        const URL_FOTO_DEFAULT = 'https://res.cloudinary.com/dom8hse1a/image/upload/v1779354074/perfil_yi4zll.jpg';
 
         // Procesar en lotes de 50 para no saturar Supabase
+        // (lotes pequeños porque cada fila puede subir una imagen a Cloudinary)
         const LOTE = 50;
         for (let i = 0; i < alumnos.length; i += LOTE) {
             const lote = alumnos.slice(i, i + LOTE);
@@ -267,15 +309,24 @@ export const cargaMasiva = async (req, res) => {
                 const pv = String(fila.puertas_abiertas || '').toLowerCase().trim();
                 const puertas = pv === 'si' || pv === 'sí' || pv === 'true' || pv === '1';
 
+                // Foto: intenta subir a Cloudinary si viene URL
+                const urlFotoRaw = String(fila.foto || '').trim();
+                let urlFoto = null;
+                if (urlFotoRaw) {
+                    urlFoto = await procesarFoto(urlFotoRaw);
+                    if (urlFoto) resultados.fotos_ok++;
+                    else          resultados.fotos_omitidas++;
+                }
+
                 const datosAlumno = {
-                    nombre_completo:    s(fila.nombre_completo).substring(0, 200),
-                    id_grupo_base:      idGrupo,
+                    nombre_completo:     s(fila.nombre_completo).substring(0, 200),
+                    id_grupo_base:       idGrupo,
                     id_estado_academico: idEstado,
-                    puertas_abiertas:   puertas,
+                    puertas_abiertas:    puertas,
                 };
 
                 if (boletasExistentes.has(boleta)) {
-                    // UPDATE
+                    // UPDATE alumnos
                     const { error } = await supabaseAdmin
                         .from('alumnos')
                         .update(datosAlumno)
@@ -283,9 +334,18 @@ export const cargaMasiva = async (req, res) => {
 
                     if (error) {
                         resultados.errores.push({ fila: fNum, boleta, error: error.message });
-                    } else {
-                        resultados.actualizados++;
+                        return;
                     }
+
+                    // UPDATE foto si vino una nueva
+                    if (urlFoto) {
+                        await supabaseAdmin
+                            .from('info_alumno')
+                            .update({ url_foto: urlFoto })
+                            .eq('boleta', boleta);
+                    }
+
+                    resultados.actualizados++;
                 } else {
                     // INSERT alumnos
                     const { error: e1 } = await supabaseAdmin
@@ -297,10 +357,10 @@ export const cargaMasiva = async (req, res) => {
                         return;
                     }
 
-                    // INSERT info_alumno (defaults)
+                    // INSERT info_alumno con foto o avatar default
                     await supabaseAdmin
                         .from('info_alumno')
-                        .insert({ boleta, url_foto: URL_FOTO_DEFAULT })
+                        .insert({ boleta, url_foto: urlFoto || URL_FOTO_DEFAULT })
                         .select()
                         .maybeSingle();
 

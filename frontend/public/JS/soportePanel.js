@@ -33,6 +33,7 @@ let detEvidenciaUrl  = null;   // URL Cloudinary pendiente de adjuntar
     await Promise.all([ cargarTickets(), cargarMetricas() ]);
     bindFiltros();
     bindDetalle();
+    bindFaqStats();
 })();
 
 // ── Carga tickets ──────────────────────────────────────────────
@@ -97,7 +98,7 @@ function renderKanban() {
 
 function crearKCard(t) {
     return `
-        <div class="kcard" data-id="${t.id_ticket}" onclick="abrirDetalle(${t.id_ticket})">
+        <div class="kcard" data-id="${t.id_ticket}" data-prio="${esc(t.prioridad)}" onclick="abrirDetalle(${t.id_ticket})">
             <div class="kcard-asunto">${esc(t.asunto)}</div>
             <div class="kcard-meta">
                 <span class="prio-badge prio-${esc(t.prioridad)}">${esc(PRIO_LABEL[t.prioridad] || t.prioridad)}</span>
@@ -327,6 +328,52 @@ function bindDetalle() {
         } catch { setMsg(msg, 'Error de conexión.', false); }
         finally  { btn.disabled = false; btn.textContent = 'Enviar'; }
     });
+}
+
+// ── FAQ Stats ─────────────────────────────────────────────────
+function bindFaqStats() {
+    const btn   = $('btn-toggle-faq-stats');
+    const panel = $('faq-stats-panel');
+    const close = $('btn-cerrar-faq-stats');
+    if (!btn || !panel) return;
+
+    btn.addEventListener('click', async () => {
+        const visible = panel.style.display !== 'none';
+        panel.style.display = visible ? 'none' : '';
+        if (!visible) await cargarFaqStats();
+    });
+
+    if (close) {
+        close.addEventListener('click', () => {
+            panel.style.display = 'none';
+        });
+    }
+}
+
+async function cargarFaqStats() {
+    try {
+        const r    = await fetch('/api/faq/stats', { credentials: 'include' });
+        const data = await r.json();
+        renderFaqStats(data.success ? data.stats : []);
+    } catch { renderFaqStats([]); }
+}
+
+function renderFaqStats(stats) {
+    const wrap = $('faq-stats-list');
+    if (!wrap) return;
+    if (!stats.length) {
+        wrap.innerHTML = '<p style="font-size:.82rem;color:#aaa;text-align:center;padding:.5rem">Sin clics registrados aún.</p>';
+        return;
+    }
+    const max = Math.max(1, stats[0]?.total_clics || 0);
+    wrap.innerHTML = stats.map(s => `
+        <div class="faq-stat-item">
+            <div class="faq-stat-pregunta" title="${esc(s.pregunta)}">${esc(s.pregunta)}</div>
+            <div class="faq-stat-barra">
+                <div class="faq-stat-fill" style="width:${Math.round((s.total_clics / max) * 100)}%"></div>
+                <span class="faq-stat-num">${s.total_clics} clic${s.total_clics !== 1 ? 's' : ''}</span>
+            </div>
+        </div>`).join('');
 }
 
 // ── Filtros ────────────────────────────────────────────────────

@@ -81,7 +81,7 @@
             <h2 class="sop-card-title">❓ Preguntas frecuentes</h2>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Qué hacer si olvido mi contraseña?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="contrasena">¿Qué hacer si olvido mi contraseña?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Si eres <strong>vigilante o prefecto</strong>, solicítalo a tu administrador desde Gestión de Usuarios.
                     Si eres <strong>administrador</strong>, usa la opción <em>"¿Olvidaste tu contraseña?"</em> en el login; recibirás un correo de recuperación.
@@ -89,7 +89,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">El código QR no es reconocido<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="qr-no-reconocido">El código QR no es reconocido<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Verifica que el código pertenezca a un alumno registrado y que sus puertas estén habilitadas.
                     Si el problema persiste, contacta al administrador para revisar el estado de la cuenta del alumno.
@@ -98,7 +98,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Cómo agregar alumnos masivamente?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="carga-masiva">¿Cómo agregar alumnos masivamente?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Desde <strong>Gestión de Grupos</strong>, usa la sección <em>"Carga masiva desde Excel"</em>.
                     Descarga la plantilla, llénala con boleta y nombre y sube el archivo <code>.xlsx</code>.
@@ -107,7 +107,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Cómo consultar el historial de un alumno?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="historial-alumno">¿Cómo consultar el historial de un alumno?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Ve a <strong>Buscar Alumno</strong>, ingresa la boleta y podrás ver todos sus registros de entrada/salida con fecha, hora y tipo.
                     Para ver incidencias de varios alumnos a la vez usa <strong>Filtrar Alumnos</strong> → pestaña "Incidencias" → selecciona rango de fechas → descarga el PDF con gráfica.
@@ -115,7 +115,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">Un alumno aparece como "bloqueado"<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="alumno-bloqueado">Un alumno aparece como "bloqueado"<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     El sistema bloquea automáticamente a alumnos que superan el máximo de retardos o de entradas sin credencial configurado.
                     Un administrador puede desbloquearlo desde <strong>Gestión de Grupos</strong> → seleccionar alumno → Desbloquear.
@@ -123,7 +123,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Cómo funciona el registro de falta manual?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="falta-manual">¿Cómo funciona el registro de falta manual?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Los roles <strong>Prefecto</strong> y <strong>Administrador</strong> pueden registrar una falta manualmente desde <strong>Entrada/Salida</strong>.
                     Despliega la sección "⚠ Registrar falta manual", ingresa la boleta y el motivo.
@@ -132,7 +132,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Cómo genero un reporte PDF?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="reporte-pdf">¿Cómo genero un reporte PDF?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Ve a <strong>Filtrar Alumnos</strong>. Aplica los filtros que necesites (grupo, turno, situación…).
                     Para reporte de datos usa el botón <em>"Descargar PDF"</em>.
@@ -141,7 +141,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Cómo agregar horarios a un grupo?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="horarios-grupo">¿Cómo agregar horarios a un grupo?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Desde <strong>Gestión de Grupos</strong>, haz clic en el botón <em>"📅 Horario"</em> de la tarjeta del grupo.
                     En el modal, selecciona la materia, el semestre, marca uno o varios días de la semana y define la hora de inicio y fin.
@@ -150,7 +150,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Cómo descargar un respaldo de la base de datos?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="respaldo-bd">¿Cómo descargar un respaldo de la base de datos?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Desde el menú lateral, ve a <strong>Descargar Respaldo</strong> (solo visible para administradores).
                     El sistema genera un script <code>.sql</code> con todos los datos actuales usando sentencias <code>INSERT … ON CONFLICT DO NOTHING</code>.
@@ -159,7 +159,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Qué significan los estados de un ticket?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="estados-ticket">¿Qué significan los estados de un ticket?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     <strong>Abierto:</strong> recién creado, sin agente asignado.<br>
                     <strong>En progreso:</strong> un agente lo tomó y está trabajando en él.<br>
@@ -170,7 +170,7 @@
             </div>
 
             <div class="faq-item">
-                <button class="faq-btn" type="button">¿Puedo adjuntar evidencia a un ticket?<span class="faq-arrow">▼</span></button>
+                <button class="faq-btn" type="button" data-faq-id="evidencia-ticket">¿Puedo adjuntar evidencia a un ticket?<span class="faq-arrow">▼</span></button>
                 <div class="faq-body">
                     Sí. Al responder un ticket, verás un campo para adjuntar una imagen (<code>.jpg</code>, <code>.png</code>, <code>.webp</code>).
                     La imagen se sube automáticamente y el agente de soporte podrá verla junto a tu mensaje.

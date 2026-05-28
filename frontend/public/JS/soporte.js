@@ -283,7 +283,19 @@ function bindFormTicket() {
 // ── FAQ ────────────────────────────────────────────────────────
 function bindFaq() {
     document.querySelectorAll('.faq-btn').forEach(btn => {
-        btn.addEventListener('click', () => btn.closest('.faq-item').classList.toggle('open'));
+        btn.addEventListener('click', () => {
+            btn.closest('.faq-item').classList.toggle('open');
+            // Registrar clic en servidor (analytics silencioso)
+            const id = btn.dataset.faqId;
+            if (id) {
+                fetch('/api/faq/clic', {
+                    method:      'POST',
+                    headers:     { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body:        JSON.stringify({ id_faq: id }),
+                }).catch(() => {}); // nunca interrumpe al usuario si falla
+            }
+        });
     });
 }
 
