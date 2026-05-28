@@ -179,11 +179,12 @@ export const buscarAlumnos = async (req, res) => {
         // Filtro: alumnos actualmente dentro del plantel (última entrada hoy sin salida)
         if (dentro === 'true' || dentro === 'false') {
             const diaMX = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+            const sigDia = s => { const d = new Date(`${s}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
             const { data: registrosHoy } = await supabaseAdmin
                 .from('registros_acceso')
                 .select('boleta, id_tipo_registro')
-                .gte('fecha_hora', `${diaMX}T00:00:00-06:00`)
-                .lte('fecha_hora', `${diaMX}T23:59:59-06:00`)
+                .gte('fecha_hora', `${diaMX}T06:00:00`)
+                .lte('fecha_hora', `${sigDia(diaMX)}T05:59:59`)
                 .order('fecha_hora', { ascending: true });
 
             const ultimoPorBoleta = {};
@@ -459,8 +460,9 @@ export const obtenerIncidenciasPeriodo = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Formato de fecha inválido. Usa YYYY-MM-DD.' });
         }
 
-        const desde = `${fecha_inicio}T00:00:00-06:00`;
-        const hasta = `${fecha_fin}T23:59:59-06:00`;
+        const sigDia = s => { const d = new Date(`${s}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+        const desde = `${fecha_inicio}T06:00:00`;
+        const hasta = `${sigDia(fecha_fin)}T05:59:59`;
 
         // 1. Registros de incidencias (retardo=3, sin credencial=4) con vigilante
         const { data: registrosInc, error: e1 } = await supabaseAdmin

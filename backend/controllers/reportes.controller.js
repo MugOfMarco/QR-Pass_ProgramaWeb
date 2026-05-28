@@ -34,13 +34,15 @@ const COLOR_GRID     = '#cccccc';
 
 // ── Helpers de filtros ────────────────────────────────────────
 
+const sigDia = s => { const d = new Date(`${s}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+
 async function boletasDentro() {
     const diaMX = new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
     const { data } = await supabaseAdmin
         .from('registros_acceso')
         .select('boleta, id_tipo_registro')
-        .gte('fecha_hora', `${diaMX}T00:00:00-06:00`)
-        .lte('fecha_hora', `${diaMX}T23:59:59-06:00`)
+        .gte('fecha_hora', `${diaMX}T06:00:00`)
+        .lte('fecha_hora', `${sigDia(diaMX)}T05:59:59`)
         .order('fecha_hora', { ascending: true });
 
     const ultimo = {};
@@ -390,8 +392,8 @@ export const generarRegistrosDia = async (req, res) => {
                 puntos_acceso   ( nombre_punto ),
                 alumnos         ( nombre_completo, puertas_abiertas )
             `)
-            .gte('fecha_hora', `${fecha}T00:00:00-06:00`)
-            .lte('fecha_hora', `${fecha}T23:59:59-06:00`)
+            .gte('fecha_hora', `${fecha}T06:00:00`)
+            .lte('fecha_hora', `${sigDia(fecha)}T05:59:59`)
             .order('fecha_hora', { ascending: true });
 
         if (error) throw error;
@@ -597,8 +599,8 @@ export const generarReporteIncidencias = async (req, res) => {
             .in('boleta', boletasArray)
             .order('fecha_hora', { ascending: false });
 
-        if (fechaInicio) regQuery = regQuery.gte('fecha_hora', `${fechaInicio}T00:00:00-06:00`);
-        if (fechaFin)    regQuery = regQuery.lte('fecha_hora', `${fechaFin}T23:59:59-06:00`);
+        if (fechaInicio) regQuery = regQuery.gte('fecha_hora', `${fechaInicio}T06:00:00`);
+        if (fechaFin)    regQuery = regQuery.lte('fecha_hora', `${sigDia(fechaFin)}T05:59:59`);
 
         const { data: registrosRaw, error: regErr } = await regQuery;
         if (regErr) throw regErr;

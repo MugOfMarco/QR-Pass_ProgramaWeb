@@ -7,6 +7,9 @@
 // ============================================================
 import { supabaseAdmin } from '../database/supabase.js';
 
+// fecha_hora almacena UTC. México = UTC-6 fijo. MX medianoche = UTC 06:00 mismo día.
+const sigDia = s => { const d = new Date(`${s}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+
 // Normalizar cualquier variante del nombre de puerta al nombre oficial
 function normalizarPuerta(nombre) {
     if (!nombre) return '—';
@@ -105,8 +108,8 @@ class Registro {
             diaStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
         }
 
-        const inicio = `${diaStr}T00:00:00-06:00`;
-        const fin    = `${diaStr}T23:59:59-06:00`;
+        const inicio = `${diaStr}T06:00:00`;
+        const fin    = `${sigDia(diaStr)}T05:59:59`;
 
         const { data, error } = await supabaseAdmin
             .from('registros_acceso')
@@ -151,8 +154,8 @@ class Registro {
                 puntos_acceso  ( nombre_punto ),
                 alumnos        ( nombre_completo )
             `)
-            .gte('fecha_hora', `${fechaInicio}T00:00:00-06:00`)
-            .lte('fecha_hora', `${fechaFin}T23:59:59-06:00`)
+            .gte('fecha_hora', `${fechaInicio}T06:00:00`)
+            .lte('fecha_hora', `${sigDia(fechaFin)}T05:59:59`)
             .order('fecha_hora', { ascending: false });
 
         if (boleta) query = query.eq('boleta', parseInt(boleta));

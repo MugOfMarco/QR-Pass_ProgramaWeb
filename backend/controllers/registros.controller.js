@@ -41,16 +41,19 @@ const TIPOS_ENTRADA = new Set([
 // Obtiene el último registro del alumno en el día de hoy.
 // Devuelve null si no hay ninguno.
 // ─────────────────────────────────────────────────────────────
+// fecha_hora is stored as UTC (Supabase default). Mexico City = UTC-6 permanently.
+// MX midnight = UTC 06:00 same day; MX 23:59:59 = UTC 05:59:59 next day.
+const sigDia = s => { const d = new Date(`${s}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+
 async function ultimoRegistroHoy(boleta) {
-    // Mexico City usa UTC-6 permanentemente desde noviembre 2022 (sin horario de verano)
     const diaMX = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
 
     const { data, error } = await supabaseAdmin
         .from('registros_acceso')
         .select('id_registro, id_tipo_registro, fecha_hora')
         .eq('boleta', parseInt(boleta))
-        .gte('fecha_hora', `${diaMX}T00:00:00-06:00`)
-        .lte('fecha_hora', `${diaMX}T23:59:59-06:00`)
+        .gte('fecha_hora', `${diaMX}T06:00:00`)
+        .lte('fecha_hora', `${sigDia(diaMX)}T05:59:59`)
         .order('fecha_hora', { ascending: false })
         .limit(1)
         .maybeSingle();

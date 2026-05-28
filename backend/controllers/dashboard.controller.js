@@ -21,8 +21,9 @@ export const obtenerDashboard = async (req, res) => {
     try {
         const ahora     = new Date();
         const hoyMX     = ahora.toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
-        const inicioHoy = `${hoyMX}T00:00:00-06:00`;
-        const finHoy    = `${hoyMX}T23:59:59-06:00`;
+        const sigDia    = s => { const d = new Date(`${s}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+        const inicioHoy = `${hoyMX}T06:00:00`;
+        const finHoy    = `${sigDia(hoyMX)}T05:59:59`;
 
         const [
             resRegistros,
