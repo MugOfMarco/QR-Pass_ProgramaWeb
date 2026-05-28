@@ -88,10 +88,15 @@ const PORT = process.env.SERVER_PORT || 3000;
 app.set('trust proxy', 1);
 
 app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL || 'http://localhost:3000',
-        'http://127.0.0.1:3000',
-    ],
+    origin: (origin, callback) => {
+        const permitidos = [
+            process.env.FRONTEND_URL || 'http://localhost:3000',
+            'http://127.0.0.1:3000',
+        ];
+        // Apps nativas (React Native / Expo) no envían Origin header
+        if (!origin || permitidos.includes(origin)) return callback(null, true);
+        callback(new Error('CORS: origen no permitido'));
+    },
     credentials: true,
 }));
 

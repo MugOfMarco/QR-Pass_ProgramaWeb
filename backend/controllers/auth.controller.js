@@ -1,5 +1,6 @@
 // backend/controllers/auth.controller.js
 import bcrypt  from 'bcryptjs';
+import jwt     from 'jsonwebtoken';
 import Usuario from '../models/Usuario.js';
 import { crearToken, consumirToken, verificarToken } from '../services/passwordReset.service.js';
 import { enviarCorreoRecuperacion } from '../services/email.service.js';
@@ -60,6 +61,56 @@ export const login = async (req, res) => {
             success: false,
             message: 'Error interno del servidor',
         });
+    }
+};
+
+// ── POST /api/auth/mobile-login ───────────────────────────────
+// Igual que login pero devuelve JWT en vez de sesión.
+// Usado por la app móvil (React Native / Expo).
+export const mobileLogin = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ success: false, message: 'Usuario y contraseña son requeridos' });
+        }
+
+        const usuario = await Usuario.obtenerPorUsername(String(username).trim());
+
+        if (!usuario) {
+            return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
+        }
+
+        const passwordValida = await bcrypt.compare(String(password).trim(), usuario.password);
+        if (!passwordValida) {
+            return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
+        }
+
+        const rol = usuario.tipo_usuario;
+        if (!['Prefecto', 'Administrador'].includes(rol)) {
+            return res.status(403).json({ success: false, message: 'Tu rol no tiene acceso a esta aplicación.' });
+        }
+
+        const token = jwt.sign(
+            { id: usuario.id_usuario, usuario: usuario.usuario, rol },
+            process.env.SESSION_SECRET || 'cecyt9_secret_2025',
+            { expiresIn: '8h' }
+        );
+
+        return res.json({
+            success: true,
+            token,
+            user: {
+                id:      usuario.id_usuario,
+                usuario: usuario.usuario,
+                nombre:  usuario.nombre_completo,
+                email:   usuario.email,
+                rol,
+            },
+        });
+    } catch (error) {
+        console.error('Error en mobile login:', error);
+        return res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
 };
 
