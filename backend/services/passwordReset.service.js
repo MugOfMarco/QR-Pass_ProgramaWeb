@@ -1,38 +1,32 @@
 // backend/services/passwordReset.service.js
-// Almacén en memoria de tokens de recuperación.
-// Se purga automáticamente cuando expira (30 min).
-import crypto from 'crypto';
+// Tokens JWT firmados con SESSION_SECRET — no se pierden al reiniciar el servidor.
+import jwt from 'jsonwebtoken';
 
-const TTL_MS = 30 * 60 * 1000;
-const tokens = new Map();
+const TTL_S = 30 * 60; // 30 minutos
 
-function ahora() { return Date.now(); }
-
-function purgar() {
-    const t = ahora();
-    for (const [k, v] of tokens) if (v.expira <= t) tokens.delete(k);
+function secret() {
+    return process.env.SESSION_SECRET || 'cecyt9_secret_2025';
 }
 
 export function crearToken(idUsuario) {
-    purgar();
-    const raw = crypto.randomBytes(32).toString('hex');
-    tokens.set(raw, { idUsuario: parseInt(idUsuario), expira: ahora() + TTL_MS });
-    return raw;
-}
-
-export function consumirToken(raw) {
-    purgar();
-    const entry = tokens.get(raw);
-    if (!entry) return null;
-    tokens.delete(raw);
-    if (entry.expira <= ahora()) return null;
-    return entry.idUsuario;
+    return jwt.sign(
+        { sub: String(idUsuario), purpose: 'pwd-reset' },
+        secret(),
+        { expiresIn: TTL_S }
+    );
 }
 
 export function verificarToken(raw) {
-    purgar();
-    const entry = tokens.get(raw);
-    if (!entry) return null;
-    if (entry.expira <= ahora()) { tokens.delete(raw); return null; }
-    return entry.idUsuario;
+    try {
+        const payload = jwt.verify(raw, secret());
+        if (payload.purpose !== 'pwd-reset') return null;
+        return parseInt(payload.sub, 10);
+    } catch {
+        return null;
+    }
+}
+
+// consumirToken = verificarToken (el enlace expira solo a los 30 min)
+export function consumirToken(raw) {
+    return verificarToken(raw);
 }

@@ -18,7 +18,7 @@ class GestionUsuarios {
         this.idEditando    = null;
         this.idPassword    = null;
         this.totalUsuarios = 0;
-        this.limite        = 30;
+        this.limite        = 50;
         this.init();
     }
 
