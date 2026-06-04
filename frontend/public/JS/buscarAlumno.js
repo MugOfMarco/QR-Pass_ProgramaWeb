@@ -408,10 +408,18 @@ class SistemaAlumnos {
                             || (a.inicio > b.inicio ? 1 : -1))
             .forEach(c => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${this.cap(c.dia)}</td>
-                    <td>${(c.inicio||'').slice(0,5)} – ${(c.fin||'').slice(0,5)}</td>
-                    <td>${this.esc(c.materia || '—')}</td>`;
+                if (c.espa) {
+                    tr.classList.add('espa-row');
+                    tr.innerHTML = `
+                        <td>${this.cap(c.dia)}</td>
+                        <td>${(c.inicio||'').slice(0,5)} – ${(c.fin||'').slice(0,5)}</td>
+                        <td><span class="espa-badge">ESPA</span>${this.esc(c.materia || '—')}</td>`;
+                } else {
+                    tr.innerHTML = `
+                        <td>${this.cap(c.dia)}</td>
+                        <td>${(c.inicio||'').slice(0,5)} – ${(c.fin||'').slice(0,5)}</td>
+                        <td>${this.esc(c.materia || '—')}</td>`;
+                }
                 tbody.appendChild(tr);
             });
     }

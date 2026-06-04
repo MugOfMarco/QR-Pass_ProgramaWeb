@@ -622,10 +622,11 @@
             </div>
 
             <div class="formato-hint">
-                📋 <strong>Formato requerido (primera fila = encabezados):</strong><br>
-                <code>boleta</code> · <code>nombre_completo</code> · <code>nombre_grupo</code> · <code>estado_academico</code> · <code>puertas_abiertas</code> · <code>foto</code> (opcional)<br>
-                El campo <code>puertas_abiertas</code> acepta: <code>SI</code>, <code>NO</code>, <code>TRUE</code>, <code>FALSE</code>. El campo <code>foto</code> acepta una URL pública (Google Drive o directa).<br>
-                Si la boleta ya existe en el sistema, sus datos serán <strong>actualizados</strong>. Si no existe, se <strong>insertará</strong> como alumno nuevo.
+                📋 <strong>Hoja «Alumnos» (primera fila = encabezados):</strong><br>
+                <code>boleta</code> · <code>nombre_completo</code> · <code>nombre_grupo</code> · <code>estado_academico</code> · <code>puertas_abiertas</code> · <code>foto</code> (opcional) · <code>espa</code> (opcional)<br>
+                <code>estado_academico</code> acepta sinónimos: <em>regular, activo, normal → mismo estado; baja provisional → baja temporal</em>, etc.<br>
+                <code>espa</code>: nombres de materias acreditadas por ESPA, separados por coma. Ej: <code>P604 – Inglés VI, P603 – Química IV</code><br>
+                📅 <strong>Hoja «Grupos y Horarios» (opcional):</strong> <code>grupo</code> · <code>materia</code> · <code>dia</code> · <code>hora_inicio</code> · <code>hora_fin</code> — se detecta automáticamente si existe.
             </div>
 
             <div class="preview-wrap" id="preview-wrap">
@@ -658,8 +659,33 @@
             </div>
 
             <div style="display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap" id="btns-carga">
-                <button class="btn-ipn" id="btn-cargar" disabled>⬆ Cargar en base de datos</button>
+                <button class="btn-ipn" id="btn-cargar" disabled>⬆ Cargar alumnos en BD</button>
                 <button class="btn-out" id="btn-limpiar-excel" style="display:none">✕ Limpiar</button>
+            </div>
+
+            <!-- SECCIÓN HORARIOS — se muestra si el Excel tiene la hoja "Grupos y Horarios" -->
+            <div id="preview-hor-wrap" style="display:none;margin-top:1.2rem">
+                <p style="font-size:.82rem;font-weight:700;color:#555;margin-bottom:.4rem">
+                    📅 Hoja «Grupos y Horarios» detectada
+                </p>
+                <div style="overflow-x:auto">
+                    <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+                        <thead id="preview-hor-head"></thead>
+                        <tbody id="preview-hor-body"></tbody>
+                    </table>
+                </div>
+                <div style="display:flex;gap:.6rem;margin-top:.7rem;flex-wrap:wrap">
+                    <button class="btn-ipn" id="btn-cargar-horarios" disabled
+                        style="background:#1565c0">⬆ Cargar horarios en BD</button>
+                </div>
+                <div class="resultado-wrap" id="resultado-hor-wrap" style="display:none;margin-top:.6rem">
+                    <span class="res-badge res-ok"   id="res-hor-insertados">✓ 0 insertados</span>
+                    <span class="res-badge res-edit"  id="res-hor-omitidos">↷ 0 omitidos</span>
+                    <span class="res-badge res-err"   id="res-hor-errores">✗ 0 errores</span>
+                </div>
+                <div id="errores-hor-detalle" style="display:none;margin-top:.5rem">
+                    <div id="errores-hor-body" style="font-size:.8rem"></div>
+                </div>
             </div>
 
         </div>
@@ -1016,6 +1042,7 @@ function crearTarjetaGrupo(g) {
                             <th>Sin cred.</th>
                             <th>Credencial</th>
                             <th>Ver</th>
+                            <th>Elim.</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1041,7 +1068,13 @@ function crearTarjetaGrupo(g) {
                                 <a href="/BuscarAlumno.html?boleta=${a.boleta}"
                                    style="color:var(--ipn);font-size:.78rem;font-weight:700">→</a>
                             </td>
-                        </tr>`).join('') : `<tr class="empty-row"><td colspan="9">Sin alumnos en este grupo</td></tr>`}
+                            <td style="text-align:center">
+                                <button onclick="eliminarAlumnoDeGrupo(${a.boleta}, event)"
+                                        title="Eliminar alumno permanentemente"
+                                        style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:1rem;padding:2px 4px;line-height:1"
+                                        >🗑</button>
+                            </td>
+                        </tr>`).join('') : `<tr class="empty-row"><td colspan="10">Sin alumnos en este grupo</td></tr>`}
                     </tbody>
                 </table>
             </div>
@@ -1057,6 +1090,33 @@ function crearTarjetaGrupo(g) {
     });
 
     return card;
+}
+
+// ── Eliminar alumno desde la tabla del grupo ───────────────────
+async function eliminarAlumnoDeGrupo(boleta, evt) {
+    evt.stopPropagation();
+    const texto = prompt(
+        `⚠️ ELIMINACIÓN PERMANENTE\n\nEsto borrará al alumno con boleta ${boleta} y TODOS sus registros (historial de accesos, incidencias, foto, etc.).\n\nEsta acción NO se puede deshacer.\n\nPara confirmar escribe exactamente:\nELIMINAR ALUMNO`
+    );
+    if (texto === null) return;
+    if (texto !== 'ELIMINAR ALUMNO') {
+        alert('El texto no coincide. Eliminación cancelada.');
+        return;
+    }
+    try {
+        const res = await fetch(`/api/alumnos/eliminar/${boleta}`, {
+            method: 'DELETE', credentials: 'include',
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || !result.success) {
+            toast(result.message || 'Error al eliminar', 'err');
+            return;
+        }
+        toast(result.message || 'Alumno eliminado', 'ok');
+        await cargarGrupos();
+    } catch (_) {
+        toast('Error de conexión', 'err');
+    }
 }
 
 // ── Selección ──────────────────────────────────────────────────
@@ -1244,17 +1304,21 @@ excelInput.addEventListener('change', e => {
     if (file) procesarExcel(file);
 });
 
+let horariosFilas = [];  // filas de la hoja "Grupos y Horarios"
+
 function procesarExcel(file) {
     const reader = new FileReader();
     reader.onload = (ev) => {
         try {
-            const wb   = XLSX.read(ev.target.result, { type: 'binary' });
-            const ws   = wb.Sheets[wb.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            const wb = XLSX.read(ev.target.result, { type: 'binary' });
 
-            if (!json.length) { toast('El archivo está vacío', 'err'); return; }
+            // ── Hoja 1: Alumnos ───────────────────────────────
+            const wsAlumnos = wb.Sheets[wb.SheetNames[0]];
+            const jsonAlumnos = XLSX.utils.sheet_to_json(wsAlumnos, { defval: '' });
 
-            excelFilas = json.map((row, i) => {
+            if (!jsonAlumnos.length) { toast('La hoja de Alumnos está vacía', 'err'); return; }
+
+            excelFilas = jsonAlumnos.map((row, i) => {
                 const norm = {};
                 for (const k in row) norm[k.toLowerCase().trim().replace(/\s+/g,'_')] = row[k];
                 return {
@@ -1265,14 +1329,37 @@ function procesarExcel(file) {
                     estado_academico: String(norm.estado_academico || norm.estado || 'Regular').trim(),
                     puertas_abiertas: String(norm.puertas_abiertas || norm.puertas || 'NO').trim(),
                     foto:             String(norm.foto || norm.url_foto || norm.foto_url || '').trim(),
+                    espa:             String(norm.espa || '').trim(),
                 };
             }).filter(r => r.boleta);
 
+            // ── Hoja 2: Grupos y Horarios (opcional) ─────────
+            horariosFilas = [];
+            const wsHorarios = wb.Sheets['Grupos y Horarios'] || wb.Sheets[wb.SheetNames[1]];
+            if (wsHorarios) {
+                const jsonHorarios = XLSX.utils.sheet_to_json(wsHorarios, { defval: '' });
+                horariosFilas = jsonHorarios.map((row, i) => {
+                    const norm = {};
+                    for (const k in row) norm[k.toLowerCase().trim().replace(/\s+/g,'_')] = row[k];
+                    return {
+                        _fila:       i + 2,
+                        grupo:       String(norm.grupo || norm.nombre_grupo || '').trim(),
+                        materia:     String(norm.materia || norm.nombre_materia || '').trim(),
+                        dia:         String(norm.dia || norm.dia_semana || '').trim(),
+                        hora_inicio: String(norm.hora_inicio || norm.inicio || '').trim(),
+                        hora_fin:    String(norm.hora_fin    || norm.fin    || '').trim(),
+                    };
+                }).filter(r => r.grupo && r.materia && r.dia);
+            }
+
             mostrarPreview();
+            mostrarPreviewHorarios();
             btnCargar.disabled         = false;
             btnLimpiar.style.display   = '';
-            $('resultado-wrap').style.display = 'none';
-            $('errores-detalle').style.display = 'none';
+            $('resultado-wrap').style.display        = 'none';
+            $('errores-detalle').style.display       = 'none';
+            $('resultado-hor-wrap').style.display    = 'none';
+            $('errores-hor-detalle').style.display   = 'none';
 
         } catch (e) {
             toast('Error al leer el archivo: ' + e.message, 'err');
@@ -1281,6 +1368,8 @@ function procesarExcel(file) {
     reader.readAsBinaryString(file);
 }
 
+const BOLETA_REGEX = /^\d{4}09\d{4}$/;
+
 function mostrarPreview() {
     const wrap = $('preview-wrap');
     const head = $('preview-head');
@@ -1288,28 +1377,81 @@ function mostrarPreview() {
 
     head.innerHTML = `<tr>
         <th>#</th><th>Boleta</th><th>Nombre</th><th>Grupo</th>
-        <th>Estado</th><th>Puertas</th><th>Foto</th>
+        <th>Estado</th><th>Puertas</th><th>Foto</th><th>ESPA</th>
     </tr>`;
 
+    const boletasInvalidas = excelFilas.filter(f => !BOLETA_REGEX.test(String(f.boleta).trim())).length;
+    if (boletasInvalidas > 0) {
+        toast(`⚠️ ${boletasInvalidas} boleta(s) con formato incorrecto (deben ser YYYY09XXXX, p.ej. 2024090406). Se marcan en rojo.`, 'err');
+    }
+
     const max = Math.min(excelFilas.length, 20);
-    body.innerHTML = excelFilas.slice(0, max).map(f => `
-        <tr>
+    body.innerHTML = excelFilas.slice(0, max).map(f => {
+        const boletaOk = BOLETA_REGEX.test(String(f.boleta).trim());
+        const boletaCell = boletaOk
+            ? esc(f.boleta)
+            : `<span style="color:#dc2626;font-weight:700" title="Debe ser YYYY09XXXX — el 09 es código del CECyT 9">${esc(f.boleta)} ⚠️</span>`;
+        return `
+        <tr${boletaOk ? '' : ' style="background:#fef2f2"'}>
             <td>${f._fila}</td>
-            <td>${esc(f.boleta)}</td>
+            <td>${boletaCell}</td>
             <td>${esc(f.nombre_completo)}</td>
             <td>${esc(f.nombre_grupo)}</td>
             <td>${esc(f.estado_academico)}</td>
             <td>${esc(f.puertas_abiertas)}</td>
             <td>${f.foto ? '<span style="color:var(--success,green)" title="'+esc(f.foto)+'">✓ URL</span>' : '<span style="color:var(--muted)">—</span>'}</td>
-        </tr>`).join('');
+            <td style="font-size:.75rem;color:#e65100">${esc(f.espa) || '<span style="color:var(--muted)">—</span>'}</td>
+        </tr>`;
+    }).join('');
 
     if (excelFilas.length > 20) {
-        body.innerHTML += `<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.78rem">
+        body.innerHTML += `<tr><td colspan="8" style="text-align:center;color:var(--muted);font-size:.78rem">
             … y ${excelFilas.length - 20} filas más</td></tr>`;
     }
 
     wrap.style.display = 'block';
-    toast(`${excelFilas.length} filas detectadas. Revisa la vista previa y carga.`, 'ok');
+    const msg = horariosFilas.length
+        ? `${excelFilas.length} alumnos y ${horariosFilas.length} horarios detectados.`
+        : `${excelFilas.length} alumnos detectados. Revisa la vista previa y carga.`;
+    toast(msg, 'ok');
+}
+
+function mostrarPreviewHorarios() {
+    const wrap = $('preview-hor-wrap');
+    if (!wrap) return;
+
+    if (!horariosFilas.length) {
+        wrap.style.display = 'none';
+        $('btn-cargar-horarios').disabled = true;
+        return;
+    }
+
+    const head = $('preview-hor-head');
+    const body = $('preview-hor-body');
+
+    head.innerHTML = `<tr>
+        <th>#</th><th>Grupo</th><th>Materia</th><th>Día</th>
+        <th>Hora inicio</th><th>Hora fin</th>
+    </tr>`;
+
+    const max = Math.min(horariosFilas.length, 20);
+    body.innerHTML = horariosFilas.slice(0, max).map(f => `
+        <tr>
+            <td>${f._fila}</td>
+            <td>${esc(f.grupo)}</td>
+            <td>${esc(f.materia)}</td>
+            <td>${esc(f.dia)}</td>
+            <td>${esc(f.hora_inicio)}</td>
+            <td>${esc(f.hora_fin)}</td>
+        </tr>`).join('');
+
+    if (horariosFilas.length > 20) {
+        body.innerHTML += `<tr><td colspan="6" style="text-align:center;color:var(--muted);font-size:.78rem">
+            … y ${horariosFilas.length - 20} filas más</td></tr>`;
+    }
+
+    wrap.style.display = 'block';
+    $('btn-cargar-horarios').disabled = false;
 }
 
 // ── Enviar al servidor ─────────────────────────────────────────
@@ -1387,15 +1529,69 @@ function mostrarDetalleErrores(errores) {
 }
 
 btnLimpiar.addEventListener('click', () => {
-    excelFilas                         = [];
-    excelInput.value                   = '';
-    $('preview-wrap').style.display    = 'none';
-    $('progress-wrap').style.display   = 'none';
-    $('resultado-wrap').style.display  = 'none';
-    $('errores-detalle').style.display = 'none';
-    btnCargar.disabled                 = true;
-    btnLimpiar.style.display           = 'none';
-    $('progress-bar').style.width      = '0%';
+    excelFilas                              = [];
+    horariosFilas                           = [];
+    excelInput.value                        = '';
+    $('preview-wrap').style.display         = 'none';
+    $('preview-hor-wrap').style.display     = 'none';
+    $('progress-wrap').style.display        = 'none';
+    $('resultado-wrap').style.display       = 'none';
+    $('errores-detalle').style.display      = 'none';
+    $('resultado-hor-wrap').style.display   = 'none';
+    $('errores-hor-detalle').style.display  = 'none';
+    btnCargar.disabled                      = true;
+    $('btn-cargar-horarios').disabled       = true;
+    btnLimpiar.style.display                = 'none';
+    $('progress-bar').style.width           = '0%';
+});
+
+// ── Enviar horarios al servidor ────────────────────────────────
+$('btn-cargar-horarios').addEventListener('click', async () => {
+    if (!horariosFilas.length) return;
+
+    const btn = $('btn-cargar-horarios');
+    btn.disabled    = true;
+    btn.textContent = '⏳ Enviando horarios…';
+    $('resultado-hor-wrap').style.display   = 'none';
+    $('errores-hor-detalle').style.display  = 'none';
+
+    try {
+        const r = await fetch('/api/grupos/carga-masiva-horarios', {
+            method:      'POST',
+            headers:     { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ horarios: horariosFilas }),
+        });
+        const data = await r.json();
+
+        if (data.success) {
+            $('res-hor-insertados').textContent = `✓ ${data.insertados} insertados`;
+            $('res-hor-omitidos').textContent   = `↷ ${data.omitidos} omitidos`;
+            $('res-hor-errores').textContent    = `✗ ${data.errores?.length || 0} errores`;
+            $('resultado-hor-wrap').style.display = 'flex';
+
+            if (data.errores?.length) {
+                const body = $('errores-hor-body');
+                body.innerHTML = data.errores.map(e =>
+                    `<div class="error-row">
+                        <span class="error-fila">Fila ${e.fila}</span>
+                        <span class="error-msg">${esc(e.error || 'Error desconocido')}</span>
+                    </div>`).join('');
+                $('errores-hor-detalle').style.display = 'block';
+                toast(`Horarios cargados con ${data.errores.length} error(es).`, 'err');
+            } else {
+                toast(data.message, 'ok');
+            }
+            await cargarGrupos();
+        } else {
+            toast(data.message || 'Error al cargar horarios', 'err');
+        }
+    } catch (e) {
+        toast('Error de conexión: ' + e.message, 'err');
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = '⬆ Cargar horarios en BD';
+    }
 });
 
 // ── Horarios ───────────────────────────────────────────────────
@@ -1605,24 +1801,23 @@ $('modal-horario').addEventListener('click', e => {
 // ── Descargar plantilla Excel ──────────────────────────────────
 $('btn-descargar-plantilla').addEventListener('click', () => {
 
-    // ── Hoja 1: datos (la que se sube al sistema) ──────────────
+    // ── Hoja 1: Alumnos (la que se sube al sistema) ────────────
     const ws = XLSX.utils.aoa_to_sheet([
-        ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas', 'foto'],
-        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO',   '6IM7', 'Regular',   'NO', ''],
-        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '6IV7', 'Irregular', 'NO', 'https://drive.google.com/file/d/XXXX/view'],
+        ['boleta', 'nombre_completo', 'nombre_grupo', 'estado_academico', 'puertas_abiertas', 'foto', 'espa'],
+        ['2023630001', 'APELLIDOS NOMBRE EJEMPLO',   '6IM7', 'Regular',   'NO', '', ''],
+        ['2023630002', 'APELLIDOS NOMBRE EJEMPLO 2', '6IV7', 'Irregular', 'NO', 'https://drive.google.com/file/d/XXXX/view', 'P604 – Ingles VI'],
+        ['2023630003', 'APELLIDOS NOMBRE EJEMPLO 3', '6IM7', 'Regular',   'NO', '', 'P604 – Ingles VI, P603 – Quimica IV'],
     ]);
-    ws['!cols'] = [12, 35, 8, 16, 14, 48].map(wch => ({ wch }));
+    ws['!cols'] = [12, 35, 8, 16, 14, 48, 45].map(wch => ({ wch }));
 
-    // ── Hoja 2: referencia de valores válidos ──────────────────
-    // Usa estadosData cargado desde la BD para listar estados reales
+    // ── Hoja 2: Referencia de valores válidos ──────────────────
     const estadosValidos = estadosData.length
         ? estadosData.map(e => e.estado)
         : ['Regular', 'Irregular', 'Baja Temporal', 'Baja Definitiva'];
 
-    // Fila(s) de estado_academico: primera con etiqueta, resto vacío en col A
     const filasEstado = estadosValidos.map((e, i) =>
         i === 0
-            ? ['estado_academico', e, 'Elige exactamente uno de los valores de esta lista (no distingue mayusculas)']
+            ? ['estado_academico', e, 'No distingue mayusculas. Sinonimos aceptados: activo=regular=normal, suspendido=baja temporal, dado de baja=baja definitiva, graduado=egresado']
             : ['', e, '']
     );
 
@@ -1630,32 +1825,39 @@ $('btn-descargar-plantilla').addEventListener('click', () => {
         ['REFERENCIA — Valores validos por columna (esta hoja es solo informativa, no la subas)'],
         [],
         ['COLUMNA', 'VALOR(ES) ACEPTADO(S)', 'NOTAS'],
-        // boleta
         ['boleta', 'Numero entero de 5 o mas digitos',
-         'Si la boleta ya existe en el sistema → se ACTUALIZA. Si no existe → se INSERTA.'],
-        // nombre_completo
+         'Si ya existe → ACTUALIZA. Si no existe → INSERTA.'],
         ['nombre_completo', 'Texto libre (maximo 200 caracteres)',
          'Escribe apellidos y nombre en mayusculas. Ej: GARCIA LOPEZ JUAN'],
-        // nombre_grupo
         ['nombre_grupo', 'Nombre exacto del grupo registrado en el sistema',
          'Debe coincidir exactamente. Ej: 6IM7 (Matutino), 6IV7 (Vespertino)'],
-        // estado_academico — filas dinámicas
         ...filasEstado,
-        // puertas_abiertas
         ['puertas_abiertas', 'SI  /  NO', 'Tambien acepta: TRUE, FALSE, 1, 0. Por defecto si se omite: NO'],
-        // foto — dos filas
         ['foto', 'URL publica directa: https://ejemplo.com/foto.jpg',
          'Opcional. Dejar la celda vacia si el alumno no tiene foto.'],
         ['', 'URL de Google Drive: https://drive.google.com/file/d/FILE_ID/view',
          'La imagen debe tener acceso publico o "cualquier persona con el enlace".'],
+        ['espa', 'Nombre(s) exacto(s) de materia separados por coma',
+         'ESPA = Estudios Previamente Adquiridos. El alumno acredito esa materia. Ej: P604 – Ingles VI, P603 – Quimica IV. Se agrega a la BD; no borra ESPAs anteriores.'],
     ]);
-    wsRef['!cols'] = [18, 58, 58].map(wch => ({ wch }));
+    wsRef['!cols'] = [18, 58, 70].map(wch => ({ wch }));
+
+    // ── Hoja 3: Grupos y Horarios ──────────────────────────────
+    const wsHor = XLSX.utils.aoa_to_sheet([
+        ['grupo', 'materia', 'dia', 'hora_inicio', 'hora_fin'],
+        ['6IM7', 'P601 – Probabilidad y Estadistica', 'Lunes',     '07:00', '08:40'],
+        ['6IM7', 'P601 – Probabilidad y Estadistica', 'Miercoles', '07:00', '08:40'],
+        ['6IM7', 'P603 – Quimica IV',                  'Martes',    '07:00', '08:40'],
+        ['6IV7', 'P604 – Ingles VI',                   'Lunes',     '14:00', '15:40'],
+    ]);
+    wsHor['!cols'] = [8, 45, 12, 11, 11].map(wch => ({ wch }));
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws,    'Alumnos');
     XLSX.utils.book_append_sheet(wb, wsRef, 'Referencia');
+    XLSX.utils.book_append_sheet(wb, wsHor, 'Grupos y Horarios');
     XLSX.writeFile(wb, 'plantilla_alumnos_qrpass.xlsx');
-    toast('Plantilla descargada. Revisa la hoja "Referencia" para ver los valores validos.', 'ok');
+    toast('Plantilla descargada con 3 hojas: Alumnos, Referencia y Grupos y Horarios.', 'ok');
 });
 </script>
 </body>

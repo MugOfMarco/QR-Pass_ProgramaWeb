@@ -247,6 +247,23 @@
 .pa-badge.pa-si { background: #e8f5e9; color: #1a5e20; border: 1px solid #a5d6a7; }
 .pa-badge.pa-no { background: #f5f5f5; color: #555;     border: 1px solid #ddd; }
 
+/* ── ESPA — materias acreditadas en el horario ────────────── */
+.espa-row td { background: #fff8e1 !important; }
+.espa-row:hover td { background: #fff3cd !important; }
+
+.espa-badge {
+    display: inline-block;
+    background: #ff9800;
+    color: white;
+    font-size: .62rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-right: 5px;
+    vertical-align: middle;
+    letter-spacing: .05em;
+}
+
 /* ── Horario ──────────────────────────────────────────────── */
 .horario-container {
     max-height: 180px;

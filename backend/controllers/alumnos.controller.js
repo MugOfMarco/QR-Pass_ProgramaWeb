@@ -10,6 +10,7 @@ import Alumno    from '../models/Alumno.js';
 import { cloudinary, getOptimizedImageUrl } from '../database/cloudinary.js';
 import sanitizeHtml from 'sanitize-html';
 import { supabaseAdmin } from '../database/supabase.js';
+import { logAuditoria } from '../utils/auditoria.js';
 
 const sanitize = (v) => typeof v === 'string'
     ? sanitizeHtml(v, { allowedTags: [], allowedAttributes: {} })
@@ -62,15 +63,24 @@ export const obtenerAlumno = async (req, res) => {
                 .eq('boleta', parseInt(boleta));
 
             const baseMap = (base || [])
-                .filter(h => !idsAcred.includes(h.id_materia))
-                .map(h => ({ id_horario: h.id_horario, dia: DIA_MAP[h.dia_semana] || String(h.dia_semana),
-                             inicio: h.hora_inicio, fin: h.hora_fin,
-                             materia: h.materias?.nombre_materia }));
+                .map(h => ({
+                    id_horario: h.id_horario,
+                    dia:        DIA_MAP[h.dia_semana] || String(h.dia_semana),
+                    inicio:     h.hora_inicio,
+                    fin:        h.hora_fin,
+                    materia:    h.materias?.nombre_materia,
+                    espa:       idsAcred.includes(h.id_materia),
+                }));
 
             const extraMap = (extras || []).map(e => e.horarios_grupo).filter(Boolean)
-                .map(h => ({ id_horario: h.id_horario, dia: DIA_MAP[h.dia_semana] || String(h.dia_semana),
-                             inicio: h.hora_inicio, fin: h.hora_fin,
-                             materia: h.materias?.nombre_materia }));
+                .map(h => ({
+                    id_horario: h.id_horario,
+                    dia:        DIA_MAP[h.dia_semana] || String(h.dia_semana),
+                    inicio:     h.hora_inicio,
+                    fin:        h.hora_fin,
+                    materia:    h.materias?.nombre_materia,
+                    espa:       false,
+                }));
 
             horario = [...baseMap, ...extraMap];
         }
@@ -234,9 +244,11 @@ export const verificarBloqueo = async (req, res) => {
 export const bloquearcredencial = async (req, res) => {
     try {
         const r = await Alumno.bloquearCredencial(req.params.boleta);
-        return r.success
-            ? res.json({ success: true, message: r.message })
-            : res.status(400).json({ success: false, message: r.message });
+        if (r.success) {
+            logAuditoria({ id_usuario: req.session.user?.id, accion: 'bloquear_credencial', boleta: parseInt(req.params.boleta) });
+            return res.json({ success: true, message: r.message });
+        }
+        return res.status(400).json({ success: false, message: r.message });
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Error al bloquear.' });
     }
@@ -246,9 +258,11 @@ export const bloquearcredencial = async (req, res) => {
 export const desbloquearcredencial = async (req, res) => {
     try {
         const r = await Alumno.desbloquearCredencial(req.params.boleta);
-        return r.success
-            ? res.json({ success: true, message: r.message })
-            : res.status(400).json({ success: false, message: r.message });
+        if (r.success) {
+            logAuditoria({ id_usuario: req.session.user?.id, accion: 'desbloquear_credencial', boleta: parseInt(req.params.boleta) });
+            return res.json({ success: true, message: r.message });
+        }
+        return res.status(400).json({ success: false, message: r.message });
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Error al desbloquear.' });
     }
@@ -264,6 +278,17 @@ export const registrarJustificacion = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Faltan datos.' });
         }
         const r = await Alumno.registrarJustificacion(id_registro, justificacion, id_usuario);
+
+        // Obtener boleta del registro para la bitácora
+        const { data: regRow } = await supabaseAdmin
+            .from('registros_acceso').select('boleta').eq('id_registro', id_registro).maybeSingle();
+        logAuditoria({
+            id_usuario,
+            accion:  'justificar_incidencia',
+            boleta:  regRow?.boleta || null,
+            detalle: `id_registro=${id_registro} | motivo: ${justificacion}`,
+        });
+
         return res.json({ success: true, message: 'Justificación registrada.', data: r });
     } catch (err) {
         return res.status(500).json({ success: false, message: 'No se pudo registrar.' });
@@ -298,10 +323,27 @@ export const obtenerRegistrosAlumno = async (req, res) => {
 export const registrarAlumno = async (req, res) => {
     try {
         const datos = sanitizeObj(req.body);
-        const r     = await Alumno.registrar(datos);
-        return r.success
-            ? res.json({ success: true, message: r.message, boleta: datos.boleta })
-            : res.status(400).json({ success: false, message: r.message });
+
+        // Validar formato de boleta: YYYY09XXXX (10 dígitos, pos 5-6 = "09" → CECyT 9)
+        const boletaStr = String(datos.boleta || '').trim();
+        if (!/^\d{4}09\d{4}$/.test(boletaStr)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Boleta inválida. Debe tener 10 dígitos con "09" en las posiciones 5-6 (ej: 2024090406). Los dígitos 5 y 6 son el código obligatorio del CECyT 9.',
+            });
+        }
+
+        const r = await Alumno.registrar(datos);
+        if (r.success) {
+            logAuditoria({
+                id_usuario: req.session.user?.id,
+                accion:     'crear_alumno',
+                boleta:     parseInt(datos.boleta),
+                detalle:    datos.nombre_completo || null,
+            });
+            return res.json({ success: true, message: r.message, boleta: datos.boleta });
+        }
+        return res.status(400).json({ success: false, message: r.message });
     } catch (err) {
         console.error('Error registrando:', err);
         return res.status(500).json({ success: false, message: 'Error al registrar.' });
@@ -318,9 +360,17 @@ export const modificarAlumno = async (req, res) => {
         const datosLimpios         = sanitizeObj(rest); // sanitizar solo los strings
 
         const r = await Alumno.modificar(boleta, { ...datosLimpios, horario });
-        return r.success
-            ? res.json({ success: true, message: r.message, boleta })
-            : res.status(400).json({ success: false, message: r.message });
+        if (r.success) {
+            const camposModificados = Object.keys(rest).filter(k => rest[k] !== undefined && rest[k] !== '').join(', ');
+            logAuditoria({
+                id_usuario: req.session.user?.id,
+                accion:     'modificar_alumno',
+                boleta:     parseInt(boleta),
+                detalle:    camposModificados ? `campos: ${camposModificados}` : null,
+            });
+            return res.json({ success: true, message: r.message, boleta });
+        }
+        return res.status(400).json({ success: false, message: r.message });
     } catch (err) {
         console.error('Error modificando:', err);
         return res.status(500).json({ success: false, message: 'Error al modificar.' });
@@ -328,11 +378,60 @@ export const modificarAlumno = async (req, res) => {
 };
 
 // ── DELETE /api/alumnos/eliminar/:boleta ─────────────────────
-// Política: nunca se borra físicamente
-export const eliminarAlumno = (_req, res) => res.status(403).json({
-    success: false,
-    message: 'La eliminación física está deshabilitada. Usa el estado "Baja Definitiva" para dar de baja al alumno.',
-});
+export const eliminarAlumno = async (req, res) => {
+    try {
+        const boletaInt = parseInt(req.params.boleta);
+        if (isNaN(boletaInt)) {
+            return res.status(400).json({ success: false, message: 'Boleta inválida.' });
+        }
+
+        // Verificar que el alumno existe y obtener datos para auditoría
+        const { data: alumno } = await supabaseAdmin
+            .from('alumnos').select('boleta, nombre_completo').eq('boleta', boletaInt).single();
+        if (!alumno) {
+            return res.status(404).json({ success: false, message: 'Alumno no encontrado.' });
+        }
+
+        // Intentar eliminar foto de Cloudinary antes de borrar el registro
+        const { data: infoFoto } = await supabaseAdmin
+            .from('info_alumno').select('url_foto').eq('boleta', boletaInt).single();
+        if (infoFoto?.url_foto?.includes('cloudinary')) {
+            try {
+                const partes = infoFoto.url_foto.split('/upload/')[1]?.split('.');
+                if (partes) {
+                    const public_id = partes.slice(0, -1).join('.');
+                    await cloudinary.uploader.destroy(public_id);
+                }
+            } catch (_) { /* silencioso: no bloqueamos el delete por esto */ }
+        }
+
+        // Eliminar registros dependientes en el orden correcto
+        await supabaseAdmin.from('materias_acreditadas').delete().eq('boleta', boletaInt);
+        await supabaseAdmin.from('horario_alumno_extra').delete().eq('boleta', boletaInt);
+        await supabaseAdmin.from('justificaciones').delete().eq('boleta', boletaInt);
+        await supabaseAdmin.from('registros_acceso').delete().eq('boleta', boletaInt);
+        await supabaseAdmin.from('bitacora_auditoria').delete().eq('boleta', boletaInt);
+        await supabaseAdmin.from('info_alumno').delete().eq('boleta', boletaInt);
+
+        const { error } = await supabaseAdmin.from('alumnos').delete().eq('boleta', boletaInt);
+        if (error) {
+            return res.status(500).json({ success: false, message: 'Error al eliminar: ' + error.message });
+        }
+
+        logAuditoria({
+            id_usuario: req.session.user?.id,
+            accion:     'eliminar_alumno',
+            boleta:     boletaInt,
+            detalle:    alumno.nombre_completo,
+        });
+
+        return res.json({ success: true, message: `Alumno ${boletaInt} (${alumno.nombre_completo}) eliminado.` });
+
+    } catch (err) {
+        console.error('Error eliminando alumno:', err);
+        return res.status(500).json({ success: false, message: 'Error interno.' });
+    }
+};
 
 // ── GET /api/alumnos/grupos/lista ────────────────────────────
 export const obtenerGrupos = async (_req, res) => {

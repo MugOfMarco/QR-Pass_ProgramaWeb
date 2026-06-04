@@ -188,6 +188,9 @@ class GestionAlumnos {
         if (boleta.length < 5) {
             this.alerta('Ingresa una boleta válida (mínimo 5 dígitos)'); return;
         }
+        if (boleta.length === 10 && !/^\d{4}09\d{4}$/.test(boleta)) {
+            this.alerta('⚠️ Advertencia: esta boleta no sigue el formato del CECyT 9 (YYYY09XXXX).\nLos dígitos 5 y 6 deben ser "09". Continuando búsqueda de todas formas…');
+        }
 
         try {
             const res = await fetch(`${this.apiBase}/alumnos/${boleta}`, {
@@ -291,7 +294,10 @@ class GestionAlumnos {
         const idGrupo = this.dom.formGrupo?.value;
         const idEstado= this.dom.formEstatus?.value;
 
-        if (boleta.length < 5)  { this.alerta('Boleta inválida');          return; }
+        if (!/^\d{4}09\d{4}$/.test(boleta)) {
+            this.alerta('Boleta inválida. Debe tener 10 dígitos con "09" en las posiciones 5-6 (ej: 2024090406).\nLos dígitos 5 y 6 son el código obligatorio del CECyT 9.');
+            return;
+        }
         if (!nombre)            { this.alerta('El nombre es obligatorio'); return; }
         if (!idGrupo)           { this.alerta('Selecciona un grupo');      return; }
         if (!idEstado)          { this.alerta('Selecciona un estado');     return; }
@@ -350,12 +356,19 @@ class GestionAlumnos {
     }
 
     // ─────────────────────────────────────────────────────────
-    // ELIMINAR — el servidor siempre devuelve 403
-    // (política de no borrado — usar Baja Definitiva)
+    // ELIMINAR — eliminación física con doble confirmación
     // ─────────────────────────────────────────────────────────
     async eliminarAlumno() {
         if (!this.currentBoleta) return;
-        if (!confirm(`¿Seguro que deseas eliminar al alumno con boleta ${this.currentBoleta}?\n\nNota: el sistema usa baja definitiva, no eliminación física.`)) return;
+
+        const texto = prompt(
+            `⚠️ ELIMINACIÓN PERMANENTE\n\nEsto borrará al alumno con boleta ${this.currentBoleta} y TODOS sus registros (historial de accesos, incidencias, foto, etc.).\n\nEsta acción NO se puede deshacer.\n\nPara confirmar escribe exactamente:\nELIMINAR ALUMNO`
+        );
+        if (texto === null) return;
+        if (texto !== 'ELIMINAR ALUMNO') {
+            alert('El texto no coincide. Eliminación cancelada.');
+            return;
+        }
 
         try {
             const res = await fetch(`${this.apiBase}/alumnos/eliminar/${this.currentBoleta}`, {
@@ -365,18 +378,12 @@ class GestionAlumnos {
 
             const result = await res.json().catch(() => ({}));
 
-            // El servidor devuelve 403 con mensaje explicativo
-            if (res.status === 403) {
-                alert(`ℹ️ ${result.message || 'La eliminación está deshabilitada. Usa Baja Definitiva en el estado académico.'}`);
-                return;
-            }
-
             if (!res.ok || !result.success) {
                 this.alerta(result.message || 'Error al intentar eliminar');
                 return;
             }
 
-            alert('Alumno eliminado');
+            alert(`✅ ${result.message}`);
             this.modoCrear();
 
         } catch (e) {

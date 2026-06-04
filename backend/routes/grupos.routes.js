@@ -12,6 +12,7 @@ import {
     editarGrupo,
     accionMasiva,
     cargaMasiva,
+    cargaMasivaHorarios,
     crearHorario,
     editarHorario,
     eliminarHorario,
@@ -35,7 +36,8 @@ router.post('/:id/horarios', requireRole('Administrador'), crearHorario);
 router.post('/',                    requireRole('Administrador'), crearGrupo);
 router.put('/:id',                  requireRole('Administrador'), editarGrupo);
 router.post('/accion-masiva',       requireRole('Administrador'), accionMasiva);
-router.post('/carga-masiva',        requireRole('Administrador'), cargaMasiva);
+router.post('/carga-masiva',          requireRole('Administrador'), cargaMasiva);
+router.post('/carga-masiva-horarios', requireRole('Administrador'), cargaMasivaHorarios);
 router.put('/horarios/:id',         requireRole('Administrador'), editarHorario);
 router.delete('/horarios/:id',      requireRole('Administrador'), eliminarHorario);
 

@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { href: '/Dashboard.html',            label: 'Dashboard' },
             { href: '/Entrada_Salida.html',        label: 'Registro entrada / salida' },
             { href: '/BuscarAlumno.html',          label: 'Buscar alumno' },
+            { href: '/BitacoraAdmin.html',         label: 'Historial y Bitácora' },
             { href: '/ModificarAlumno.html',       label: 'Modificar alumno' },
             { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
             { href: '/GestionGrupos.html',         label: 'Gestión de grupos' },
@@ -39,7 +40,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             { href: '/Descargasbd.html',           label: 'Descargar respaldo' },
             { href: '/LogicaNegocio.html',         label: 'Lógica de Negocio' },
             { href: '/Soporte.html',               label: 'Soporte QRPASS' },
-
         ];
 
         const menuVigilante = [

@@ -70,21 +70,6 @@
             gap: 1rem;
         }
 
-        .Boton-nav button, #menu-toggle-btn {
-            width: 40px; height: 40px;
-            background: rgba(255,255,255,.15);
-            border: 1px solid rgba(255,255,255,.25);
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background .2s;
-            flex-shrink: 0;
-        }
-        .Boton-nav button:hover, #menu-toggle-btn:hover { background: rgba(255,255,255,.28); }
-        .Boton-nav img { width: 22px; height: 22px; filter: brightness(0) invert(1); }
-
         .header-title { flex: 1; }
         .header-title h1 { color: white; font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; }
         .header-title p  { color: rgba(255,255,255,.65); font-size: .78rem; margin-top: 1px; }
@@ -110,54 +95,6 @@
             font-size: .82rem;
             letter-spacing: .04em;
         }
-
-        /* ═══════════════════════════════════════════════════
-           NAV LATERAL
-        ═══════════════════════════════════════════════════ */
-        .menu-navegacion {
-            position: fixed; top: 0; left: 0;
-            width: 280px; height: 100%;
-            background: var(--surface);
-            box-shadow: 4px 0 24px rgba(0,0,0,.12);
-            z-index: 1100;
-            transform: translateX(-100%);
-            transition: transform .35s cubic-bezier(.4,0,.2,1);
-            display: flex; flex-direction: column; overflow-y: auto;
-        }
-        .menu-navegacion::before {
-            content: "QR Pass";
-            display: block;
-            background: linear-gradient(135deg, var(--ipn), var(--ipn-dark));
-            color: white; font-size: 1.1rem; font-weight: 700;
-            padding: 1.2rem 1.5rem; letter-spacing: .02em;
-        }
-        .menu-navegacion.nav-open { transform: translateX(0); }
-
-        .menu-lista { list-style: none; padding: .4rem 0; }
-        .menu-lista li { border-bottom: 1px solid var(--border); }
-        .menu-lista li:last-child { border-bottom: none; }
-        .menu-lista a {
-            display: flex; align-items: center; gap: .65rem;
-            padding: .85rem 1.4rem; text-decoration: none;
-            color: var(--text); font-size: .92rem; font-weight: 500;
-            transition: all .2s; position: relative;
-        }
-        .menu-lista a::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-            width: 3px; background: var(--ipn);
-            border-radius: 0 3px 3px 0; opacity: 0; transition: opacity .2s;
-        }
-        .menu-lista a:hover { background: var(--ipn-ghost); color: var(--ipn); }
-        .menu-lista a:hover::before { opacity: 1; }
-        .menu-lista a.active { background: var(--ipn-ghost); color: var(--ipn); font-weight: 600; }
-        .menu-lista a.active::before { opacity: 1; }
-
-        .menu-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,.4); z-index: 1050;
-            opacity: 0; pointer-events: none; transition: opacity .35s;
-        }
-        .menu-overlay.nav-open { opacity: 1; pointer-events: all; }
 
         /* ═══════════════════════════════════════════════════
            MAIN LAYOUT

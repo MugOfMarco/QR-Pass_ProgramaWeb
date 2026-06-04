@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial y Bitácora — QR Pass</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <style>
+        /* ── Layout ─────────────────────────────────────────── */
+        .page-wrap {
+            max-width: 1400px;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* ── Toolbar ─────────────────────────────────────────── */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: .8rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .toolbar h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--color-primary, #5c1f33);
+            margin: 0;
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .date-group {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            flex-wrap: wrap;
+        }
+
+        .date-group label {
+            font-size: .8rem;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .date-group input[type="date"] {
+            padding: .38rem .6rem;
+            border: 2px solid var(--color-border, #ddd);
+            border-radius: 6px;
+            font-size: .85rem;
+            font-family: inherit;
+        }
+
+        /* ── Tabs ────────────────────────────────────────────── */
+        .tabs-bar {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--color-border, #ddd);
+            margin-bottom: 1.2rem;
+        }
+
+        .tab-btn {
+            padding: .65rem 1.4rem;
+            font-size: .9rem;
+            font-weight: 700;
+            font-family: inherit;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            color: #777;
+            transition: color .15s, border-color .15s;
+        }
+
+        .tab-btn:hover { color: var(--color-primary, #5c1f33); }
+
+        .tab-btn.active {
+            color: var(--color-primary, #5c1f33);
+            border-bottom-color: var(--color-primary, #5c1f33);
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── Filter row ──────────────────────────────────────── */
+        .filter-row {
+            display: flex;
+            gap: .6rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            margin-bottom: .9rem;
+            background: #f8f9fa;
+            padding: .75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--color-border, #ddd);
+        }
+
+        .filter-row .field {
+            display: flex;
+            flex-direction: column;
+            gap: .2rem;
+            min-width: 140px;
+        }
+
+        .filter-row label {
+            font-size: .74rem;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .filter-row select,
+        .filter-row input[type="text"] {
+            padding: .38rem .6rem;
+            border: 2px solid var(--color-border, #ddd);
+            border-radius: 6px;
+            font-size: .85rem;
+            font-family: inherit;
+            background: #fff;
+        }
+
+        .filter-row select:focus,
+        .filter-row input:focus {
+            outline: none;
+            border-color: var(--color-primary, #5c1f33);
+        }
+
+        .btn-buscar {
+            padding: .42rem 1.1rem;
+            background: var(--color-primary, #5c1f33);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-family: inherit;
+            font-size: .85rem;
+            cursor: pointer;
+            align-self: flex-end;
+            white-space: nowrap;
+        }
+
+        .btn-buscar:hover { opacity: .88; }
+
+        .btn-limpiar {
+            padding: .42rem .9rem;
+            background: none;
+            color: #777;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-weight: 600;
+            font-family: inherit;
+            font-size: .82rem;
+            cursor: pointer;
+            align-self: flex-end;
+        }
+
+        .btn-limpiar:hover { border-color: #999; color: #333; }
+
+        /* ── Result info bar ────────────────────────────────── */
+        .result-info {
+            font-size: .82rem;
+            color: #555;
+            margin-bottom: .6rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .result-info strong { color: var(--color-primary, #5c1f33); }
+
+        /* ── Table ───────────────────────────────────────────── */
+        .tabla-wrap { overflow-x: auto; }
+
+        .tabla-bitacora {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .82rem;
+        }
+
+        .tabla-bitacora thead th {
+            background: var(--header-grad, linear-gradient(135deg,#7c2020,#5c1f33));
+            color: #fff;
+            padding: .55rem .75rem;
+            text-align: left;
+            font-size: .76rem;
+            letter-spacing: .03em;
+            white-space: nowrap;
+        }
+
+        .tabla-bitacora tbody td {
+            padding: .5rem .75rem;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        .tabla-bitacora tbody tr:hover td { background: #fdf6f8; }
+
+        .cell-fecha { white-space: nowrap; color: #555; font-size: .78rem; }
+        .cell-boleta { font-family: monospace; font-size: .8rem; }
+
+        .link-alumno {
+            color: var(--color-primary, #5c1f33);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .link-alumno:hover { text-decoration: underline; }
+
+        /* Badges de tipo de registro */
+        .badge-tipo {
+            display: inline-block;
+            padding: .15rem .55rem;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge-entrada  { background: #e8f5e9; color: #1b5e20; }
+        .badge-salida   { background: #e3f2fd; color: #0d47a1; }
+        .badge-retardo  { background: #fff3e0; color: #e65100; }
+        .badge-sin-cred { background: #fce4ec; color: #880e4f; }
+        .badge-falta    { background: #f5f5f5; color: #424242; }
+
+        /* Badges de acción admin */
+        .badge-accion {
+            display: inline-block;
+            padding: .15rem .55rem;
+            border-radius: 6px;
+            font-size: .72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge-bloquear    { background: #ffebee; color: #c62828; }
+        .badge-desbloquear { background: #e8f5e9; color: #1b5e20; }
+        .badge-justificar  { background: #e3f2fd; color: #0d47a1; }
+        .badge-modificar   { background: #fff3e0; color: #e65100; }
+        .badge-crear       { background: #f3e5f5; color: #6a1b9a; }
+        .badge-carga       { background: #e0f2f1; color: #00695c; }
+        .badge-default     { background: #f5f5f5; color: #555;    }
+
+        .cell-detalle {
+            font-size: .76rem;
+            color: #666;
+            max-width: 280px;
+            word-break: break-word;
+        }
+
+        .cell-just-ok { color: #1b5e20; font-size: .75rem; }
+        .cell-vigilante { font-size: .8rem; color: #333; }
+
+        /* ── Paginación ──────────────────────────────────────── */
+        .paginacion {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin-top: .9rem;
+            flex-wrap: wrap;
+        }
+
+        .paginacion button {
+            padding: .3rem .75rem;
+            border: 2px solid var(--color-border, #ddd);
+            border-radius: 6px;
+            background: #fff;
+            font-family: inherit;
+            font-size: .82rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .paginacion button:hover:not(:disabled) { border-color: var(--color-primary, #5c1f33); color: var(--color-primary, #5c1f33); }
+        .paginacion button:disabled { opacity: .4; cursor: default; }
+        .paginacion button.activa { background: var(--color-primary, #5c1f33); color: white; border-color: var(--color-primary, #5c1f33); }
+
+        .paginacion .pag-info { font-size: .8rem; color: #666; }
+
+        /* ── Vacío / cargando ────────────────────────────────── */
+        .empty-row td {
+            text-align: center;
+            padding: 2.5rem;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* ── Toast ───────────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem; right: 1.5rem;
+            padding: .7rem 1.2rem;
+            border-radius: 8px;
+            font-size: .85rem; font-weight: 700;
+            color: white; z-index: 4000;
+            opacity: 0; transform: translateY(8px);
+            transition: opacity .3s, transform .3s;
+            pointer-events: none;
+        }
+        .toast.visible { opacity: 1; transform: none; }
+        .toast.ok  { background: #2e7d32; }
+        .toast.err { background: #b71c1c; }
+
+        @media (max-width: 768px) {
+            .toolbar { flex-direction: column; align-items: flex-start; }
+            .filter-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-container">
+        <div class="Boton-nav">
+            <button type="button" id="menu-toggle-btn" aria-label="Abrir menú">
+                <img src="../imgs/menu.png" alt="">
+            </button>
+        </div>
+        <h1 class="title">Historial y Bitácora</h1>
+        <div class="logo">
+            <img src="../imgs/WhatsApp_Image_2025-11-26_at_3.28.04_PM-removebg-preview.png" alt="Logo">
+        </div>
+    </div>
+</header>
+
+<nav class="menu-navegacion" aria-label="Menú principal">
+    <ul id="lista-opciones" class="menu-lista"></ul>
+</nav>
+<div id="menu-overlay" class="menu-overlay"></div>
+
+<div class="page-wrap">
+
+    <!-- Barra de título + rango de fechas (compartido para ambas tabs) -->
+    <div class="toolbar">
+        <h2>Historial y Bitácora</h2>
+        <div class="date-group">
+            <label for="fecha-inicio">Desde</label>
+            <input type="date" id="fecha-inicio">
+        </div>
+        <div class="date-group">
+            <label for="fecha-fin">Hasta</label>
+            <input type="date" id="fecha-fin">
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-bar">
+        <button class="tab-btn active" data-tab="accesos">📋 Registros de acceso</button>
+        <button class="tab-btn"        data-tab="acciones">🔐 Acciones del sistema</button>
+    </div>
+
+    <!-- ═══ TAB 1: REGISTROS DE ACCESO ══════════════════════════ -->
+    <div class="tab-panel active" id="panel-accesos">
+
+        <div class="filter-row">
+            <div class="field">
+                <label for="acc-vigilante">Vigilante / usuario</label>
+                <select id="acc-vigilante">
+                    <option value="">— Todos —</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="acc-tipo">Tipo de registro</label>
+                <select id="acc-tipo">
+                    <option value="">— Todos —</option>
+                </select>
+            </div>
+            <div class="field" style="min-width:180px">
+                <label for="acc-q">Buscar alumno</label>
+                <input type="text" id="acc-q" placeholder="Nombre o boleta…">
+            </div>
+            <button class="btn-buscar" id="btn-buscar-accesos">Buscar</button>
+            <button class="btn-limpiar" id="btn-limpiar-accesos">Limpiar</button>
+        </div>
+
+        <div class="result-info" id="info-accesos">
+            Selecciona un rango y haz clic en Buscar.
+        </div>
+
+        <div class="tabla-wrap">
+            <table class="tabla-bitacora">
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Alumno</th>
+                        <th>Tipo</th>
+                        <th>Puerta</th>
+                        <th>Vigilante</th>
+                        <th>Justif.</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-accesos">
+                    <tr class="empty-row"><td colspan="6">Ingresa un rango de fechas y haz clic en Buscar.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="paginacion" id="pag-accesos"></div>
+    </div>
+
+    <!-- ═══ TAB 2: ACCIONES DEL SISTEMA ═════════════════════════ -->
+    <div class="tab-panel" id="panel-acciones">
+
+        <div class="filter-row">
+            <div class="field">
+                <label for="act-usuario">Usuario (admin)</label>
+                <select id="act-usuario">
+                    <option value="">— Todos —</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="act-accion">Tipo de acción</label>
+                <select id="act-accion">
+                    <option value="">— Todas —</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="act-boleta">Boleta afectada</label>
+                <input type="text" id="act-boleta" placeholder="10 dígitos…" maxlength="10" style="width:120px">
+            </div>
+            <button class="btn-buscar" id="btn-buscar-acciones">Buscar</button>
+            <button class="btn-limpiar" id="btn-limpiar-acciones">Limpiar</button>
+        </div>
+
+        <div class="result-info" id="info-acciones">
+            Selecciona un rango y haz clic en Buscar.
+        </div>
+
+        <div class="tabla-wrap">
+            <table class="tabla-bitacora">
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Alumno afectado</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-acciones">
+                    <tr class="empty-row"><td colspan="5">Ingresa un rango de fechas y haz clic en Buscar.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="paginacion" id="pag-acciones"></div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./JS/navigation.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// BitacoraAdmin.js — inline
+// ══════════════════════════════════════════════════════════════
+
+const API = '/api/bitacora';
+
+// Estado de paginación por tab
+const estado = {
+    accesos:  { page: 1, total: 0, limit: 50 },
+    acciones: { page: 1, total: 0, limit: 50 },
+};
+
+// Mapa acción → { label, clase CSS badge }
+const ACCIONES_META = {
+    bloquear_credencial:    { label: 'Bloqueó credencial',      cls: 'badge-bloquear'    },
+    desbloquear_credencial: { label: 'Desbloqueó credencial',   cls: 'badge-desbloquear' },
+    justificar_incidencia:  { label: 'Justificó incidencia',    cls: 'badge-justificar'  },
+    modificar_alumno:       { label: 'Modificó datos alumno',   cls: 'badge-modificar'   },
+    crear_alumno:           { label: 'Creó alumno',             cls: 'badge-crear'       },
+    carga_masiva_alumnos:   { label: 'Carga masiva (alumnos)',  cls: 'badge-carga'       },
+    carga_masiva_horarios:  { label: 'Carga masiva (horarios)', cls: 'badge-carga'       },
+};
+
+// ── Helpers ───────────────────────────────────────────────────
+const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function toast(msg, tipo = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${tipo} visible`;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('visible'), 3500);
+}
+
+function fmtFechaHora(iso) {
+    if (!iso) return '—';
+    const d = new Date(/Z|[+-]\d{2}:\d{2}$/.test(iso) ? iso : iso + 'Z');
+    const fecha = d.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City', day:'2-digit', month:'2-digit', year:'numeric' });
+    const hora  = d.toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City', hour:'2-digit', minute:'2-digit' });
+    return `${fecha}<br><span style="color:#888;font-size:.75rem">${hora}</span>`;
+}
+
+function badgeTipo(tipo) {
+    if (!tipo) return '<span style="color:#bbb">—</span>';
+    const t = tipo.toLowerCase();
+    let cls = 'badge-default';
+    if (t.includes('entrada') && !t.includes('sin'))  cls = 'badge-entrada';
+    else if (t.includes('salida'))                     cls = 'badge-salida';
+    else if (t.includes('retardo'))                    cls = 'badge-retardo';
+    else if (t.includes('credencial'))                 cls = 'badge-sin-cred';
+    else if (t.includes('falta'))                      cls = 'badge-falta';
+    return `<span class="badge-tipo ${cls}">${esc(tipo)}</span>`;
+}
+
+function badgeAccion(accion) {
+    const meta = ACCIONES_META[accion] || { label: accion, cls: 'badge-default' };
+    return `<span class="badge-accion ${meta.cls}">${esc(meta.label)}</span>`;
+}
+
+function linkAlumno(boleta, nombre) {
+    if (!boleta) return '<span style="color:#bbb">—</span>';
+    const n = nombre || String(boleta);
+    return `<a class="link-alumno" href="/BuscarAlumno.html?boleta=${boleta}" title="${esc(n)}">
+                <span class="cell-boleta">${boleta}</span><br>
+                <span style="font-size:.76rem;color:#555">${esc(n)}</span>
+            </a>`;
+}
+
+// ── Fechas por defecto: últimos 7 días ────────────────────────
+function inicializarFechas() {
+    const hoyStr  = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+    const d       = new Date(hoyStr);
+    d.setDate(d.getDate() - 6);
+    const inicioStr = d.toISOString().slice(0, 10);
+    document.getElementById('fecha-inicio').value = inicioStr;
+    document.getElementById('fecha-fin').value    = hoyStr;
+}
+
+function getFechas() {
+    return {
+        fi: document.getElementById('fecha-inicio').value || '',
+        ff: document.getElementById('fecha-fin').value    || '',
+    };
+}
+
+// ── Cargar catálogos para los <select> ────────────────────────
+async function cargarCatalogos() {
+    try {
+        const r    = await fetch(`${API}/catalogos`, { credentials: 'include' });
+        const data = await r.json();
+        if (!data.success) return;
+
+        // Vigilante selector (tab 1)
+        const selVig = document.getElementById('acc-vigilante');
+        data.usuarios.forEach(u => {
+            const o = document.createElement('option');
+            o.value       = u.id_usuario;
+            o.textContent = `${u.nombre_completo} (${u.tipo})`;
+            selVig.appendChild(o);
+        });
+
+        // Tipo de registro selector (tab 1)
+        const selTipo = document.getElementById('acc-tipo');
+        data.tipos.forEach(t => {
+            const o = document.createElement('option');
+            o.value       = t.id_tipo;
+            o.textContent = t.descripcion;
+            selTipo.appendChild(o);
+        });
+
+        // Usuario admin selector (tab 2)
+        const selUsr = document.getElementById('act-usuario');
+        data.usuarios.forEach(u => {
+            const o = document.createElement('option');
+            o.value       = u.id_usuario;
+            o.textContent = `${u.nombre_completo} (${u.tipo})`;
+            selUsr.appendChild(o);
+        });
+
+        // Tipo de acción selector (tab 2)
+        const selAcc = document.getElementById('act-accion');
+        data.acciones.forEach(a => {
+            const o = document.createElement('option');
+            o.value       = a.value;
+            o.textContent = a.label;
+            selAcc.appendChild(o);
+        });
+
+    } catch (e) {
+        toast('No se pudieron cargar los filtros', 'err');
+    }
+}
+
+// ── Renderizar paginación ─────────────────────────────────────
+function renderPaginacion(containerId, tab, onPage) {
+    const el    = document.getElementById(containerId);
+    const { page, total, limit } = estado[tab];
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    el.innerHTML = '';
+    if (total === 0) return;
+
+    const btnPrev = document.createElement('button');
+    btnPrev.textContent = '← Anterior';
+    btnPrev.disabled    = page <= 1;
+    btnPrev.addEventListener('click', () => onPage(page - 1));
+    el.appendChild(btnPrev);
+
+    const info = document.createElement('span');
+    info.className   = 'pag-info';
+    info.textContent = `Página ${page} de ${totalPages} — ${total} registros`;
+    el.appendChild(info);
+
+    const btnNext = document.createElement('button');
+    btnNext.textContent = 'Siguiente →';
+    btnNext.disabled    = page >= totalPages;
+    btnNext.addEventListener('click', () => onPage(page + 1));
+    el.appendChild(btnNext);
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 1 — REGISTROS DE ACCESO
+// ══════════════════════════════════════════════════════════════
+async function buscarAccesos(page = 1) {
+    const { fi, ff } = getFechas();
+    if (!fi || !ff) { toast('Selecciona un rango de fechas', 'err'); return; }
+
+    const vigilante = document.getElementById('acc-vigilante').value;
+    const tipo      = document.getElementById('acc-tipo').value;
+    const q         = document.getElementById('acc-q').value.trim();
+
+    const params = new URLSearchParams({ fecha_inicio: fi, fecha_fin: ff, page, limit: estado.accesos.limit });
+    if (vigilante) params.set('id_vigilante', vigilante);
+    if (tipo)      params.set('id_tipo',      tipo);
+    if (q)         params.set('q',            q);
+
+    const tbody = document.getElementById('tbody-accesos');
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Cargando…</td></tr>`;
+    document.getElementById('info-accesos').innerHTML = 'Cargando…';
+
+    try {
+        const r    = await fetch(`${API}/accesos?${params}`, { credentials: 'include' });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.message);
+
+        estado.accesos.page  = data.page;
+        estado.accesos.total = data.total;
+
+        document.getElementById('info-accesos').innerHTML =
+            `Se encontraron <strong>${data.total}</strong> registros. ` +
+            `Mostrando ${data.data.length} (página ${data.page}).`;
+
+        if (!data.data.length) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Sin resultados para el filtro aplicado.</td></tr>`;
+            renderPaginacion('pag-accesos', 'accesos', buscarAccesos);
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(r => `
+            <tr>
+                <td class="cell-fecha">${fmtFechaHora(r.fecha_hora)}</td>
+                <td>${linkAlumno(r.boleta, r.nombre_alumno)}</td>
+                <td>${badgeTipo(r.tipo)}</td>
+                <td style="font-size:.8rem">${esc(r.puerta)}</td>
+                <td class="cell-vigilante">${esc(r.vigilante)}</td>
+                <td>${r.justificacion
+                    ? `<span class="cell-just-ok" title="${esc(r.justificacion)}">✔ Justificado</span>`
+                    : '<span style="color:#bbb;font-size:.76rem">—</span>'}</td>
+            </tr>`).join('');
+
+        renderPaginacion('pag-accesos', 'accesos', buscarAccesos);
+
+    } catch (e) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Error: ${esc(e.message)}</td></tr>`;
+        toast('Error al cargar registros', 'err');
+    }
+}
+
+document.getElementById('btn-buscar-accesos').addEventListener('click', () => buscarAccesos(1));
+document.getElementById('btn-limpiar-accesos').addEventListener('click', () => {
+    document.getElementById('acc-vigilante').value = '';
+    document.getElementById('acc-tipo').value      = '';
+    document.getElementById('acc-q').value         = '';
+    document.getElementById('tbody-accesos').innerHTML = `<tr class="empty-row"><td colspan="6">Ingresa un rango de fechas y haz clic en Buscar.</td></tr>`;
+    document.getElementById('info-accesos').textContent = 'Selecciona un rango y haz clic en Buscar.';
+    document.getElementById('pag-accesos').innerHTML = '';
+    estado.accesos.page = 1; estado.accesos.total = 0;
+});
+
+// ══════════════════════════════════════════════════════════════
+// TAB 2 — ACCIONES DEL SISTEMA
+// ══════════════════════════════════════════════════════════════
+async function buscarAcciones(page = 1) {
+    const { fi, ff } = getFechas();
+    if (!fi || !ff) { toast('Selecciona un rango de fechas', 'err'); return; }
+
+    const usuario = document.getElementById('act-usuario').value;
+    const accion  = document.getElementById('act-accion').value;
+    const boleta  = document.getElementById('act-boleta').value.trim();
+
+    const params = new URLSearchParams({ fecha_inicio: fi, fecha_fin: ff, page, limit: estado.acciones.limit });
+    if (usuario) params.set('id_usuario', usuario);
+    if (accion)  params.set('accion',     accion);
+    if (boleta)  params.set('boleta',     boleta);
+
+    const tbody = document.getElementById('tbody-acciones');
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Cargando…</td></tr>`;
+    document.getElementById('info-acciones').innerHTML = 'Cargando…';
+
+    try {
+        const r    = await fetch(`${API}/acciones?${params}`, { credentials: 'include' });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.message);
+
+        estado.acciones.page  = data.page;
+        estado.acciones.total = data.total;
+
+        document.getElementById('info-acciones').innerHTML =
+            `Se encontraron <strong>${data.total}</strong> acciones. ` +
+            `Mostrando ${data.data.length} (página ${data.page}).`;
+
+        if (!data.data.length) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Sin acciones registradas para este filtro.
+                ${page === 1 && !usuario && !accion ? '<br><small style="color:#aaa">Las acciones se registran a partir de ahora — acciones anteriores no están en la bitácora.</small>' : ''}</td></tr>`;
+            renderPaginacion('pag-acciones', 'acciones', buscarAcciones);
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(r => `
+            <tr>
+                <td class="cell-fecha">${fmtFechaHora(r.fecha_hora)}</td>
+                <td style="font-size:.82rem;font-weight:600">${esc(r.usuario)}</td>
+                <td>${badgeAccion(r.accion)}</td>
+                <td>${linkAlumno(r.boleta, r.nombre_alumno)}</td>
+                <td class="cell-detalle">${esc(r.detalle) || '<span style="color:#bbb">—</span>'}</td>
+            </tr>`).join('');
+
+        renderPaginacion('pag-acciones', 'acciones', buscarAcciones);
+
+    } catch (e) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Error: ${esc(e.message)}</td></tr>`;
+        toast('Error al cargar bitácora', 'err');
+    }
+}
+
+document.getElementById('btn-buscar-acciones').addEventListener('click', () => buscarAcciones(1));
+document.getElementById('btn-limpiar-acciones').addEventListener('click', () => {
+    document.getElementById('act-usuario').value = '';
+    document.getElementById('act-accion').value  = '';
+    document.getElementById('act-boleta').value  = '';
+    document.getElementById('tbody-acciones').innerHTML = `<tr class="empty-row"><td colspan="5">Ingresa un rango de fechas y haz clic en Buscar.</td></tr>`;
+    document.getElementById('info-acciones').textContent = 'Selecciona un rango y haz clic en Buscar.';
+    document.getElementById('pag-acciones').innerHTML = '';
+    estado.acciones.page = 1; estado.acciones.total = 0;
+});
+
+// ── Tabs ──────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+    });
+});
+
+// También busca al cambiar las fechas si ya hay resultados cargados
+['fecha-inicio', 'fecha-fin'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+        if (estado.accesos.total > 0)  buscarAccesos(1);
+        if (estado.acciones.total > 0) buscarAcciones(1);
+    });
+});
+
+// ── Arranque ──────────────────────────────────────────────────
+inicializarFechas();
+cargarCatalogos();
+</script>
+</body>
+</html>

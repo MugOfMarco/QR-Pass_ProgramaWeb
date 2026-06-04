@@ -502,6 +502,9 @@
                         <div class="filter-section">
                             <h4>Turno</h4>
                             <label class="filter-label">
+                                <input type="radio" name="turno" value="" checked> Todos
+                            </label>
+                            <label class="filter-label">
                                 <input type="radio" name="turno" value="Matutino"> Matutino
                             </label>
                             <label class="filter-label">
@@ -511,19 +514,18 @@
 
                         <div class="filter-section">
                             <h4>Situación académica</h4>
-                            <label class="filter-label">
-                                <input type="radio" name="estado" value="Regular"> Regular
-                            </label>
-                            <label class="filter-label">
-                                <input type="radio" name="estado" value="Créditos"> Créditos
-                            </label>
-                            <label class="filter-label">
-                                <input type="radio" name="estado" value="Dictamen"> Dictamen
-                            </label>
+                            <div id="filtro-estados-container">
+                                <label class="filter-label">
+                                    <input type="radio" name="estado" value="" checked> Todos
+                                </label>
+                            </div>
                         </div>
 
                         <div class="filter-section">
                             <h4>Puertas abiertas</h4>
+                            <label class="filter-label">
+                                <input type="radio" name="puertas" value="" checked> Todos
+                            </label>
                             <label class="filter-label">
                                 <input type="radio" name="puertas" value="true"> Sí
                             </label>
@@ -535,6 +537,9 @@
                         <div class="filter-section">
                             <h4>Presencia hoy</h4>
                             <label class="filter-label">
+                                <input type="radio" name="dentro" value="" checked> Todos
+                            </label>
+                            <label class="filter-label">
                                 <input type="radio" name="dentro" value="true"> Dentro del plantel
                             </label>
                             <label class="filter-label">
@@ -544,6 +549,9 @@
 
                         <div class="filter-section">
                             <h4>Credencial</h4>
+                            <label class="filter-label">
+                                <input type="radio" name="bloqueado" value="" checked> Todos
+                            </label>
                             <label class="filter-label">
                                 <input type="radio" name="bloqueado" value="true"> Bloqueados
                             </label>

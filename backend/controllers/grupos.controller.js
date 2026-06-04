@@ -9,6 +9,7 @@ import Alumno from '../models/Alumno.js';
 import sanitizeHtml from 'sanitize-html';
 import { supabaseAdmin } from '../database/supabase.js';
 import { cloudinary } from '../database/cloudinary.js';
+import { logAuditoria } from '../utils/auditoria.js';
 
 const s = (v) => typeof v === 'string'
     ? sanitizeHtml(v, { allowedTags: [], allowedAttributes: {} }).trim()
@@ -240,9 +241,11 @@ export const cargaMasiva = async (req, res) => {
         }
 
         // ── 1. Precargar catálogos una sola vez ───────────────
-        const [gruposRes, estadosRes] = await Promise.all([
+        const [gruposRes, estadosRes, materiasRes, semestreRes] = await Promise.all([
             supabaseAdmin.from('grupos').select('id_grupo, nombre_grupo'),
             supabaseAdmin.from('estado_academico').select('id_estado, estado'),
+            supabaseAdmin.from('materias').select('id_materia, nombre_materia'),
+            supabaseAdmin.from('semestres').select('id_semestre').eq('activo', true).maybeSingle(),
         ]);
 
         const grupoMap = {};
@@ -254,6 +257,29 @@ export const cargaMasiva = async (req, res) => {
         for (const e of (estadosRes.data || [])) {
             estadoMap[e.estado.toLowerCase().trim()] = e.id_estado;
         }
+
+        // Sinónimos: palabras alternativas que apuntan al mismo estado canónico
+        const SINONIMOS_ESTADO = {
+            'regular':          'activo',
+            'normal':           'activo',
+            'en regla':         'activo',
+            'baja provisional': 'baja temporal',
+            'suspendido':       'baja temporal',
+            'dado de baja':     'baja definitiva',
+            'graduado':         'egresado',
+            'titulado':         'egresado',
+        };
+        for (const [sinonimo, canonico] of Object.entries(SINONIMOS_ESTADO)) {
+            if (!estadoMap[sinonimo] && estadoMap[canonico]) {
+                estadoMap[sinonimo] = estadoMap[canonico];
+            }
+        }
+
+        const materiasMap = {};
+        for (const m of (materiasRes.data || [])) {
+            materiasMap[m.nombre_materia.toLowerCase().trim()] = m.id_materia;
+        }
+        const semestreActivo = semestreRes.data || null;
 
         // ── 2. Obtener boletas ya existentes ──────────────────
         const boletas = alumnos.map(a => parseInt(a.boleta)).filter(b => !isNaN(b));
@@ -280,9 +306,14 @@ export const cargaMasiva = async (req, res) => {
                 const fNum = i + idx + 1;
                 const boleta = parseInt(fila.boleta);
 
-                // Validaciones básicas
-                if (isNaN(boleta) || String(boleta).length < 5) {
-                    resultados.errores.push({ fila: fNum, boleta: fila.boleta, error: 'Boleta inválida' });
+                // Validaciones básicas — formato YYYY09XXXX (CECyT 9 obligatorio)
+                const boletaStr = String(fila.boleta || '').trim();
+                if (!/^\d{4}09\d{4}$/.test(boletaStr)) {
+                    resultados.errores.push({
+                        fila: fNum,
+                        boleta: fila.boleta,
+                        error: 'Boleta inválida: debe ser YYYY09XXXX (10 dígitos; posiciones 5-6 = "09", código del CECyT 9)',
+                    });
                     return;
                 }
                 if (!fila.nombre_completo?.trim()) {
@@ -367,8 +398,34 @@ export const cargaMasiva = async (req, res) => {
                     resultados.insertados++;
                     boletasExistentes.add(boleta); // evitar duplicados dentro del mismo archivo
                 }
+
+                // ── Procesar columna ESPA ─────────────────────
+                // Formato: nombres de materias separados por coma
+                // Ej: "P604 – Inglés VI, P603 – Química IV"
+                const espaRaw = String(fila.espa || '').trim();
+                if (espaRaw && semestreActivo) {
+                    const espaNombres = espaRaw.split(',').map(n => n.trim()).filter(Boolean);
+                    for (const nombre of espaNombres) {
+                        const idMat = materiasMap[nombre.toLowerCase().trim()];
+                        if (idMat) {
+                            await supabaseAdmin
+                                .from('materias_acreditadas')
+                                .upsert(
+                                    { boleta, id_materia: idMat, id_semestre: semestreActivo.id_semestre },
+                                    { onConflict: 'boleta,id_materia', ignoreDuplicates: true }
+                                );
+                        }
+                    }
+                }
             }));
         }
+
+        logAuditoria({
+            id_usuario: req.session.user?.id,
+            accion:     'carga_masiva_alumnos',
+            boleta:     null,
+            detalle:    `insertados=${resultados.insertados} actualizados=${resultados.actualizados} errores=${resultados.errores.length} total=${alumnos.length}`,
+        });
 
         return res.json({
             success: true,
@@ -379,5 +436,147 @@ export const cargaMasiva = async (req, res) => {
     } catch (err) {
         console.error('Error en carga masiva:', err);
         return res.status(500).json({ success: false, message: 'Error interno en la carga masiva.' });
+    }
+};
+
+// ── POST /api/grupos/carga-masiva-horarios ────────────────────
+// Body: { horarios: [ { grupo, materia, dia, hora_inicio, hora_fin } ] }
+// Hoja "Grupos y Horarios" del Excel. Crea la materia si no existe.
+// Usa el semestre activo. Omite duplicados (mismo grupo+materia+semestre+día).
+export const cargaMasivaHorarios = async (req, res) => {
+    try {
+        const { horarios } = req.body;
+        if (!Array.isArray(horarios) || !horarios.length) {
+            return res.status(400).json({ success: false, message: 'No se recibieron datos de horarios.' });
+        }
+        if (horarios.length > 5000) {
+            return res.status(400).json({ success: false, message: 'Máximo 5000 filas por carga.' });
+        }
+
+        // Precargar catálogos
+        const [gruposRes, materiasRes, semestreRes] = await Promise.all([
+            supabaseAdmin.from('grupos').select('id_grupo, nombre_grupo'),
+            supabaseAdmin.from('materias').select('id_materia, nombre_materia'),
+            supabaseAdmin.from('semestres').select('id_semestre').eq('activo', true).maybeSingle(),
+        ]);
+
+        if (!semestreRes.data) {
+            return res.status(400).json({ success: false, message: 'No hay semestre activo configurado.' });
+        }
+        const idSemestre = semestreRes.data.id_semestre;
+
+        const grupoMap = {};
+        for (const g of (gruposRes.data || [])) {
+            grupoMap[g.nombre_grupo.toLowerCase().trim()] = g.id_grupo;
+        }
+
+        const materiasMapLocal = {};
+        for (const m of (materiasRes.data || [])) {
+            materiasMapLocal[m.nombre_materia.toLowerCase().trim()] = m.id_materia;
+        }
+
+        // Precargar horarios existentes del semestre activo para detectar duplicados
+        const { data: horariosExistentes } = await supabaseAdmin
+            .from('horarios_grupo')
+            .select('id_grupo, id_materia, dia_semana')
+            .eq('id_semestre', idSemestre);
+
+        const existentesSet = new Set(
+            (horariosExistentes || []).map(h => `${h.id_grupo}-${h.id_materia}-${h.dia_semana}`)
+        );
+
+        const DIA_NOMBRE = {
+            'lunes': 1, 'martes': 2, 'miercoles': 3, 'miércoles': 3,
+            'jueves': 4, 'viernes': 5, 'sabado': 6, 'sábado': 6,
+        };
+
+        const resultado = { insertados: 0, omitidos: 0, errores: [] };
+
+        for (let idx = 0; idx < horarios.length; idx++) {
+            const fila = horarios[idx];
+            const fNum = idx + 1;
+
+            // Validar grupo
+            const idGrupo = grupoMap[(fila.grupo || '').toLowerCase().trim()];
+            if (!idGrupo) {
+                resultado.errores.push({ fila: fNum, error: `Grupo "${fila.grupo}" no encontrado` });
+                continue;
+            }
+
+            // Validar/crear materia
+            const nombreMat = s(fila.materia || '').trim();
+            if (!nombreMat) {
+                resultado.errores.push({ fila: fNum, error: 'Columna "materia" vacía' });
+                continue;
+            }
+            let idMateria = materiasMapLocal[nombreMat.toLowerCase()];
+            if (!idMateria) {
+                const { data: newMat, error: matErr } = await supabaseAdmin
+                    .from('materias')
+                    .insert({ nombre_materia: nombreMat })
+                    .select('id_materia')
+                    .single();
+                if (matErr) {
+                    resultado.errores.push({ fila: fNum, error: `No se pudo crear materia: ${matErr.message}` });
+                    continue;
+                }
+                idMateria = newMat.id_materia;
+                materiasMapLocal[nombreMat.toLowerCase()] = idMateria;
+            }
+
+            // Validar día
+            const diaNorm = (fila.dia || '')
+                .toLowerCase().trim()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '');
+            const diaSemana = DIA_NOMBRE[diaNorm] || DIA_NOMBRE[(fila.dia || '').toLowerCase().trim()];
+            if (!diaSemana) {
+                resultado.errores.push({ fila: fNum, error: `Día "${fila.dia}" inválido (usa Lunes-Viernes)` });
+                continue;
+            }
+
+            // Validar horas
+            const horaInicio = String(fila.hora_inicio || '').trim();
+            const horaFin    = String(fila.hora_fin    || '').trim();
+            if (!horaInicio || !horaFin) {
+                resultado.errores.push({ fila: fNum, error: 'hora_inicio y hora_fin son obligatorias' });
+                continue;
+            }
+            if (horaFin <= horaInicio) {
+                resultado.errores.push({ fila: fNum, error: 'hora_fin debe ser mayor que hora_inicio' });
+                continue;
+            }
+
+            // Omitir duplicados
+            const key = `${idGrupo}-${idMateria}-${diaSemana}`;
+            if (existentesSet.has(key)) { resultado.omitidos++; continue; }
+
+            const { error: insErr } = await supabaseAdmin
+                .from('horarios_grupo')
+                .insert({ id_grupo: idGrupo, id_materia: idMateria, id_semestre: idSemestre, dia_semana: diaSemana, hora_inicio: horaInicio, hora_fin: horaFin });
+
+            if (insErr) {
+                resultado.errores.push({ fila: fNum, error: insErr.message });
+                continue;
+            }
+            existentesSet.add(key);
+            resultado.insertados++;
+        }
+
+        logAuditoria({
+            id_usuario: req.session.user?.id,
+            accion:     'carga_masiva_horarios',
+            boleta:     null,
+            detalle:    `insertados=${resultado.insertados} omitidos=${resultado.omitidos} errores=${resultado.errores.length} total=${horarios.length}`,
+        });
+
+        return res.json({
+            success: true,
+            message: `${resultado.insertados} horarios insertados, ${resultado.omitidos} omitidos (ya existían), ${resultado.errores.length} errores.`,
+            ...resultado,
+        });
+
+    } catch (err) {
+        console.error('Error en carga masiva de horarios:', err);
+        return res.status(500).json({ success: false, message: 'Error interno en la carga de horarios.' });
     }
 };

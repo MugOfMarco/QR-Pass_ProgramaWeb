@@ -19,6 +19,7 @@ import backupRoutes    from './routes/backup.routes.js';
 import soporteRoutes   from './routes/soporte.routes.js';
 import configRoutes    from './routes/config.routes.js';
 import faqRoutes       from './routes/faq.routes.js';
+import bitacoraRoutes  from './routes/bitacora.routes.js';
 
 import { supabaseAdmin } from './database/supabase.js';
 
@@ -136,6 +137,7 @@ app.use('/api/backup',    backupRoutes);
 app.use('/api/soporte',   soporteRoutes);
 app.use('/api/config',    configRoutes);
 app.use('/api/faq',       faqRoutes);
+app.use('/api/bitacora',  bitacoraRoutes);
 
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), {
     extensions: ['html', 'css', 'js'],
@@ -159,6 +161,7 @@ app.use((req, res, next) => {
         '/dashboard.html',
         '/gestiongrupos.html',
         '/logicanegocio.html',
+        '/bitacoraadmin.html',
     ];
 
     const adminOSoporte = ['/soportepanel.html'];
@@ -200,6 +203,7 @@ app.get('/', (req, res) => {
     '/Soporte.html',
     '/SoportePanel.html',
     '/LogicaNegocio.html',
+    '/BitacoraAdmin.html',
     '/menu.html',
 ].forEach(ruta => {
     app.get(ruta, (req, res) =>

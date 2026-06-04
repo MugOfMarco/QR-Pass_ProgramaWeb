@@ -65,6 +65,26 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (_) { /* silencioso: los filtros siguen funcionando sin grupos */ }
     }
 
+    // ── Cargar estados académicos dinámicamente ───────────────
+    async function cargarEstados() {
+        try {
+            const res = await fetch('/api/alumnos/estados/lista', { credentials: 'include' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success) return;
+
+            const container = document.getElementById('filtro-estados-container');
+            if (!container) return;
+
+            (data.estados || []).forEach(e => {
+                const lbl = document.createElement('label');
+                lbl.className = 'filter-label';
+                lbl.innerHTML = `<input type="radio" name="estado" value="${e.estado}"> ${e.estado}`;
+                container.appendChild(lbl);
+            });
+        } catch (_) { /* silencioso */ }
+    }
+
     // ── Construir query params actuales ───────────────────────
     function obtenerParams() {
         const params = new URLSearchParams();
@@ -78,20 +98,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const bloqueado = document.querySelector('input[name="bloqueado"]:checked');
         const grupo    = filtroGrupo?.value || '';
 
-        if (turno)    params.append('turno',    turno.value);
-        if (puertas)  params.append('puertas',  puertas.value);
-        if (estado)   params.append('estado',   estado.value);
-        if (dentro)   params.append('dentro',   dentro.value);
-        if (bloqueado) params.append('bloqueado', bloqueado.value);
+        if (turno?.value)    params.append('turno',    turno.value);
+        if (puertas?.value)  params.append('puertas',  puertas.value);
+        if (estado?.value)   params.append('estado',   estado.value);
+        if (dentro?.value)   params.append('dentro',   dentro.value);
+        if (bloqueado?.value) params.append('bloqueado', bloqueado.value);
         if (grupo)    params.append('grupo',    grupo);
 
         filtrosActivos = {
             q,
-            turno:    turno?.value,
-            puertas:  puertas?.value,
-            estado:   estado?.value,
-            dentro:   dentro?.value,
-            bloqueado: bloqueado?.value,
+            turno:    turno?.value    || '',
+            puertas:  puertas?.value  || '',
+            estado:   estado?.value   || '',
+            dentro:   dentro?.value   || '',
+            bloqueado: bloqueado?.value || '',
             grupo,
         };
 
@@ -614,6 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Carga inicial ─────────────────────────────────────────
     cargarGrupos();
+    cargarEstados();
     cargarAlumnos().then(actualizarHoraRefresh);
 
     // Auto-refresco cada 30 s solo en modo Datos
