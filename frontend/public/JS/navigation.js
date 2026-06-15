@@ -28,25 +28,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (listaOpciones && userTipo) {
 
+        const sep = (label) => ({ type: 'separator', label });
+
         const menuAdmin = [
-            { href: '/Dashboard.html',            label: 'Dashboard' },
-            { href: '/Entrada_Salida.html',        label: 'Registro entrada / salida' },
-            { href: '/BuscarAlumno.html',          label: 'Buscar alumno' },
-            { href: '/BitacoraAdmin.html',         label: 'Historial y Bitácora' },
-            { href: '/ModificarAlumno.html',       label: 'Modificar alumno' },
-            { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
-            { href: '/GestionGrupos.html',         label: 'Gestión de grupos' },
-            { href: '/GestionUsuarios.html',       label: 'Gestión de usuarios' },
-            { href: '/Descargasbd.html',           label: 'Descargar respaldo' },
-            { href: '/LogicaNegocio.html',         label: 'Lógica de Negocio' },
-            { href: '/Soporte.html',               label: 'Soporte QRPASS' },
+            sep('Operación'),
+            { href: '/Dashboard.html',       label: 'Dashboard' },
+            { href: '/Entrada_Salida.html',  label: 'Escanear QR' },
+            sep('Alumnos'),
+            { href: '/BuscarAlumno.html',    label: 'Buscar alumno' },
+            { href: '/ModificarAlumno.html', label: 'Modificar alumno' },
+            { href: '/FiltrarAlumnos.html',  label: 'Incidencias por período' },
+            sep('Sistema'),
+            { href: '/BitacoraAdmin.html',   label: 'Historial y Bitácora' },
+            { href: '/GestionGrupos.html',   label: 'Gestión de grupos' },
+            { href: '/GestionUsuarios.html', label: 'Gestión de usuarios' },
+            { href: '/LogicaNegocio.html',   label: 'Configuración del sistema' },
+            { href: '/Descargasbd.html',     label: 'Respaldo de datos' },
+            sep(''),
+            { href: '/Soporte.html',         label: 'Soporte' },
+        ];
+
+        const menuPrefecto = [
+            sep('Operación'),
+            { href: '/Entrada_Salida.html', label: 'Escanear QR' },
+            sep('Alumnos'),
+            { href: '/BuscarAlumno.html',   label: 'Buscar alumno' },
+            { href: '/FiltrarAlumnos.html', label: 'Incidencias por período' },
+            sep(''),
+            { href: '/Soporte.html',        label: 'Soporte' },
         ];
 
         const menuVigilante = [
-            { href: '/Entrada_Salida.html',        label: 'Entrada / Salida' },
+            sep('Operación'),
+            { href: '/Entrada_Salida.html',        label: 'Escanear QR' },
+            sep('Alumnos'),
             { href: '/BuscarAlumnoVigilante.html', label: 'Buscar alumno' },
-            { href: '/FiltrarAlumnos.html',        label: 'Filtrar alumnos' },
-            { href: '/Soporte.html',               label: 'Soporte QRPASS' },
+            { href: '/FiltrarAlumnos.html',        label: 'Incidencias por período' },
+            sep(''),
+            { href: '/Soporte.html',               label: 'Soporte' },
         ];
 
         const menuSoporte = [
@@ -54,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ];
 
         const items = userTipo === 'Administrador' ? menuAdmin
+                    : userTipo === 'Prefecto'      ? menuPrefecto
                     : userTipo === 'Soporte'       ? menuSoporte
                     : menuVigilante;
 
@@ -62,6 +82,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentPath = window.location.pathname;
 
         items.forEach(item => {
+            // ── Separador / cabecera de categoría ────────────
+            if (item.type === 'separator') {
+                const li = document.createElement('li');
+                if (item.label) {
+                    li.textContent = item.label;
+                    li.style.cssText = [
+                        'padding: .5rem 1rem .15rem',
+                        'font-size: .68rem',
+                        'font-weight: 700',
+                        'color: #a0768a',
+                        'text-transform: uppercase',
+                        'letter-spacing: .09em',
+                        'margin-top: .3rem',
+                        'pointer-events: none',
+                        'user-select: none',
+                    ].join(';');
+                } else {
+                    li.style.cssText = [
+                        'border-top: 1px solid #f0e8ea',
+                        'margin: .4rem 0 0',
+                        'padding: 0',
+                        'pointer-events: none',
+                    ].join(';');
+                }
+                listaOpciones.appendChild(li);
+                return;
+            }
+
+            // ── Ítem normal ───────────────────────────────────
             const li = document.createElement('li');
             const a  = document.createElement('a');
             a.href        = item.href;
@@ -81,9 +130,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         liSep.style.cssText = 'border-top: 2px solid #f0e8ea; margin-top: .5rem;';
 
         const aCerrar = document.createElement('a');
-        aCerrar.href             = '#';
-        aCerrar.textContent      = '🚪 Cerrar sesión';
-        aCerrar.style.cssText    = 'color: #b71c1c; font-weight: 700;';
+        aCerrar.href          = '#';
+        aCerrar.textContent   = '🚪 Cerrar sesión';
+        aCerrar.style.cssText = 'color: #b71c1c; font-weight: 700;';
         aCerrar.addEventListener('click', async (e) => {
             e.preventDefault();
             try {
