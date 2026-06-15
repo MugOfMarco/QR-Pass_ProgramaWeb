@@ -21,7 +21,10 @@ class RegistroSystem {
 
         this._input = input;
 
-        // Auto-enfocar el campo al cargar
+        // Indicador en idle al arrancar
+        const statusInd = document.getElementById('status-indicator');
+        if (statusInd) statusInd.classList.add('idle');
+
         input.focus();
 
         input.addEventListener('keydown', (e) => {
@@ -169,6 +172,18 @@ class RegistroSystem {
         }
     }
 
+    // Determina la categoría especial del alumno para el color/badge.
+    // Orden de prioridad: bloqueado > puerta_abierta > dictamen > créditos > null
+    _categoriaAlumno(alumno) {
+        if (!alumno) return null;
+        if (alumno.puerta_abierta) return 'puerta_abierta';
+        const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const est  = norm(alumno.estado_academico || alumno.estado || '');
+        if (est.includes('dictamen')) return 'dictamen';
+        if (est.includes('credito')) return 'creditos';
+        return null;
+    }
+
     verificarRetardo(horario) {
         if (!horario?.length) return null;
 
@@ -234,21 +249,28 @@ class RegistroSystem {
             }
         }
 
+        const cat = this._categoriaAlumno(alumno);
+        if (cat === 'puerta_abierta') { mensaje += ' — 🔓 PUERTAS ABIERTAS'; }
+        else if (cat === 'dictamen')  { mensaje += ' — 📋 DICTAMEN'; }
+        else if (cat === 'creditos')  { mensaje += ' — 🎓 CRÉDITOS'; }
+
         if (esFinSemana) {
             mensaje += ` (${this.diasSemana[new Date().getDay()].toUpperCase()} — sin clases)`;
             color = 'warning';
         }
 
         this.mostrarEstado(mensaje, color);
-        this.actualizarBadge(tipoDetectado, idTipo);
+        this.actualizarBadge(tipoDetectado, idTipo, alumno);
     }
 
-    actualizarBadge(tipoDetectado, idTipo) {
-        const badge = document.getElementById('tipo-badge');
-        const texto = document.getElementById('tipo-texto');
+    actualizarBadge(tipoDetectado, idTipo, alumno) {
+        const badge    = document.getElementById('tipo-badge');
+        const texto    = document.getElementById('tipo-texto');
+        const catBadge = document.getElementById('categoria-badge');
+        const catTexto = document.getElementById('categoria-texto');
         if (!badge || !texto) return;
 
-        badge.className = 'badge-movimiento';   // reset a la clase base
+        badge.className = 'badge-movimiento';
 
         if (tipoDetectado === 'salida') {
             badge.classList.add('badge-salida');
@@ -268,6 +290,21 @@ class RegistroSystem {
                     texto.textContent = '↓ ENTRADA';
             }
         }
+
+        if (!catBadge || !catTexto) return;
+        const cat = this._categoriaAlumno(alumno);
+        if (cat) {
+            const LABELS = {
+                puerta_abierta: '🔓 PUERTAS ABIERTAS',
+                dictamen:       '📋 DICTAMEN',
+                creditos:       '🎓 CRÉDITOS',
+            };
+            catBadge.className = `badge-categoria badge-cat--${cat}`;
+            catTexto.textContent = LABELS[cat];
+            catBadge.style.display = '';
+        } else {
+            catBadge.style.display = 'none';
+        }
     }
 
     mostrarFoto(alumno) {
@@ -283,12 +320,18 @@ class RegistroSystem {
                 foto.src = 'https://res.cloudinary.com/depoh32sv/image/upload/v1765415709/vector-de-perfil-avatar-predeterminado-foto-usuario-medios-sociales-icono-183042379.jpg_jfpw3y.webp';
             };
         }
-        if (alumno?.bloqueado) {
-            foto.classList.add('bloqueado');
-            if (infoBox) infoBox.style.borderColor = '#dc3545';
-        } else {
-            foto.classList.remove('bloqueado');
-            if (infoBox) infoBox.style.borderColor = '#dee2e6';
+
+        foto.classList.remove('bloqueado');
+        if (infoBox) {
+            infoBox.className = 'placeholder-box info-box';
+            infoBox.style.borderColor = '';
+            if (alumno?.bloqueado) {
+                foto.classList.add('bloqueado');
+                infoBox.classList.add('info-box--bloqueado');
+            } else {
+                const cat = this._categoriaAlumno(alumno);
+                if (cat) infoBox.classList.add(`info-box--${cat.replace('_', '-')}`);
+            }
         }
     }
 
@@ -296,7 +339,10 @@ class RegistroSystem {
         const foto    = document.getElementById('student-photo');
         const infoBox = document.getElementById('info-box');
         if (foto) { foto.src = ''; foto.style.display = 'none'; foto.classList.remove('bloqueado'); }
-        if (infoBox) infoBox.style.borderColor = '#dee2e6';
+        if (infoBox) {
+            infoBox.className = 'placeholder-box info-box';
+            infoBox.style.borderColor = '';
+        }
     }
 
     mostrarEstado(mensaje, tipo) {
@@ -307,7 +353,7 @@ class RegistroSystem {
         const innerBox  = document.querySelector('.inner-box');
 
         if (statusMsg)  statusMsg.textContent = mensaje;
-        if (statusInd)  statusInd.style.backgroundColor = color;
+        if (statusInd)  { statusInd.style.backgroundColor = color; statusInd.classList.remove('idle'); }
         if (innerBox) {
             Object.assign(innerBox.style, {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -324,12 +370,12 @@ class RegistroSystem {
         ['nombre-output','boleta-output','grupo-output','horario-output',
          'retardos-output','sin-credencial-output'].forEach(id => this.set(id, ''));
         this.set('boleta-input', '');
-        if (this._input) this._input.focus(); // re-enfocar para el siguiente escaneo
+        if (this._input) this._input.focus();
 
         const statusMsg = document.getElementById('status-message');
         if (statusMsg) statusMsg.textContent = 'Esperando registro...';
         const statusInd = document.getElementById('status-indicator');
-        if (statusInd) statusInd.style.backgroundColor = '#ffc107';
+        if (statusInd) { statusInd.style.backgroundColor = '#ffc107'; statusInd.classList.add('idle'); }
 
         const innerBox = document.querySelector('.inner-box');
         if (innerBox) { innerBox.textContent = ''; innerBox.style.removeProperty('background-color'); }
@@ -338,6 +384,9 @@ class RegistroSystem {
         const texto = document.getElementById('tipo-texto');
         if (badge) badge.className = 'badge-movimiento badge-idle';
         if (texto) texto.textContent = '— esperando —';
+
+        const catBadge = document.getElementById('categoria-badge');
+        if (catBadge) catBadge.style.display = 'none';
     }
 
     set(id, val) {

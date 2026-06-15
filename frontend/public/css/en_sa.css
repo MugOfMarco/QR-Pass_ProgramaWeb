@@ -1,32 +1,45 @@
 /* ============================================================
    en_sa.css — Entrada / Salida
    Importa global.css primero en el HTML.
-   Aquí solo estilos propios de esta vista.
    ============================================================ */
 
-/* ── Contenedor de estado (barra superior) ────────────────── */
+/* ── Contenedor de estado ─────────────────────────────────── */
 .status-container {
-    background-color: var(--color-white);
-    padding: 1rem 2rem;
+    background: linear-gradient(180deg, #fff 0%, #faf7f8 100%);
+    padding: 1.2rem 2rem 1.6rem;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,.1);
+    border-bottom: 1px solid #e8dde2;
+    box-shadow: 0 4px 16px rgba(92, 31, 51, .06);
 }
 
+/* Indicador circular de estado */
 #status-indicator {
     display: inline-block;
-    width: 18px;
-    height: 18px;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
     background-color: var(--color-warning);
-    margin-right: .8rem;
+    margin-right: .7rem;
     vertical-align: middle;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, .2);
+    transition: background-color .3s, box-shadow .3s;
+}
+
+#status-indicator.idle {
+    animation: pulse-idle 2s ease-in-out infinite;
+}
+
+@keyframes pulse-idle {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .4; }
 }
 
 #status-message {
     display: inline;
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 700;
     color: var(--color-text);
+    letter-spacing: .2px;
 }
 
 /* ── Layout de 2 columnas ─────────────────────────────────── */
@@ -47,30 +60,31 @@
 .option-group {
     border: 1px solid var(--color-border-light);
     border-radius: var(--radius-lg);
-    padding: 1.2rem 1.5rem;
+    padding: 1rem 1.4rem;
     background-color: var(--color-white);
     display: flex;
     align-items: center;
     gap: 1.5rem;
     flex-wrap: wrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
 }
 
 .option-group legend {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--color-text);
     padding: 0 .5rem;
 }
 
 .option-group input[type="radio"] {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     accent-color: var(--color-primary);
     cursor: pointer;
 }
 
 .option-group label {
-    font-size: 1rem;
+    font-size: .95rem;
     font-weight: 600;
     cursor: pointer;
 }
@@ -78,23 +92,22 @@
 /* ── Cajas placeholder / info ─────────────────────────────── */
 .placeholder-box {
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .Registro {
-    min-height: 240px;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, #b0b0b0 0%, #909090 100%);
+    height: 300px;
+    padding: 1.2rem;
+    background: linear-gradient(135deg, #c0c0c0 0%, #989898 100%);
 }
 
 .inner-box {
     width: 100%;
     height: 100%;
-    min-height: 180px;
-    background-color: rgba(255,255,255,.3);
+    background-color: rgba(255,255,255,.25);
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
@@ -103,23 +116,47 @@
     font-weight: 700;
     text-align: center;
     padding: 1rem;
-    transition: background-color .3s, color .3s;
+    transition: background-color .35s ease, color .35s ease;
 }
 
+/* Caja de foto — altura fija para que no cambie con la imagen */
 .info-box {
-    min-height: 240px;
-    border: 1px solid var(--color-border-light);
+    height: 300px;
+    border: 2px solid var(--color-border-light);
     background: var(--color-white);
     overflow: hidden;
     position: relative;
+    transition: border-color .3s ease, box-shadow .3s ease;
+}
+
+/* ── Categorías de alumno — color en info-box ─────────────── */
+.info-box--bloqueado {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 4px rgba(220, 53, 69, .15), 0 2px 12px rgba(0,0,0,.06);
+}
+
+.info-box--puerta-abierta {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, .2), 0 2px 12px rgba(0,0,0,.06);
+}
+
+.info-box--dictamen {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, .2), 0 2px 12px rgba(0,0,0,.06);
+}
+
+.info-box--creditos {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, .2), 0 2px 12px rgba(0,0,0,.06);
 }
 
 /* ── Foto del alumno ──────────────────────────────────────── */
 #student-photo {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    padding: 8px;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
     background-color: var(--color-white);
     transition: transform .3s;
 }
@@ -130,22 +167,65 @@
     opacity: .9;
 }
 
-/* ── Badge de tipo de movimiento ─────────────────────────── */
-.badge-movimiento {
-    display: inline-block;
-    padding: 5px 18px;
-    border-radius: 20px;
-    font-weight: 800;
-    font-size: .95rem;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-    transition: background .3s, color .3s;
+/* ── Contenedor de badges ─────────────────────────────────── */
+.badges-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
 }
 
-.badge-idle    { background: #e0e0e0; color: #999; }
+/* ── Badge de tipo de movimiento ─────────────────────────── */
+.badge-movimiento {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 20px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .88rem;
+    letter-spacing: 1.5px;
+    transition: background .3s ease, color .3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,.14);
+}
+
+.badge-idle    { background: #e8e8e8; color: #999; box-shadow: none; }
 .badge-entrada { background: var(--color-success); color: #fff; }
 .badge-salida  { background: #2196f3; color: #fff; }
 .badge-retardo { background: var(--color-warning); color: #fff; }
+
+/* ── Badge de categoría especial del alumno ───────────────── */
+.badge-categoria {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .78rem;
+    letter-spacing: 1px;
+    border: 1.5px solid transparent;
+    box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    transition: all .3s ease;
+}
+
+.badge-cat--puerta-abierta {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #f59e0b;
+}
+
+.badge-cat--dictamen {
+    background: #ede9fe;
+    color: #5b21b6;
+    border-color: #7c3aed;
+}
+
+.badge-cat--creditos {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #10b981;
+}
 
 /* ── Columna de outputs (campos de texto) ─────────────────── */
 .column-outputs {
@@ -160,30 +240,35 @@
 .text-entry.field { display: flex; flex-direction: column; }
 
 .text-entry.field label {
-    font-size: 1rem;
+    font-size: .8rem;
     font-weight: 700;
-    color: var(--color-text);
-    margin-bottom: .4rem;
+    color: #888;
+    margin-bottom: .35rem;
+    text-transform: uppercase;
+    letter-spacing: .6px;
 }
 
 .text-entry.field input {
-    padding: .8rem 1.1rem;
+    padding: .75rem 1rem;
     font-size: .95rem;
     border: 2px solid var(--color-border-light);
     border-radius: var(--radius-xl);
     background-color: var(--color-white);
     color: var(--color-text);
+    transition: border-color .2s;
 }
 
 .text-entry.field input:focus:not([readonly]) {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(92,31,51,.1);
+    box-shadow: 0 0 0 3px rgba(92, 31, 51, .1);
 }
 
 .text-entry.field input[readonly] {
-    background-color: #f9f9f9;
+    background-color: #f8f6f7;
     cursor: default;
+    color: #2a2a2a;
+    font-weight: 600;
 }
 
 /* ── Retardos / sin credencial (invertidos) ───────────────── */
@@ -206,7 +291,10 @@
 
 .container-outputs .text-entry.field input {
     text-align: center;
-    font-weight: 700;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    border-radius: var(--radius-lg);
 }
 
 /* ── Responsive ───────────────────────────────────────────── */
@@ -220,5 +308,5 @@
     .column-outputs  { padding: 0 1rem; grid-template-columns: 1fr; }
     .container-outputs { grid-template-columns: 1fr; }
     .option-group    { flex-direction: column; align-items: flex-start; }
-    .Registro, .info-box { min-height: 180px; }
+    .Registro, .info-box { height: 220px; }
 }

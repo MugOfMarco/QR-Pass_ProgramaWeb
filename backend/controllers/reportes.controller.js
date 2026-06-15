@@ -92,7 +92,7 @@ function dibujarTabla(doc, headers, rows, colWidths, alignments) {
         let xPos = x0;
         row.forEach((cell, i) => {
             doc.text(String(cell ?? '—'), xPos + PAD_X, yPos + 5,
-                { width: colWidths[i] - PAD_X * 2, align: alignments[i] || 'left', lineBreak: false });
+                { width: colWidths[i] - PAD_X * 2, align: alignments[i] || 'left', lineBreak: false, ellipsis: true });
             xPos += colWidths[i];
         });
         doc.save()
@@ -258,8 +258,8 @@ export const generarReporteAlumnos = async (req, res) => {
 
         // ── Tabla de alumnos ──────────────────────────────────
         const colWidths = [
-            pageW * 0.13,  // Boleta
-            pageW * 0.32,  // Nombre
+            pageW * 0.16,  // Boleta (ampliado para 10 dígitos)
+            pageW * 0.29,  // Nombre
             pageW * 0.13,  // Grupo
             pageW * 0.12,  // Turno
             pageW * 0.17,  // Situación
@@ -314,6 +314,11 @@ export const generarReporteAlumnos = async (req, res) => {
 function fmtFechaMX(isoStr) {
     const d  = new Date(isoStr);
     return d.toLocaleDateString('es-MX', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+// Fecha corta DD/MM/AA (2 dígitos año) — para tablas con muchas columnas
+function fmtFechaCorta(isoStr) {
+    const d = new Date(isoStr);
+    return d.toLocaleDateString('es-MX', { timeZone: TZ, day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 function fmtHoraMX(isoStr) {
     const d = new Date(isoStr);
@@ -390,7 +395,8 @@ export const generarRegistrosDia = async (req, res) => {
                 id_tipo_registro,
                 tipos_registro  ( descripcion ),
                 puntos_acceso   ( nombre_punto ),
-                alumnos         ( nombre_completo, puertas_abiertas )
+                alumnos         ( nombre_completo ),
+                usuarios_sistema:id_usuario_vigilante ( nombre_completo )
             `)
             .gte('fecha_hora', `${fecha}T06:00:00`)
             .lte('fecha_hora', `${sigDia(fecha)}T05:59:59`)
@@ -401,10 +407,10 @@ export const generarRegistrosDia = async (req, res) => {
         const filas = (registros || []).map(r => [
             fmtHoraMX(r.fecha_hora),
             String(r.boleta),
-            r.alumnos?.nombre_completo  || '—',
-            r.alumnos?.puertas_abiertas ? 'Sí' : 'No',
+            r.alumnos?.nombre_completo || '—',
             normalizarPuerta(r.puntos_acceso?.nombre_punto),
             r.tipos_registro?.descripcion || '—',
+            r.usuarios_sistema?.nombre_completo || '—',
         ]);
 
         // ── 3. Datos del encabezado ────────────────────────────
@@ -464,15 +470,15 @@ export const generarRegistrosDia = async (req, res) => {
 
         // ── Tabla principal ────────────────────────────────────
         const colWidths = [
-            pageW * 0.10,   // Hora
-            pageW * 0.14,   // Boleta
-            pageW * 0.30,   // Nombre
-            pageW * 0.10,   // Puertas
-            pageW * 0.18,   // Puerta acceso
-            pageW * 0.18,   // Tipo
+            pageW * 0.09,   // Hora
+            pageW * 0.16,   // Boleta (ampliado para 10 dígitos)
+            pageW * 0.27,   // Nombre
+            pageW * 0.16,   // Puerta acceso
+            pageW * 0.16,   // Tipo
+            pageW * 0.16,   // Vigilante
         ];
-        const alignments = ['center', 'center', 'left', 'center', 'left', 'left'];
-        const headers    = ['Hora', 'Boleta', 'Nombre alumno', 'Puertas', 'Puerta acceso', 'Tipo'];
+        const alignments = ['center', 'center', 'left', 'left', 'left', 'left'];
+        const headers    = ['Hora', 'Boleta', 'Nombre alumno', 'Puerta acceso', 'Tipo', 'Vigilante'];
 
         const filasRender = filas.length
             ? filas
@@ -594,7 +600,8 @@ export const generarReporteIncidencias = async (req, res) => {
                 id_tipo_registro,
                 tipos_registro (descripcion),
                 puntos_acceso  (nombre_punto),
-                justificaciones (motivo)
+                justificaciones (motivo),
+                usuarios_sistema:id_usuario_vigilante (nombre_completo)
             `)
             .in('boleta', boletasArray)
             .order('fecha_hora', { ascending: false });
@@ -618,6 +625,7 @@ export const generarReporteIncidencias = async (req, res) => {
                 id_tipo:       r.id_tipo_registro,
                 punto_acceso:  normalizarPuerta(r.puntos_acceso?.nombre_punto),
                 justificacion: r.justificaciones?.motivo || null,
+                vigilante:     r.usuarios_sistema?.nombre_completo || '—',
             });
             if (r.id_tipo_registro === 3) conRetardo.add(r.boleta);
             if (r.id_tipo_registro === 5) conFalta.add(r.boleta);
@@ -647,7 +655,7 @@ export const generarReporteIncidencias = async (req, res) => {
 
         const doc = new PDFDocument({
             size:    'LETTER',
-            margins: { top: 70, bottom: 70, left: 85, right: 85 },
+            margins: { top: 60, bottom: 60, left: 60, right: 60 },
             info:    { Title: 'Reporte de Incidencias — QR Pass', Author: 'CECyT 9 — IPN' },
         });
 
@@ -722,32 +730,43 @@ export const generarReporteIncidencias = async (req, res) => {
 
         // ── Columnas de la tabla de registros ────────────────
         const colWidths = [
-            pageW * 0.13,   // Fecha
-            pageW * 0.10,   // Hora
-            pageW * 0.21,   // Puerta
-            pageW * 0.24,   // Tipo
-            pageW * 0.32,   // Justificación
+            pageW * 0.12,   // Fecha (DD/MM/AA)
+            pageW * 0.09,   // Hora
+            pageW * 0.17,   // Puerta
+            pageW * 0.17,   // Tipo
+            pageW * 0.19,   // Vigilante
+            pageW * 0.26,   // Justificación
         ];
-        const alignments = ['center', 'center', 'left', 'left', 'left'];
-        const headers    = ['Fecha', 'Hora', 'Puerta', 'Tipo', 'Justificación'];
+        const alignments = ['center', 'center', 'left', 'left', 'left', 'left'];
+        const headers    = ['Fecha', 'Hora', 'Puerta', 'Tipo', 'Vigilante', 'Justificación'];
         const bottomLimit = doc.page.height - doc.page.margins.bottom;
 
         // ── Sección por alumno ────────────────────────────────
         for (const alumno of alumnos) {
             const registros = registrosPorBoleta[alumno.boleta] || [];
 
-            if (doc.y + 60 > bottomLimit) doc.addPage();
+            if (doc.y + 70 > bottomLimit) doc.addPage();
 
-            // Barra del alumno
+            // Barra del alumno — 2 líneas: boleta+nombre / grupo+turno+estado
+            const barH = 40;
             const barY = doc.y;
-            doc.save().rect(x0, barY, pageW, 22).fill(COLOR_GUINDA).restore();
+            doc.save().rect(x0, barY, pageW, barH).fill(COLOR_GUINDA).restore();
+
+            // Línea 1: boleta (bold) + nombre con ellipsis si es largo
             doc.fontSize(9.5).font('Helvetica-Bold').fillColor('white')
-               .text(
-                   `${alumno.boleta}  ·  ${alumno.nombre_completo}  ·  ${alumno.grupo}  ·  ${alumno.turno}  ·  ${alumno.estado_academico}`,
-                   x0 + 5, barY + 6,
-                   { width: pageW - 10, align: 'left', lineBreak: false }
-               );
-            doc.y = barY + 26;
+               .text(String(alumno.boleta), x0 + 6, barY + 6,
+                     { width: 82, lineBreak: false });
+            doc.font('Helvetica').fillColor('white')
+               .text(alumno.nombre_completo, x0 + 92, barY + 6,
+                     { width: pageW - 98, lineBreak: false, ellipsis: true });
+
+            // Línea 2: grupo · turno · estado (más pequeño, color suave)
+            doc.fontSize(8.5).font('Helvetica').fillColor('#f4c2d0')
+               .text(`${alumno.grupo}  ·  ${alumno.turno}  ·  ${alumno.estado_academico}`,
+                     x0 + 6, barY + 22,
+                     { width: pageW - 12, lineBreak: false, ellipsis: true });
+
+            doc.y = barY + barH + 3;
 
             if (!registros.length) {
                 doc.fontSize(9).font('Helvetica').fillColor('#888888')
@@ -757,10 +776,11 @@ export const generarReporteIncidencias = async (req, res) => {
             }
 
             const filas = registros.map(r => [
-                fmtFechaMX(r.fecha_hora),
+                fmtFechaCorta(r.fecha_hora),
                 fmtHoraMX(r.fecha_hora),
                 r.punto_acceso,
                 r.tipo,
+                r.vigilante,
                 r.justificacion || '—',
             ]);
 
