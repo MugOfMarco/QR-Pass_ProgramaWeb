@@ -627,6 +627,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('La fecha final no puede ser anterior a la inicial.');
                 return;
             }
+            const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+            if (fechaFin > hoy) {
+                alert('La fecha final no puede ser mayor a hoy. Las incidencias futuras no existen aún.');
+                return;
+            }
             actualizarLabelPeriodo();
             cargarIncidencias();
         });

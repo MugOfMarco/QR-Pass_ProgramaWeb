@@ -741,8 +741,10 @@ export const generarReporteIncidencias = async (req, res) => {
         const headers    = ['Fecha', 'Hora', 'Puerta', 'Tipo', 'Vigilante', 'Justificación'];
         const bottomLimit = doc.page.height - doc.page.margins.bottom;
 
-        // ── Sección por alumno ────────────────────────────────
-        for (const alumno of alumnos) {
+        // ── Sección por alumno (solo los que tienen registros) ──
+        const alumnosConRegistros = alumnos.filter(a => (registrosPorBoleta[a.boleta]?.length ?? 0) > 0);
+
+        for (const alumno of alumnosConRegistros) {
             const registros = registrosPorBoleta[alumno.boleta] || [];
 
             if (doc.y + 70 > bottomLimit) doc.addPage();
@@ -768,13 +770,6 @@ export const generarReporteIncidencias = async (req, res) => {
 
             doc.y = barY + barH + 3;
 
-            if (!registros.length) {
-                doc.fontSize(9).font('Helvetica').fillColor('#888888')
-                   .text('Sin registros en el período seleccionado.', x0 + 5, doc.y);
-                doc.moveDown(0.9);
-                continue;
-            }
-
             const filas = registros.map(r => [
                 fmtFechaCorta(r.fecha_hora),
                 fmtHoraMX(r.fecha_hora),
@@ -792,8 +787,8 @@ export const generarReporteIncidencias = async (req, res) => {
         if (doc.y + 30 > bottomLimit) doc.addPage();
         doc.moveDown(0.3)
            .fontSize(11).font('Helvetica').fillColor('black')
-           .text(`Total de alumnos en el reporte: `, { continued: true })
-           .font('Helvetica-Bold').text(String(alumnos.length));
+           .text(`Alumnos con registros en el período: `, { continued: true })
+           .font('Helvetica-Bold').text(String(alumnosConRegistros.length));
 
         doc.end();
         await pdfFin;
@@ -814,5 +809,176 @@ export const generarReporteIncidencias = async (req, res) => {
             success: false,
             message: 'Error al generar el reporte de incidencias: ' + err.message,
         });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/reportes/historial-alumno-pdf?boleta=XXXXXXXXXX
+//     &fecha_inicio=YYYY-MM-DD  (opcional)
+//     &fecha_fin=YYYY-MM-DD     (opcional)
+// PDF con el historial completo de accesos de un alumno.
+// ─────────────────────────────────────────────────────────────
+export const generarHistorialAlumnoPdf = async (req, res) => {
+    try {
+        const boleta      = parseInt(sanitize(req.query.boleta || ''));
+        const fechaInicio = sanitize(req.query.fecha_inicio || '');
+        const fechaFin    = sanitize(req.query.fecha_fin    || '');
+
+        if (!boleta || isNaN(boleta)) {
+            return res.status(400).json({ success: false, message: 'Boleta inválida.' });
+        }
+
+        // ── 1. Datos del alumno ───────────────────────────────
+        const { data: alumnoRaw, error: e0 } = await supabaseAdmin
+            .from('alumnos')
+            .select(`
+                boleta, nombre_completo,
+                grupos:id_grupo_base ( nombre_grupo, turnos:id_turno ( nombre_turno ) ),
+                estado_academico:id_estado_academico ( estado )
+            `)
+            .eq('boleta', boleta)
+            .maybeSingle();
+
+        if (e0) throw e0;
+        if (!alumnoRaw) {
+            return res.status(404).json({ success: false, message: 'Alumno no encontrado.' });
+        }
+
+        const alumno = {
+            boleta:           alumnoRaw.boleta,
+            nombre_completo:  alumnoRaw.nombre_completo,
+            grupo:            alumnoRaw.grupos?.nombre_grupo         || 'Sin Grupo',
+            turno:            alumnoRaw.grupos?.turnos?.nombre_turno || 'Sin Turno',
+            estado_academico: alumnoRaw.estado_academico?.estado     || 'Desconocido',
+        };
+
+        // ── 2. Registros del alumno ───────────────────────────
+        let regQuery = supabaseAdmin
+            .from('registros_acceso')
+            .select(`
+                id_registro, fecha_hora, id_tipo_registro,
+                tipos_registro  ( descripcion ),
+                puntos_acceso   ( nombre_punto ),
+                justificaciones ( motivo ),
+                usuarios_sistema:id_usuario_vigilante ( nombre_completo )
+            `)
+            .eq('boleta', boleta)
+            .order('fecha_hora', { ascending: false });
+
+        if (fechaInicio) regQuery = regQuery.gte('fecha_hora', `${fechaInicio}T06:00:00`);
+        if (fechaFin)    regQuery = regQuery.lte('fecha_hora', `${sigDia(fechaFin)}T05:59:59`);
+
+        const { data: registros, error: e1 } = await regQuery;
+        if (e1) throw e1;
+
+        // ── 3. Generar PDF ────────────────────────────────────
+        const ahora   = new Date();
+        const fechaMX = ahora.toLocaleDateString('es-MX', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric' });
+        const horaMX  = ahora.toLocaleTimeString('es-MX', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+        const fechaStr = ahora.toLocaleDateString('sv-SE', { timeZone: TZ }).replace(/-/g, '');
+
+        const doc = new PDFDocument({
+            size:    'LETTER',
+            margins: { top: 60, bottom: 60, left: 60, right: 60 },
+            info:    { Title: `Historial — ${alumno.nombre_completo}`, Author: 'CECyT 9 — IPN' },
+        });
+
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        const pdfFin = new Promise((resolve, reject) => { doc.on('end', resolve); doc.on('error', reject); });
+
+        const x0    = doc.page.margins.left;
+        const pageW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+        // Encabezado institucional
+        doc.fontSize(15).font('Helvetica-Bold').fillColor(COLOR_GUINDA)
+           .text('INSTITUTO POLITÉCNICO NACIONAL', { align: 'center' });
+        doc.fontSize(13).font('Helvetica').fillColor('black')
+           .text('CECyT 9 "JUAN DE DIOS BÁTIZ"', { align: 'center' });
+        doc.fontSize(11)
+           .text('SISTEMA DE CONTROL DE ACCESO — QR PASS', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(COLOR_GUINDA)
+           .text('HISTORIAL DE ACCESOS — ALUMNO', { align: 'center', underline: true });
+        doc.moveDown(0.4);
+
+        // Línea separadora
+        doc.save()
+           .moveTo(x0, doc.y).lineTo(x0 + pageW, doc.y)
+           .strokeColor(COLOR_GUINDA).lineWidth(1.2).stroke()
+           .restore();
+        doc.moveDown(0.5);
+
+        // Barra de datos del alumno
+        const barH = 42;
+        const barY = doc.y;
+        doc.save().rect(x0, barY, pageW, barH).fill(COLOR_GUINDA).restore();
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('white')
+           .text(String(alumno.boleta), x0 + 6, barY + 6, { width: 90, lineBreak: false });
+        doc.font('Helvetica').fillColor('white')
+           .text(alumno.nombre_completo, x0 + 100, barY + 6,
+                 { width: pageW - 106, lineBreak: false, ellipsis: true });
+        doc.fontSize(8.5).font('Helvetica').fillColor('#f4c2d0')
+           .text(`${alumno.grupo}  ·  ${alumno.turno}  ·  ${alumno.estado_academico}`,
+                 x0 + 6, barY + 24, { width: pageW - 12, lineBreak: false, ellipsis: true });
+        doc.y = barY + barH + 8;
+
+        // Período y fecha de emisión
+        doc.fontSize(9).font('Helvetica').fillColor('#444')
+           .text(`Emitido: ${fechaMX}, ${horaMX} hrs`);
+        if (fechaInicio || fechaFin) {
+            doc.fontSize(9).fillColor('#1a5e20')
+               .text(`Período: ${fechaInicio || '—'}  →  ${fechaFin || '—'}`);
+        }
+        doc.moveDown(0.6);
+
+        // Tabla de registros
+        const colWidths = [
+            pageW * 0.12,   // Fecha
+            pageW * 0.09,   // Hora
+            pageW * 0.18,   // Puerta
+            pageW * 0.16,   // Tipo
+            pageW * 0.20,   // Vigilante
+            pageW * 0.25,   // Justificación
+        ];
+        const alignments = ['center', 'center', 'left', 'left', 'left', 'left'];
+        const headers    = ['Fecha', 'Hora', 'Puerta', 'Tipo', 'Vigilante', 'Justificación'];
+
+        const filas = (registros || []).map(r => [
+            fmtFechaCorta(r.fecha_hora),
+            fmtHoraMX(r.fecha_hora),
+            normalizarPuerta(r.puntos_acceso?.nombre_punto),
+            r.tipos_registro?.descripcion || '—',
+            r.usuarios_sistema?.nombre_completo || '—',
+            r.justificaciones?.motivo || '—',
+        ]);
+
+        if (filas.length) {
+            dibujarTabla(doc, headers, filas, colWidths, alignments);
+        } else {
+            doc.fontSize(10).font('Helvetica').fillColor('#888')
+               .text('Sin registros en el período seleccionado.', x0, doc.y);
+        }
+
+        // Total
+        doc.moveDown(0.5)
+           .fontSize(10).font('Helvetica').fillColor('black')
+           .text('Total de registros: ', { continued: true })
+           .font('Helvetica-Bold').text(String(filas.length));
+
+        doc.end();
+        await pdfFin;
+
+        const pdfBuffer = Buffer.concat(chunks);
+        res.set({
+            'Content-Type':        'application/pdf',
+            'Content-Disposition': `attachment; filename="historial_${boleta}_${fechaStr}.pdf"`,
+            'Content-Length':      pdfBuffer.length,
+        });
+        return res.send(pdfBuffer);
+
+    } catch (err) {
+        console.error('Error generando historial PDF:', err);
+        return res.status(500).json({ success: false, message: 'Error al generar el PDF: ' + err.message });
     }
 };

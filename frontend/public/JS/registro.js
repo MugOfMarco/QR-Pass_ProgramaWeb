@@ -145,9 +145,10 @@ class RegistroSystem {
             }
 
             if (!respRegistro.ok || !resultado.success) {
-                // Mostrar el mensaje exacto que devuelve el servidor
                 const msg = resultado.message || `Error ${respRegistro.status} al registrar`;
-                this.mostrarEstado(msg, 'error');
+                // 429 = doble escaneo — mostrar como advertencia, no error rojo
+                const tipo = respRegistro.status === 429 ? 'warning' : 'error';
+                this.mostrarEstado(msg, tipo);
                 console.error('Error del servidor al registrar:', respRegistro.status, resultado);
                 return;
             }

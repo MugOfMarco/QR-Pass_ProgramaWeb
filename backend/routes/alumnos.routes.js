@@ -67,7 +67,7 @@ router.delete('/image',
 
 // ── Justificaciones ───────────────────────────────────────────
 router.post('/justificaciones',
-    requireRole('Administrador', 'Prefecto'),
+    requireRole('Administrador'),
     ctrl.registrarJustificacion
 );
 
@@ -77,6 +77,10 @@ router.get('/:boleta/registros/justificar',
     ctrl.obtenerRegistrosParaJustificar
 );
 router.get('/:boleta/registros', ctrl.obtenerRegistrosAlumno);
+router.get('/:boleta/historial-bloqueos',
+    requireRole('Administrador'),
+    ctrl.historialBloqueos
+);
 
 // ── Obtener alumno por boleta (va AL FINAL — es la genérica) ──
 router.get('/:boleta', ctrl.obtenerAlumno);

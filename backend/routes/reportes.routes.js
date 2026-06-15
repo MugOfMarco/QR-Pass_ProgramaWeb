@@ -10,7 +10,7 @@
 // ============================================================
 import express from 'express';
 import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
-import { generarReporteAlumnos, generarReporteIncidencias, generarRegistrosDia } from '../controllers/reportes.controller.js';
+import { generarReporteAlumnos, generarReporteIncidencias, generarRegistrosDia, generarHistorialAlumnoPdf } from '../controllers/reportes.controller.js';
 
 const router = express.Router();
 
@@ -29,6 +29,11 @@ router.get('/incidencias-pdf',
 router.get('/registros-dia-pdf',
     requireRole('Administrador'),
     generarRegistrosDia
+);
+
+router.get('/historial-alumno-pdf',
+    requireRole('Administrador', 'Prefecto'),
+    generarHistorialAlumnoPdf
 );
 
 export default router;

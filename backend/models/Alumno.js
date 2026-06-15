@@ -41,7 +41,8 @@ class Alumno {
                 estado_academico ( estado ),
                 info_alumno (
                     url_foto, contador_retardos, contador_sin_credencial,
-                    bloqueado_manual, bloqueado_sistema
+                    bloqueado_manual, bloqueado_sistema,
+                    total_sin_credencial, total_retardos
                 )
             `)
             .eq('boleta', parseInt(boleta))
@@ -56,10 +57,12 @@ class Alumno {
             carrera:          data.grupos?.carreras?.nombre_carrera,
             estado_academico: data.estado_academico?.estado,
             puerta_abierta:   data.puertas_abiertas,
-            bloqueado:        info.bloqueado_manual || info.bloqueado_sistema,
-            retardos:         info.contador_retardos       ?? 0,
-            sin_credencial:   info.contador_sin_credencial ?? 0,
-            url:              info.url_foto,
+            bloqueado:             info.bloqueado_manual || info.bloqueado_sistema,
+            retardos:              info.contador_retardos       ?? 0,
+            sin_credencial:        info.contador_sin_credencial ?? 0,
+            total_retardos:        info.total_retardos          ?? 0,
+            total_sin_credencial:  info.total_sin_credencial    ?? 0,
+            url:                   info.url_foto,
         };
     }
 
@@ -128,8 +131,15 @@ class Alumno {
     }
 
     // ─── Historial ────────────────────────────────────────────
-    static async obtenerRegistros(boleta) {
-        const { data, error } = await supabaseAdmin
+    // fechaInicio / fechaFin opcionales en formato YYYY-MM-DD (zona MX)
+    static async obtenerRegistros(boleta, fechaInicio = '', fechaFin = '') {
+        const sigDia = s => {
+            const d = new Date(`${s}T12:00:00Z`);
+            d.setUTCDate(d.getUTCDate() + 1);
+            return d.toISOString().slice(0, 10);
+        };
+
+        let query = supabaseAdmin
             .from('registros_acceso')
             .select(`
                 id_registro, fecha_hora,
@@ -140,6 +150,11 @@ class Alumno {
             `)
             .eq('boleta', parseInt(boleta))
             .order('fecha_hora', { ascending: false });
+
+        if (fechaInicio) query = query.gte('fecha_hora', `${fechaInicio}T06:00:00`);
+        if (fechaFin)    query = query.lte('fecha_hora', `${sigDia(fechaFin)}T05:59:59`);
+
+        const { data, error } = await query;
         if (error) throw error;
         return (data || []).map(r => ({
             id_registro:   r.id_registro,

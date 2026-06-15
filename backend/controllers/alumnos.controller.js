@@ -38,7 +38,7 @@ export const obtenerAlumno = async (req, res) => {
         }
 
         const { data: semestre } = await supabaseAdmin
-            .from('semestres').select('id_semestre').eq('activo', true).single();
+            .from('semestres').select('id_semestre').eq('activo', true).maybeSingle();
 
         const { data: alumnoRaw } = await supabaseAdmin
             .from('alumnos').select('id_grupo_base').eq('boleta', parseInt(boleta)).single();
@@ -268,6 +268,35 @@ export const desbloquearcredencial = async (req, res) => {
     }
 };
 
+// ── GET /api/alumnos/:boleta/historial-bloqueos ───────────────
+export const historialBloqueos = async (req, res) => {
+    try {
+        const boleta = parseInt(req.params.boleta);
+        const { data, error } = await supabaseAdmin
+            .from('bitacora_auditoria')
+            .select(`
+                id_auditoria, fecha_hora, accion, detalle,
+                usuarios_sistema:id_usuario_accion ( nombre_completo )
+            `)
+            .eq('boleta_afectada', boleta)
+            .in('accion', ['bloquear_credencial', 'desbloquear_credencial'])
+            .order('fecha_hora', { ascending: false });
+        if (error) throw error;
+        return res.json({
+            success: true,
+            historial: (data || []).map(r => ({
+                id:        r.id_auditoria,
+                fecha_hora: r.fecha_hora,
+                accion:    r.accion,
+                detalle:   r.detalle || null,
+                usuario:   r.usuarios_sistema?.nombre_completo || null,
+            })),
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Error al cargar historial de bloqueos.' });
+    }
+};
+
 // ── POST /api/alumnos/justificaciones ────────────────────────
 export const registrarJustificacion = async (req, res) => {
     try {
@@ -279,15 +308,40 @@ export const registrarJustificacion = async (req, res) => {
         }
         const r = await Alumno.registrarJustificacion(id_registro, justificacion, id_usuario);
 
-        // Obtener boleta del registro para la bitácora
+        // Obtener boleta y tipo del registro para la bitácora y el decremento
         const { data: regRow } = await supabaseAdmin
-            .from('registros_acceso').select('boleta').eq('id_registro', id_registro).maybeSingle();
+            .from('registros_acceso')
+            .select('boleta, id_tipo_registro')
+            .eq('id_registro', id_registro)
+            .maybeSingle();
+
         logAuditoria({
             id_usuario,
             accion:  'justificar_incidencia',
             boleta:  regRow?.boleta || null,
             detalle: `id_registro=${id_registro} | motivo: ${justificacion}`,
         });
+
+        // Decrementar el contador activo (para bloqueo) sin tocar el total histórico
+        if (regRow?.boleta) {
+            const { data: info } = await supabaseAdmin
+                .from('info_alumno')
+                .select('contador_sin_credencial, contador_retardos')
+                .eq('boleta', regRow.boleta)
+                .maybeSingle();
+
+            if (info) {
+                if (regRow.id_tipo_registro === 4) {
+                    await supabaseAdmin.from('info_alumno')
+                        .update({ contador_sin_credencial: Math.max(0, info.contador_sin_credencial - 1) })
+                        .eq('boleta', regRow.boleta);
+                } else if (regRow.id_tipo_registro === 3) {
+                    await supabaseAdmin.from('info_alumno')
+                        .update({ contador_retardos: Math.max(0, info.contador_retardos - 1) })
+                        .eq('boleta', regRow.boleta);
+                }
+            }
+        }
 
         return res.json({ success: true, message: 'Justificación registrada.', data: r });
     } catch (err) {
@@ -310,9 +364,13 @@ export const obtenerRegistrosParaJustificar = async (req, res) => {
 };
 
 // ── GET /api/alumnos/:boleta/registros ───────────────────────
+// Acepta ?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD opcionales
 export const obtenerRegistrosAlumno = async (req, res) => {
     try {
-        const registros = await Alumno.obtenerRegistros(req.params.boleta);
+        const { boleta } = req.params;
+        const fechaInicio = sanitize(req.query.fecha_inicio || '');
+        const fechaFin    = sanitize(req.query.fecha_fin    || '');
+        const registros = await Alumno.obtenerRegistros(boleta, fechaInicio, fechaFin);
         return res.json({ success: true, registros });
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Error al cargar registros.' });

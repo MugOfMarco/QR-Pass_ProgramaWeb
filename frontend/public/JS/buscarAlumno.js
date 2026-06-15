@@ -12,6 +12,8 @@ class SistemaAlumnos {
         this.accesos      = [];
         this.userType     = null;
         this.userInfo     = null;
+        this.histFechaInicio = '';
+        this.histFechaFin    = '';
         this.initialize();
     }
 
@@ -77,6 +79,50 @@ class SistemaAlumnos {
             const allow = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab'];
             if (!allow.includes(e.key) && isNaN(Number(e.key))) e.preventDefault();
         });
+
+        // Filtro de fechas
+        const btnToggle  = document.getElementById('btn-toggle-fechas');
+        const barFechas  = document.getElementById('filtro-fechas-bar');
+        const btnAplicar = document.getElementById('btn-aplicar-hist');
+        const btnLimpiar = document.getElementById('btn-limpiar-hist');
+
+        btnToggle?.addEventListener('click', () => {
+            if (!barFechas) return;
+            const visible = barFechas.style.display === 'flex';
+            barFechas.style.display = visible ? 'none' : 'flex';
+        });
+
+        btnAplicar?.addEventListener('click', () => {
+            const fi = document.getElementById('hist-fecha-inicio')?.value || '';
+            const ff = document.getElementById('hist-fecha-fin')?.value    || '';
+            if (!fi || !ff) { alert('Selecciona ambas fechas.'); return; }
+            if (ff < fi)    { alert('La fecha final no puede ser anterior a la inicial.'); return; }
+            const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+            if (ff > hoy)   { alert('La fecha final no puede ser mayor a hoy.'); return; }
+            this.histFechaInicio = fi;
+            this.histFechaFin    = ff;
+            if (this.alumnoActual) this.cargarIncidencias(this.alumnoActual.boleta);
+        });
+
+        btnLimpiar?.addEventListener('click', () => {
+            this.histFechaInicio = '';
+            this.histFechaFin    = '';
+            const fi = document.getElementById('hist-fecha-inicio');
+            const ff = document.getElementById('hist-fecha-fin');
+            if (fi) fi.value = '';
+            if (ff) ff.value = '';
+            if (this.alumnoActual) this.cargarIncidencias(this.alumnoActual.boleta);
+        });
+
+        // Toggle historial de bloqueos
+        document.getElementById('btn-toggle-bloqueos')?.addEventListener('click', () => {
+            const content = document.getElementById('bloqueos-content');
+            const icon    = document.getElementById('bloqueos-toggle-icon');
+            if (!content) return;
+            const abierto = content.style.display !== 'none';
+            content.style.display = abierto ? 'none' : '';
+            if (icon) icon.textContent = abierto ? '▼' : '▲';
+        });
     }
 
     configureButtonsByRole() {
@@ -86,16 +132,18 @@ class SistemaAlumnos {
         const btnJustRet     = document.getElementById('btn-justret');
         const btnJustSin     = document.getElementById('btn-justsin');
         const btnJustAll     = document.getElementById('btn-justall');
+        const btnPdf         = document.getElementById('btn-pdf-alumno');
 
         const esAdmin = this.userType === 'Administrador';
-        const todos   = [btnBloquear, btnDesbloquear, btnJustSelec, btnJustRet, btnJustSin, btnJustAll];
+        const btnsAdmin = [btnBloquear, btnDesbloquear, btnJustSelec, btnJustRet, btnJustSin, btnJustAll];
 
-        todos.forEach(b => {
+        btnsAdmin.forEach(b => {
             if (!b) return;
             b.style.display = esAdmin ? '' : 'none';
             b.disabled = !esAdmin;
         });
 
+        // PDF y bloqueos permanecen ocultos hasta cargar un alumno
         if (esAdmin) {
             btnBloquear   ?.addEventListener('click', () => this.bloquear());
             btnDesbloquear?.addEventListener('click', () => this.desbloquear());
@@ -103,6 +151,43 @@ class SistemaAlumnos {
             btnJustRet    ?.addEventListener('click', () => this.justificarPorTipo('Retardo'));
             btnJustSin    ?.addEventListener('click', () => this.justificarPorTipo('Entrada Sin Credencial'));
             btnJustAll    ?.addEventListener('click', () => this.justificarTodas());
+        }
+
+        btnPdf?.addEventListener('click', () => this.descargarPdfHistorial());
+    }
+
+    async descargarPdfHistorial() {
+        if (!this.alumnoActual) { this.notif('Busca un alumno primero', 'error'); return; }
+        const btn = document.getElementById('btn-pdf-alumno');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando…'; }
+
+        try {
+            const params = new URLSearchParams({ boleta: this.alumnoActual.boleta });
+            if (this.histFechaInicio) params.append('fecha_inicio', this.histFechaInicio);
+            if (this.histFechaFin)    params.append('fecha_fin',    this.histFechaFin);
+
+            const res = await fetch(`${this.apiBase}/reportes/historial-alumno-pdf?${params}`, {
+                credentials: 'include',
+            });
+            if (res.status === 401) { window.location.href = '/login.html'; return; }
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `Error ${res.status}`);
+            }
+
+            const blob = await res.blob();
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `historial_${this.alumnoActual.boleta}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        } catch (err) {
+            this.notif(`Error al generar PDF: ${err.message}`, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '⬇ Descargar PDF'; }
         }
     }
 
@@ -130,9 +215,64 @@ class SistemaAlumnos {
             this.mostrarHorario(data.horario || []);
             this.mostrarFoto(data.alumno);
             await this.cargarIncidencias(boleta);
+            if (this.userType === 'Administrador') this.cargarHistorialBloqueos(boleta);
         } catch (e) {
             console.error('Error buscando alumno:', e);
         }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // HISTORIAL DE BLOQUEOS
+    // ─────────────────────────────────────────────────────────
+    async cargarHistorialBloqueos(boleta) {
+        try {
+            const res = await fetch(`${this.apiBase}/alumnos/${boleta}/historial-bloqueos`, {
+                credentials: 'include',
+            });
+            if (res.status === 401) { window.location.href = '/login.html'; return; }
+            if (!res.ok) return;
+            const data = await res.json();
+            this.mostrarHistorialBloqueos(data.historial || []);
+        } catch (e) {
+            console.error('Error cargando historial bloqueos:', e);
+        }
+    }
+
+    mostrarHistorialBloqueos(historial) {
+        const tbody = document.getElementById('bloqueos-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!historial.length) {
+            tbody.innerHTML = `<tr>
+                <td colspan="4" style="text-align:center;padding:1rem;color:#888;">
+                    Sin eventos de bloqueo registrados
+                </td></tr>`;
+            return;
+        }
+
+        historial.forEach(ev => {
+            const fechaObj = ev.fecha_hora ? new Date(this.utc(ev.fecha_hora)) : null;
+            const fechaFmt = fechaObj
+                ? fechaObj.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
+                : '—';
+            const horaFmt  = fechaObj
+                ? fechaObj.toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit' })
+                : '—';
+
+            const esBloqueo = ev.accion === 'bloquear_credencial';
+            const accionLabel = esBloqueo
+                ? '<span style="color:#c62828;font-weight:700;">Bloqueada</span>'
+                : '<span style="color:#2e7d32;font-weight:700;">Desbloqueada</span>';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${fechaFmt}</td>
+                <td>${horaFmt}</td>
+                <td>${accionLabel}</td>
+                <td style="font-size:.8rem;color:#555">${this.esc(ev.usuario || '—')}</td>`;
+            tbody.appendChild(tr);
+        });
     }
 
     // ─────────────────────────────────────────────────────────
@@ -140,7 +280,12 @@ class SistemaAlumnos {
     // ─────────────────────────────────────────────────────────
     async cargarIncidencias(boleta) {
         try {
-            const res = await fetch(`${this.apiBase}/alumnos/${boleta}/registros`, {
+            const params = new URLSearchParams();
+            if (this.histFechaInicio) params.append('fecha_inicio', this.histFechaInicio);
+            if (this.histFechaFin)    params.append('fecha_fin',    this.histFechaFin);
+
+            const qs  = params.toString() ? `?${params}` : '';
+            const res = await fetch(`${this.apiBase}/alumnos/${boleta}/registros${qs}`, {
                 credentials: 'include',
             });
             if (res.status === 401) { window.location.href = '/login.html'; return; }
@@ -276,6 +421,7 @@ class SistemaAlumnos {
                 this.notif('Credencial bloqueada', 'success');
                 this.alumnoActual.bloqueado = true;
                 this.actualizarEstadoCredencial();
+                this.cargarHistorialBloqueos(this.alumnoActual.boleta);
             } else {
                 this.notif(data.message, 'error');
             }
@@ -289,7 +435,7 @@ class SistemaAlumnos {
         try {
             const res = await fetch(
                 `${this.apiBase}/alumnos/desbloquear/${this.alumnoActual.boleta}`,
-                { method: 'PUT', credentials: 'include' }   // FIX: faltaba credentials
+                { method: 'PUT', credentials: 'include' }
             );
             if (res.status === 401) { window.location.href = '/login.html'; return; }
             const data = await res.json();
@@ -299,6 +445,7 @@ class SistemaAlumnos {
                 this.alumnoActual.sin_credencial = 0;
                 this.actualizarEstadoCredencial();
                 this.mostrarDatosAlumno();
+                this.cargarHistorialBloqueos(this.alumnoActual.boleta);
             } else {
                 this.notif(data.message, 'error');
             }
@@ -364,6 +511,18 @@ class SistemaAlumnos {
             `${ok} justificada(s)${fail ? ` · ${fail} error(es)` : ''}`,
             fail ? 'error' : 'success'
         );
+
+        // Recargar datos del alumno para actualizar contadores activos
+        try {
+            const res = await fetch(`${this.apiBase}/alumnos/${this.alumnoActual.boleta}`, { credentials: 'include' });
+            const data = await res.json();
+            if (data.success && data.alumno) {
+                this.alumnoActual = data.alumno;
+                this.mostrarDatosAlumno();
+                this.mostrarFoto(data.alumno);
+            }
+        } catch (_) { /* silencioso — los contadores se actualizarán en la próxima búsqueda */ }
+
         await this.cargarIncidencias(this.alumnoActual.boleta);
     }
 
@@ -376,10 +535,25 @@ class SistemaAlumnos {
         this.set('display-boleta', a.boleta);
         this.set('display-alumno', a.nombre);
         this.set('display-grupo',  a.nombre_grupo);
-        document.getElementById('total-incidencias').textContent  = a.sin_credencial ?? 0;
-        document.getElementById('total-retardos').textContent     = a.retardos        ?? 0;
+        document.getElementById('total-incidencias').textContent = a.sin_credencial ?? 0;
+        document.getElementById('total-retardos').textContent    = a.retardos        ?? 0;
+
+        const hi = document.getElementById('hist-incidencias');
+        const hr = document.getElementById('hist-retardos');
+        if (hi) hi.textContent = `(total: ${a.total_sin_credencial ?? 0})`;
+        if (hr) hr.textContent = `(total: ${a.total_retardos       ?? 0})`;
         this.actualizarEstadoCredencial();
         this.actualizarEstadoPuertaAbierta();
+
+        // Mostrar botón PDF cuando hay alumno cargado
+        const btnPdf = document.getElementById('btn-pdf-alumno');
+        if (btnPdf) btnPdf.style.display = '';
+
+        // Mostrar sección de bloqueos solo para Admin
+        if (this.userType === 'Administrador') {
+            const sec = document.getElementById('bloqueos-section');
+            if (sec) sec.style.display = '';
+        }
     }
 
     actualizarEstadoPuertaAbierta() {
@@ -450,13 +624,24 @@ class SistemaAlumnos {
     }
 
     actualizarEstadoCredencial() {
-        const el = document.getElementById('estado-credencial');
+        const el             = document.getElementById('estado-credencial');
+        const btnBloquear    = document.getElementById('btn-bloquear-credencial');
+        const btnDesbloquear = document.getElementById('btn-desbloquear-credencial');
         if (!el || !this.alumnoActual) return;
+
         const bloq = this.alumnoActual.bloqueado;
         el.textContent = bloq ? 'BLOQUEADA' : 'ACTIVA';
-        el.className   = bloq
-            ? 'counter-value estado-bloqueada'
-            : 'counter-value estado-activa';
+        el.className   = bloq ? 'counter-value estado-bloqueada' : 'counter-value estado-activa';
+
+        if (this.userType !== 'Administrador') return;
+        if (btnBloquear) {
+            btnBloquear.disabled = bloq;
+            btnBloquear.style.opacity = bloq ? '0.4' : '1';
+        }
+        if (btnDesbloquear) {
+            btnDesbloquear.disabled = !bloq;
+            btnDesbloquear.style.opacity = !bloq ? '0.4' : '1';
+        }
     }
 
     limpiarDatos() {
@@ -466,6 +651,11 @@ class SistemaAlumnos {
         if (el) el.textContent = '0';
         const er = document.getElementById('total-retardos');
         if (er) er.textContent = '0';
+
+        const hi = document.getElementById('hist-incidencias');
+        const hr = document.getElementById('hist-retardos');
+        if (hi) hi.textContent = '(total: 0)';
+        if (hr) hr.textContent = '(total: 0)';
 
         const horarioTbody = document.getElementById('horario-tbody');
         if (horarioTbody) horarioTbody.innerHTML = `<tr>
@@ -491,6 +681,22 @@ class SistemaAlumnos {
         this.alumnoActual = null;
         this.incidencias  = [];
         this.accesos      = [];
+
+        // Ocultar botón PDF y sección de bloqueos
+        const btnPdf = document.getElementById('btn-pdf-alumno');
+        if (btnPdf) btnPdf.style.display = 'none';
+
+        const sec = document.getElementById('bloqueos-section');
+        if (sec) sec.style.display = 'none';
+
+        const bloqueosTbody = document.getElementById('bloqueos-tbody');
+        if (bloqueosTbody) bloqueosTbody.innerHTML = `<tr>
+            <td colspan="4" style="text-align:center;padding:1rem;">Ingresa una boleta</td></tr>`;
+
+        const bloqueosCnt = document.getElementById('bloqueos-content');
+        if (bloqueosCnt) bloqueosCnt.style.display = 'none';
+        const bloqueoIcon = document.getElementById('bloqueos-toggle-icon');
+        if (bloqueoIcon) bloqueoIcon.textContent = '▼';
     }
 
     // ─────────────────────────────────────────────────────────

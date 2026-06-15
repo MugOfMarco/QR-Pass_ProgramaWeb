@@ -111,8 +111,22 @@ export const crearRegistro = async (req, res) => {
         //   último registro del día es ENTRADA → ahora registra SALIDA
         //   último registro del día es SALIDA  → ahora registra ENTRADA
         //   sin registros hoy                  → registra ENTRADA
+        //
+        // Protección doble escaneo: si el último registro tiene menos
+        // de 5 segundos, es un scan duplicado — se rechaza.
         // ──────────────────────────────────────────────────────
         const ultimo   = await ultimoRegistroHoy(boleta);
+
+        if (ultimo) {
+            const segundosDesdeUltimo = (Date.now() - new Date(ultimo.fecha_hora).getTime()) / 1000;
+            if (segundosDesdeUltimo < 5) {
+                return res.status(429).json({
+                    success: false,
+                    message: 'Registro duplicado — espera unos segundos antes de volver a escanear.',
+                });
+            }
+        }
+
         const esSalida = ultimo !== null && TIPOS_ENTRADA.has(ultimo.id_tipo_registro);
 
         let id_tipo_registro;
