@@ -65,9 +65,9 @@ async function boletasBloqueadas() {
 // ── Dibuja tabla en el PDF ────────────────────────────────────
 
 function dibujarTabla(doc, headers, rows, colWidths, alignments) {
-    const HEADER_H    = 24;
-    const ROW_H       = 20;
-    const PAD_X       = 5;
+    const HEADER_H    = 28;
+    const ROW_H       = 26;
+    const PAD_X       = 6;
     const totalW      = colWidths.reduce((a, b) => a + b, 0);
     const x0          = doc.page.margins.left;
     const bottomLimit = doc.page.height - doc.page.margins.bottom;
@@ -77,7 +77,7 @@ function dibujarTabla(doc, headers, rows, colWidths, alignments) {
         doc.fontSize(10).font('Helvetica-Bold').fillColor('white');
         let xPos = x0;
         headers.forEach((h, i) => {
-            doc.text(h, xPos + PAD_X, yPos + 7,
+            doc.text(h, xPos + PAD_X, yPos + 9,
                 { width: colWidths[i] - PAD_X * 2, align: 'center', lineBreak: false });
             xPos += colWidths[i];
         });
@@ -91,7 +91,7 @@ function dibujarTabla(doc, headers, rows, colWidths, alignments) {
         doc.fontSize(9.5).font('Helvetica').fillColor('black');
         let xPos = x0;
         row.forEach((cell, i) => {
-            doc.text(String(cell ?? '—'), xPos + PAD_X, yPos + 5,
+            doc.text(String(cell ?? '—'), xPos + PAD_X, yPos + 8,
                 { width: colWidths[i] - PAD_X * 2, align: alignments[i] || 'left', lineBreak: false, ellipsis: true });
             xPos += colWidths[i];
         });
