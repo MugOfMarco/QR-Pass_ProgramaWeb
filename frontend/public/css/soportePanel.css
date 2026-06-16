@@ -615,6 +615,26 @@
     gap: .2rem;
 }
 
+.faq-stat-acciones {
+    display: flex;
+    gap: .3rem;
+    margin-top: .15rem;
+}
+
+.faq-btn-editar,
+.faq-btn-eliminar {
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: .75rem;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.faq-btn-editar:hover   { background: #dbeafe; border-color: #93c5fd; }
+.faq-btn-eliminar:hover { background: #fee2e2; border-color: #fca5a5; }
+
 .faq-stat-pregunta {
     font-size: .78rem;
     color: #374151;

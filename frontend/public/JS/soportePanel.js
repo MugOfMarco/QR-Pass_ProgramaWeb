@@ -367,13 +367,56 @@ function renderFaqStats(stats) {
     }
     const max = Math.max(1, stats[0]?.total_clics || 0);
     wrap.innerHTML = stats.map(s => `
-        <div class="faq-stat-item">
+        <div class="faq-stat-item" data-id="${s.id_faq}">
             <div class="faq-stat-pregunta" title="${esc(s.pregunta)}">${esc(s.pregunta)}</div>
             <div class="faq-stat-barra">
                 <div class="faq-stat-fill" style="width:${Math.round((s.total_clics / max) * 100)}%"></div>
                 <span class="faq-stat-num">${s.total_clics} clic${s.total_clics !== 1 ? 's' : ''}</span>
             </div>
+            <div class="faq-stat-acciones">
+                <button class="faq-btn-editar" data-id="${s.id_faq}" data-pregunta="${esc(s.pregunta)}" title="Editar pregunta">✏️</button>
+                <button class="faq-btn-eliminar" data-id="${s.id_faq}" title="Eliminar pregunta">🗑️</button>
+            </div>
         </div>`).join('');
+
+    // Bind botones editar
+    wrap.querySelectorAll('.faq-btn-editar').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id       = btn.dataset.id;
+            const actual   = btn.dataset.pregunta;
+            const nuevo    = prompt('Editar pregunta frecuente:', actual);
+            if (!nuevo || nuevo.trim() === actual) return;
+            try {
+                const r = await fetch(`/api/faq/${id}`, {
+                    method:  'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ pregunta: nuevo.trim() }),
+                });
+                const data = await r.json();
+                if (data.success) await cargarFaqStats();
+                else alert('Error: ' + (data.message || 'No se pudo actualizar.'));
+            } catch { alert('Error de conexión.'); }
+        });
+    });
+
+    // Bind botones eliminar
+    wrap.querySelectorAll('.faq-btn-eliminar').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            const item = wrap.querySelector(`.faq-stat-item[data-id="${id}"] .faq-stat-pregunta`);
+            const texto = item?.textContent || '(esta pregunta)';
+            if (!confirm(`¿Eliminar la pregunta frecuente?\n\n"${texto}"\n\nEsta acción no se puede deshacer.`)) return;
+            try {
+                const r = await fetch(`/api/faq/${id}`, {
+                    method: 'DELETE', credentials: 'include',
+                });
+                const data = await r.json();
+                if (data.success) await cargarFaqStats();
+                else alert('Error: ' + (data.message || 'No se pudo eliminar.'));
+            } catch { alert('Error de conexión.'); }
+        });
+    });
 }
 
 // ── Filtros ────────────────────────────────────────────────────

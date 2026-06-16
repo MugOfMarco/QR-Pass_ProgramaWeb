@@ -103,6 +103,13 @@ function dibujarTabla(doc, headers, rows, colWidths, alignments) {
     }
 
     let y = doc.y;
+
+    // Si no cabe ni el encabezado + una fila, saltar de página antes de empezar
+    if (y + HEADER_H + ROW_H > bottomLimit) {
+        doc.addPage();
+        y = doc.page.margins.top;
+    }
+
     y = dibujarEncabezado(y);
 
     rows.forEach((row, idx) => {
@@ -705,18 +712,31 @@ export const generarReporteIncidencias = async (req, res) => {
         const cyP    = doc.y + radioP + 8;
 
         dibujarPastel(doc, cxP, cyP, radioP, segmentos);
-        dibujarLeyendaPastel(doc, cxP, cyP, radioP, segmentos);
 
-        // Estadísticas numéricas junto al pastel
-        const statsX = cxP + radioP + 130;
-        const statsY = cyP - radioP + 4;
+        // Leyenda a la derecha del pastel
+        const leyX    = cxP + radioP + 18;  // 176
+        const leyY    = cyP - radioP * 0.5; // alineada al centro del pastel
+        const boxSize = 10;
+        let leyYcur   = leyY;
+        for (const seg of segmentos) {
+            if (seg.pct < 0.5) continue;
+            doc.save().rect(leyX, leyYcur, boxSize, boxSize).fill(seg.color).restore();
+            doc.fontSize(8.5).font('Helvetica').fillColor('#333')
+               .text(`${seg.label} (${seg.pct.toFixed(1)} %)`, leyX + boxSize + 5, leyYcur + 1,
+                     { width: 150, lineBreak: false });
+            leyYcur += 16;
+        }
+
+        // Estadísticas numéricas en columna propia, no superpuesta con la leyenda
+        const statsX = leyX + 180;  // bien a la derecha de la leyenda
+        const statsY = leyY;
         doc.fontSize(9).font('Helvetica-Bold').fillColor('#333')
-           .text('Resumen del período:', statsX, statsY);
+           .text('Resumen del período:', statsX, statsY, { width: 160, lineBreak: false });
         doc.fontSize(9).font('Helvetica').fillColor('#333')
-           .text(`Total alumnos:     ${total}`,    statsX, statsY + 14)
-           .text(`Sin incidencias:   ${nNormales}`, statsX, statsY + 26)
-           .text(`Con retardo(s):    ${nRetardos}`, statsX, statsY + 38)
-           .text(`Con falta(s):      ${nFaltas}`,   statsX, statsY + 50);
+           .text(`Total alumnos:     ${total}`,    statsX, statsY + 14, { width: 160, lineBreak: false })
+           .text(`Sin incidencias:   ${nNormales}`, statsX, statsY + 26, { width: 160, lineBreak: false })
+           .text(`Con retardo(s):    ${nRetardos}`, statsX, statsY + 38, { width: 160, lineBreak: false })
+           .text(`Con falta(s):      ${nFaltas}`,   statsX, statsY + 50, { width: 160, lineBreak: false });
 
         doc.y = cyP + radioP + 14;
         doc.moveDown(0.4);
