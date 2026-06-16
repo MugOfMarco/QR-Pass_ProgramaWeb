@@ -1286,14 +1286,24 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
     }
 });
 
-// ── Convierte fracción decimal de Excel a "HH:MM" ──────────────
-// Excel guarda las horas como fracción de día (07:00 = 0.2916...).
-// SheetJS sin cellDates devuelve ese número en bruto; aquí lo
-// convertimos antes de mandarlo al backend.
+// ── Convierte cualquier valor de Excel a "HH:MM" ───────────────
+// Excel guarda horas como fracción de día (07:00 = 0.2916...).
+// Celdas con fecha+hora llevan el serial del día también (ej. 44927.2916).
+// Tomamos solo la parte fraccionaria en ambos casos.
 function excelTimeToHHMM(val) {
-    if (typeof val === 'string' && val.trim()) return val.trim();
-    if (typeof val === 'number' && val >= 0 && val < 1) {
-        const mins = Math.round(val * 24 * 60);
+    if (typeof val === 'string') {
+        const s = val.trim();
+        // Si ya tiene formato HH:MM o HH:MM:SS, devolverlo limpio
+        if (/^\d{1,2}:\d{2}/.test(s)) return s.substring(0, 5);
+        // Si es string de decimal (dato ya guardado mal), convertir
+        const n = parseFloat(s);
+        if (!isNaN(n)) val = n;
+        else return s;
+    }
+    if (typeof val === 'number') {
+        // Extraer solo la parte fraccionaria (por si trae serial de fecha)
+        const frac = val % 1;
+        const mins = Math.round(frac * 24 * 60);
         return String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
     }
     if (val instanceof Date) {
@@ -1680,8 +1690,8 @@ function renderHorariosTabla() {
     tbody.innerHTML = horariosActivos.map(h => `
         <tr>
             <td>${esc(DIAS[h.dia_semana] || h.dia_semana)}</td>
-            <td>${esc(h.hora_inicio)}</td>
-            <td>${esc(h.hora_fin)}</td>
+            <td>${esc(excelTimeToHHMM(h.hora_inicio))}</td>
+            <td>${esc(excelTimeToHHMM(h.hora_fin))}</td>
             <td>${esc(h.nombre_materia)}</td>
             <td>${esc(h.nombre_semestre)}</td>
             <td style="white-space:nowrap">
@@ -1698,8 +1708,8 @@ function iniciarEditHorario(id) {
     $('hf-id').value       = id;
     $('hf-materia').value  = h.id_materia;
     $('hf-semestre').value = h.id_semestre;
-    $('hf-inicio').value   = h.hora_inicio;
-    $('hf-fin').value      = h.hora_fin;
+    $('hf-inicio').value   = excelTimeToHHMM(h.hora_inicio);
+    $('hf-fin').value      = excelTimeToHHMM(h.hora_fin);
     // Checkboxes: marcar solo el día de este horario
     document.querySelectorAll('.hf-dia-chk').forEach(c => {
         c.checked = parseInt(c.value) === h.dia_semana;
