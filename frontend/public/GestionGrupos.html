@@ -1286,6 +1286,22 @@ $('btn-guardar-grupo').addEventListener('click', async () => {
     }
 });
 
+// ── Convierte fracción decimal de Excel a "HH:MM" ──────────────
+// Excel guarda las horas como fracción de día (07:00 = 0.2916...).
+// SheetJS sin cellDates devuelve ese número en bruto; aquí lo
+// convertimos antes de mandarlo al backend.
+function excelTimeToHHMM(val) {
+    if (typeof val === 'string' && val.trim()) return val.trim();
+    if (typeof val === 'number' && val >= 0 && val < 1) {
+        const mins = Math.round(val * 24 * 60);
+        return String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+    }
+    if (val instanceof Date) {
+        return String(val.getUTCHours()).padStart(2, '0') + ':' + String(val.getUTCMinutes()).padStart(2, '0');
+    }
+    return String(val ?? '').trim();
+}
+
 // ── Excel: parseo con SheetJS ──────────────────────────────────
 const dropZone   = $('drop-zone');
 const excelInput = $('excel-input');
@@ -1347,8 +1363,8 @@ function procesarExcel(file) {
                         grupo:       String(norm.grupo || norm.nombre_grupo || '').trim(),
                         materia:     String(norm.materia || norm.nombre_materia || '').trim(),
                         dia:         String(norm.dia || norm.dia_semana || '').trim(),
-                        hora_inicio: String(norm.hora_inicio || norm.inicio || '').trim(),
-                        hora_fin:    String(norm.hora_fin    || norm.fin    || '').trim(),
+                        hora_inicio: excelTimeToHHMM(norm.hora_inicio ?? norm.inicio ?? ''),
+                        hora_fin:    excelTimeToHHMM(norm.hora_fin    ?? norm.fin    ?? ''),
                     };
                 }).filter(r => r.grupo && r.materia && r.dia);
             }
